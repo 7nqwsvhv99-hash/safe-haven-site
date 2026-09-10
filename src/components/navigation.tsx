@@ -2,8 +2,9 @@
 
 import Link from "next/link"
 import { useState } from "react"
-import { Menu, X, Heart } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Image from "next/image"
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -21,11 +22,22 @@ export function Navigation() {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <div className="container-custom">
-        <div className="flex h-16 items-center justify-between px-4">
+        <div className="flex h-20 items-center justify-between px-4">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 font-bold text-xl">
-            <Heart className="h-6 w-6 text-primary fill-primary" />
-            <span className="hidden sm:inline">Safe Haven</span>
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="relative h-14 w-14 transition-transform group-hover:scale-105">
+              <Image
+                src="/images/safe-haven-humane-society-logo.png"
+                alt="Safe Haven Humane Society"
+                fill
+                className="object-contain"
+                priority
+              />
+            </div>
+            <div className="hidden md:flex flex-col">
+              <span className="font-bold text-lg leading-tight">Safe Haven</span>
+              <span className="text-xs text-muted-foreground">Humane Society</span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
