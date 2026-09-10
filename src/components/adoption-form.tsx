@@ -268,7 +268,7 @@ export function AdoptionForm({ petName = "", onClose }: AdoptionFormProps) {
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        By submitting this form, you agree to be contacted by Safe Haven Animal Rescue regarding your application.
+        By submitting this form, you agree to be contacted by Safe Haven Humane Society regarding your application.
       </p>
     </form>
   )
