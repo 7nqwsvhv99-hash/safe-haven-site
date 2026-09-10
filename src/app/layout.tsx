@@ -18,8 +18,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Safe Haven Animal Rescue | Adopt, Foster, or Donate",
-  description: "Find your new best friend in Jo Daviess County. Adopt, foster, or support affordable vet care at Safe Haven Animal Rescue in Elizabeth, Illinois.",
+  title: "Safe Haven Humane Society | Adopt, Foster, or Donate",
+  description: "Find your new best friend in Jo Daviess County. Adopt, foster, or support affordable vet care at Safe Haven Humane Society in Elizabeth, Illinois.",
 };
 
 export default function RootLayout({
