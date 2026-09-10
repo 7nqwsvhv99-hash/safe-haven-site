@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { Heart, MapPin, Phone, Mail, Facebook, Instagram } from "lucide-react"
+import { MapPin, Phone, Mail, Facebook, Instagram } from "lucide-react"
 import { NewsletterSignup } from "@/components/newsletter-signup"
 
 export function Footer() {
@@ -9,10 +9,19 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Heart className="h-6 w-6 text-primary fill-primary" />
-              <span className="font-bold text-lg">Safe Haven</span>
-            </div>
+            <Link href="/" className="inline-flex items-center gap-3 group">
+              <img
+                src="/images/safe-haven-logo-header.png"
+                alt="Safe Haven Humane Society"
+                width={64}
+                height={64}
+                className="h-16 w-16 shrink-0 object-contain transition-transform group-hover:scale-105"
+              />
+              <div className="flex flex-col">
+                <span className="font-bold text-lg leading-tight">Safe Haven</span>
+                <span className="text-xs text-muted-foreground">Humane Society</span>
+              </div>
+            </Link>
             <p className="text-sm text-muted-foreground">
               Connecting pets and people in Jo Daviess County since 1994.
             </p>
@@ -137,7 +146,7 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-6 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Safe Haven Animal Rescue. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Safe Haven Humane Society. All rights reserved.</p>
         </div>
       </div>
     </footer>
