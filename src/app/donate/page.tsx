@@ -211,7 +211,7 @@ export default function DonatePage() {
           <div className="mt-8 bg-white rounded-xl p-6 space-y-3">
             <h3 className="font-semibold text-center mb-3">Other Ways to Donate</h3>
             <p className="text-sm text-muted-foreground">
-              <strong>By Mail:</strong> Safe Haven Animal Rescue, 123 Main St, Elizabeth, IL 61028
+              <strong>By Mail:</strong> Safe Haven Humane Society, 123 Main St, Elizabeth, IL 61028
             </p>
             <p className="text-sm text-muted-foreground">
               <strong>By Phone:</strong> Call us at (815) 858-2265 to make a donation
