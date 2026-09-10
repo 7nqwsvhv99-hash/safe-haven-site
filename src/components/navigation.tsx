@@ -26,12 +26,13 @@ export function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <Image
-              src="/images/safe-haven-humane-society-logo.png"
+              src="/images/safe-haven-logo-header.svg"
               alt="Safe Haven Humane Society"
               width={56}
               height={56}
               className="h-14 w-14 shrink-0 object-contain transition-transform group-hover:scale-105"
               priority
+              unoptimized
             />
             <div className="hidden md:flex flex-col">
               <span className="font-bold text-lg leading-tight">Safe Haven</span>
