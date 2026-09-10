@@ -185,7 +185,7 @@ export function DonationForm() {
       </Button>
 
       <div className="text-xs text-muted-foreground text-center space-y-1">
-        <p>Safe Haven Animal Rescue is a 501(c)(3) nonprofit organization.</p>
+        <p>Safe Haven Humane Society is a 501(c)(3) nonprofit organization.</p>
         <p>Your donation is tax-deductible to the extent allowed by law.</p>
       </div>
     </form>
