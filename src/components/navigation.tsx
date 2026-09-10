@@ -4,7 +4,6 @@ import Link from "next/link"
 import { useState } from "react"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import Image from "next/image"
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
@@ -25,14 +24,12 @@ export function Navigation() {
         <div className="flex h-20 items-center justify-between px-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <Image
-              src="/images/safe-haven-logo-header.svg"
+            <img
+              src="/images/safe-haven-logo-header.png"
               alt="Safe Haven Humane Society"
-              width={56}
-              height={56}
+              width="56"
+              height="56"
               className="h-14 w-14 shrink-0 object-contain transition-transform group-hover:scale-105"
-              priority
-              unoptimized
             />
             <div className="hidden md:flex flex-col">
               <span className="font-bold text-lg leading-tight">Safe Haven</span>
