@@ -28,7 +28,7 @@ export default function AboutPage() {
           </h2>
           <div className="space-y-6 text-lg text-muted-foreground">
             <p>
-              Safe Haven Animal Rescue was founded in 1994 by a small group of volunteers who saw a need for compassionate animal welfare services in Jo Daviess County. What started as a handful of foster homes has grown into a full-service shelter and clinic serving thousands of animals each year.
+              Safe Haven Humane Society was founded in 1994 by a small group of volunteers who saw a need for compassionate animal welfare services in Jo Daviess County. What started as a handful of foster homes has grown into a full-service shelter and clinic serving thousands of animals each year.
             </p>
             <p>
               We believe every animal deserves a second chance. Whether they come to us as strays, surrenders, or transfers from overcrowded shelters, each one receives medical care, love, and the time they need to find the perfect home.
