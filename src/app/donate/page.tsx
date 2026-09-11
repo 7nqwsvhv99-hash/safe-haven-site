@@ -83,11 +83,11 @@ export default function DonatePage() {
                 <p className="text-sm text-muted-foreground">Purchase food, cleaning supplies, toys, and other items Safe Haven needs.</p>
               </div>
               <Button asChild variant="outline" size="lg" className="w-full">
-                <a href="https://safehavenforpets.org/donate-supplies/" target="_blank" rel="noopener noreferrer">
+                <a href="https://www.amazon.com/hz/wishlist/ls/MICZ1RISU5X1" target="_blank" rel="noopener noreferrer">
                   View Our Amazon Wishlist
                 </a>
               </Button>
-              <p className="text-xs text-muted-foreground">The wishlist currently opens through Safe Haven's existing supplies page.</p>
+              <p className="text-xs text-muted-foreground">Purchase items directly from Safe Haven's current Amazon Wishlist.</p>
             </Card>
           </div>
         </div>
