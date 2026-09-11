@@ -166,9 +166,14 @@ export default function HomePage() {
       {/* Social Proof */}
       <section className="section-padding bg-white">
         <div className="container-custom">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Happy Tails
-          </h2>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              Real Families. Real Second Chances.
+            </h2>
+            <p className="text-muted-foreground">
+              Adoption changes more than one life.
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="p-6">
@@ -338,15 +343,15 @@ const featuredPets = [
 
 const testimonials = [
   {
-    quote: "We adopted Max three months ago and he's brought so much joy to our family. The team at Safe Haven made the process so easy!",
-    author: "Sarah M.",
+    quote: "Watching him go from shelter to our home has been joyous.",
+    author: "Jane, Dewey's adopter",
   },
   {
-    quote: "Fostering through Safe Haven has been the most rewarding experience. They provide everything you need and the support is amazing.",
-    author: "Jake T.",
+    quote: "Mila is fitting in perfectly with my grandpa! She has brought him so much joy in the few days they've been together.",
+    author: "Kelcie, Mila's family",
   },
   {
-    quote: "The low-cost spay and neuter program helped us when we needed it most. So grateful for this community resource.",
-    author: "Maria L.",
+    quote: "Scout is doing great in his new home with us! We are completely in love with him! Thank you for letting him come home with us.",
+    author: "Karen, Scout's adopter",
   },
 ]
