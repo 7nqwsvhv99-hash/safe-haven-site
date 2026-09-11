@@ -2,7 +2,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Heart, Search, FileCheck, Home as HomeIcon, Users, DollarSign, Syringe, TrendingUp, Instagram, Facebook } from "lucide-react"
+import { Heart, Search, FileCheck, Home as HomeIcon, Users, DollarSign, Syringe, PackageOpen, Instagram, Facebook } from "lucide-react"
 
 export default function HomePage() {
   return (
@@ -10,14 +10,15 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="hero-gradient">
         <div className="container-custom section-padding">
-          <div className="max-w-3xl mx-auto text-center space-y-6">
+          <div className="max-w-5xl mx-auto text-center space-y-6">
             <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
               Safe Haven Humane Society
             </p>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-balance">
-              Find Your New Best Friend This Week
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
+              <span className="block md:whitespace-nowrap">Find Your New Best Friend</span>
+              <span className="block">This Week</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground text-balance">
+            <p className="text-lg md:text-xl text-muted-foreground text-balance max-w-3xl mx-auto">
               Safe Haven Humane Society connects pets and people across Jo Daviess County through adoption, fostering, community support, and affordable spay/neuter services.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
@@ -82,6 +83,39 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* About Safe Haven */}
+      <section className="section-padding bg-primary/5">
+        <div className="container-custom">
+          <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-8 md:gap-12 items-center max-w-5xl mx-auto">
+            <div className="flex justify-center">
+              <img
+                src="/images/safe-haven-logo-header.png"
+                alt="Safe Haven Humane Society"
+                width={220}
+                height={220}
+                className="h-44 w-44 md:h-52 md:w-52 object-contain"
+              />
+            </div>
+            <div className="space-y-5 text-center md:text-left">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary mb-2">
+                  About Safe Haven Humane Society
+                </p>
+                <h2 className="text-3xl md:text-4xl font-bold">
+                  A safe place for animals. A stronger community for the people who care about them.
+                </h2>
+              </div>
+              <p className="text-lg text-muted-foreground">
+                Safe Haven provides compassionate care for adoptable cats and dogs, helps them find suitable homes, promotes humane treatment, and supports spay/neuter programs that reduce pet overpopulation in our community.
+              </p>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/about">Learn More About Safe Haven</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Featured Pets */}
       <section className="section-padding bg-slate-50">
         <div className="container-custom">
@@ -134,33 +168,50 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Impact Metrics */}
+      {/* 2026 Community Impact */}
       <section className="section-padding bg-primary/5">
         <div className="container-custom">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Our Impact This Year
-          </h2>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              2026 Community Impact
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              Keeping pets fed. Preventing unwanted litters. Helping shelter animals go home.
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-3">
               <div className="flex justify-center">
-                <TrendingUp className="h-12 w-12 text-primary" />
+                <PackageOpen className="h-12 w-12 text-primary" />
               </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary">247</div>
-              <p className="text-muted-foreground font-medium">Pets Adopted</p>
+              <div className="text-4xl md:text-5xl font-bold text-primary">—</div>
+              <p className="text-foreground font-semibold">Pounds of Food Distributed</p>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                To families, food pantries, and community cat caregivers.
+              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-primary">2026 total coming soon</p>
             </div>
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-3">
               <div className="flex justify-center">
                 <Syringe className="h-12 w-12 text-primary" />
               </div>
               <div className="text-4xl md:text-5xl font-bold text-primary">419</div>
-              <p className="text-muted-foreground font-medium">Spay & Neuter Surgeries</p>
+              <p className="text-foreground font-semibold">Spay &amp; Neuter Surgeries</p>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                Helping prevent unwanted litters and reduce pet overpopulation.
+              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-primary">Estimated veterinary savings coming soon</p>
             </div>
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-3">
               <div className="flex justify-center">
-                <Users className="h-12 w-12 text-primary" />
+                <HomeIcon className="h-12 w-12 text-primary" />
               </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary">189</div>
-              <p className="text-muted-foreground font-medium">Families Helped</p>
+              <div className="text-4xl md:text-5xl font-bold text-primary">—</div>
+              <p className="text-foreground font-semibold">Animals Adopted Into Homes</p>
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+                Creating lasting connections between shelter animals and their new families.
+              </p>
+              <p className="text-xs font-medium uppercase tracking-wide text-primary">2026 total coming soon</p>
             </div>
           </div>
         </div>
