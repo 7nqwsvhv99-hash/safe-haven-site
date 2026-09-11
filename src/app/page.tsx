@@ -83,39 +83,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* About Safe Haven */}
-      <section className="section-padding bg-primary/5">
-        <div className="container-custom">
-          <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-8 md:gap-12 items-center max-w-5xl mx-auto">
-            <div className="flex justify-center">
-              <img
-                src="/images/safe-haven-logo-header.png"
-                alt="Safe Haven Humane Society"
-                width={220}
-                height={220}
-                className="h-44 w-44 md:h-52 md:w-52 object-contain"
-              />
-            </div>
-            <div className="space-y-5 text-center md:text-left">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary mb-2">
-                  About Safe Haven Humane Society
-                </p>
-                <h2 className="text-3xl md:text-4xl font-bold">
-                  A safe place for animals. A stronger community for the people who care about them.
-                </h2>
-              </div>
-              <p className="text-lg text-muted-foreground">
-                Safe Haven provides compassionate care for adoptable cats and dogs, helps them find suitable homes, promotes humane treatment, and supports spay/neuter programs that reduce pet overpopulation in our community.
-              </p>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/about">Learn More About Safe Haven</Link>
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Featured Pets */}
       <section className="section-padding bg-slate-50">
         <div className="container-custom">
@@ -302,8 +269,41 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Follow Us */}
+      {/* About Safe Haven */}
       <section className="section-padding bg-primary/5">
+        <div className="container-custom">
+          <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-8 md:gap-14 items-center max-w-6xl mx-auto">
+            <div className="flex justify-center">
+              <img
+                src="/images/safe-haven-logo-header.png"
+                alt="Safe Haven Humane Society"
+                width={320}
+                height={320}
+                className="h-60 w-60 md:h-72 md:w-72 object-contain"
+              />
+            </div>
+            <div className="space-y-5 text-center md:text-left">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary mb-2">
+                  About Safe Haven Humane Society
+                </p>
+                <h2 className="text-3xl md:text-4xl font-bold">
+                  A safe place for animals. A stronger community for the people who care about them.
+                </h2>
+              </div>
+              <p className="text-lg text-muted-foreground">
+                Safe Haven provides compassionate care for adoptable cats and dogs, helps them find suitable homes, promotes humane treatment, and supports spay/neuter programs that reduce pet overpopulation in our community.
+              </p>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/about">Learn More About Safe Haven</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Follow Us */}
+      <section className="section-padding bg-white">
         <div className="container-custom">
           <div className="max-w-2xl mx-auto text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold">
