@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Heart, ShoppingBag, Wallet, Mail, MapPin, Stethoscope, PackageOpen, PawPrint, Gift } from "lucide-react"
+import { Heart, ShoppingBag, Wallet, Mail, MapPin, Stethoscope, PackageOpen, PawPrint, Gift, Landmark, Building2, FileHeart } from "lucide-react"
+
+const paypalBusinessEmail = "safehavenbookkeeper1471@gmail.com"
 
 export default function DonatePage() {
   return (
@@ -28,11 +30,11 @@ export default function DonatePage() {
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-3">Choose the Way You Want to Give</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Safe Haven currently accepts donations through Venmo, cash, check, and needed supplies.
+              Give online, by mail, or by sending supplies Safe Haven needs most.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             <Card className="p-7 text-center space-y-5 border-primary/20">
               <div className="flex justify-center">
                 <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
@@ -49,6 +51,28 @@ export default function DonatePage() {
                   Open Venmo
                 </a>
               </Button>
+            </Card>
+
+            <Card className="p-7 text-center space-y-5 border-primary/20">
+              <div className="flex justify-center">
+                <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Heart className="h-7 w-7 text-primary" />
+                </div>
+              </div>
+              <div>
+                <h3 className="font-bold text-xl mb-2">Give with PayPal</h3>
+                <p className="text-sm text-muted-foreground">Choose your own amount and complete your gift securely through PayPal.</p>
+              </div>
+              <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_blank">
+                <input type="hidden" name="cmd" value="_donations" />
+                <input type="hidden" name="business" value={paypalBusinessEmail} />
+                <input type="hidden" name="item_name" value="Safe Haven Humane Society" />
+                <input type="hidden" name="currency_code" value="USD" />
+                <Button type="submit" size="lg" className="w-full">
+                  Donate with PayPal
+                </Button>
+              </form>
+              <p className="text-xs text-muted-foreground">You will finish your donation on PayPal.</p>
             </Card>
 
             <Card className="p-7 text-center space-y-5">
@@ -99,7 +123,7 @@ export default function DonatePage() {
           <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-3">Direct Your Donation</h2>
             <p className="text-muted-foreground max-w-3xl mx-auto">
-              Want your gift to support a specific part of Safe Haven's work? Add the fund name to your Venmo note or check memo. Gifts without a designation can be used where they are needed most.
+              Want your gift to support a specific part of Safe Haven's work? Add the fund name to your Venmo note, PayPal note, or check memo. Gifts without a designation can be used where they are needed most.
             </p>
           </div>
 
@@ -128,16 +152,80 @@ export default function DonatePage() {
         </div>
       </section>
 
-      {/* What Gifts Support */}
+      {/* What Your Gift Can Do */}
       <section className="section-padding bg-white">
-        <div className="container-custom max-w-5xl">
+        <div className="container-custom max-w-6xl">
           <div className="text-center mb-10">
             <Heart className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">Every Gift Becomes Care</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Donations help Safe Haven provide food, shelter, medical care, spay/neuter services, and the daily support animals need while they wait for home.
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">What Your Gift Can Do</h2>
+            <p className="text-muted-foreground max-w-3xl mx-auto">
+              Every gift helps Safe Haven provide food, shelter, medical care, spay/neuter services, and everyday supplies. These are examples of the kinds of needs donations can help support.
             </p>
           </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {[
+              ["$10", "Everyday medical or care supplies"],
+              ["$25", "Vaccines and preventive-care needs"],
+              ["$50", "Microchips, testing, or medical supplies"],
+              ["$100", "Diagnostic or veterinary-care support"],
+              ["$250", "A meaningful contribution toward surgery or treatment"],
+              ["$500+", "Help with major medical or shelter-care needs"],
+            ].map(([amount, description]) => (
+              <Card key={amount} className="p-5 text-center space-y-2">
+                <p className="text-2xl font-bold text-primary">{amount}</p>
+                <p className="text-sm text-muted-foreground">{description}</p>
+              </Card>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground text-center mt-6 max-w-3xl mx-auto">
+            Examples are illustrative. Actual costs and needs vary, and unrestricted gifts may be used where they can do the most good.
+          </p>
+        </div>
+      </section>
+
+      {/* More Ways to Give */}
+      <section className="section-padding bg-primary/5">
+        <div className="container-custom max-w-6xl">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">More Ways to Give</h2>
+            <p className="text-muted-foreground max-w-3xl mx-auto">
+              Some gifts need a little more coordination. Safe Haven can help you get started.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Card className="p-7 space-y-4">
+              <Building2 className="h-10 w-10 text-primary" />
+              <h3 className="font-bold text-xl">Employer Matching</h3>
+              <p className="text-sm text-muted-foreground">
+                Your employer may match charitable gifts, which can increase the impact of your donation. Check with your employer's benefits or giving program.
+              </p>
+            </Card>
+            <Card className="p-7 space-y-4">
+              <Landmark className="h-10 w-10 text-primary" />
+              <h3 className="font-bold text-xl">Appreciated Securities</h3>
+              <p className="text-sm text-muted-foreground">
+                Gifts of appreciated securities may be an option for some donors. Contact Safe Haven before initiating a transfer, and consult your financial or tax advisor about your situation.
+              </p>
+            </Card>
+            <Card className="p-7 space-y-4">
+              <FileHeart className="h-10 w-10 text-primary" />
+              <h3 className="font-bold text-xl">Planned & Estate Gifts</h3>
+              <p className="text-sm text-muted-foreground">
+                You may choose to include Safe Haven in a will, trust, beneficiary designation, or other estate plan. Contact us for organization information and consult your advisor for legal or tax guidance.
+              </p>
+            </Card>
+          </div>
+          <div className="text-center mt-8">
+            <Button asChild variant="outline" size="lg">
+              <a href="mailto:safehaven1471@gmail.com?subject=Giving%20to%20Safe%20Haven">Contact Safe Haven About Giving</a>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Nonprofit note */}
+      <section className="section-padding bg-white">
+        <div className="container-custom max-w-5xl">
           <div className="rounded-2xl bg-slate-50 p-6 md:p-8 text-center">
             <p className="text-sm md:text-base text-muted-foreground">
               Safe Haven Humane Society is a 501(c)(3) nonprofit organization. Questions about giving or directing a larger gift? Call <a href="tel:815-858-2265" className="font-semibold text-primary hover:underline">(815) 858-2265</a> or email <a href="mailto:safehaven1471@gmail.com" className="font-semibold text-primary hover:underline">safehaven1471@gmail.com</a>.
