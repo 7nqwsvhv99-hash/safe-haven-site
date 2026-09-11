@@ -49,7 +49,7 @@ export default function HomePage() {
               </div>
               <h3 className="font-semibold text-lg">Browse Pets</h3>
               <p className="text-sm text-muted-foreground">
-                Check out available dogs, cats, and other animals
+                Check out available dogs and cats
               </p>
             </div>
             <div className="flex flex-col items-center text-center space-y-3">
@@ -167,7 +167,10 @@ export default function HomePage() {
               <p className="text-sm text-muted-foreground max-w-xs mx-auto">
                 Helping prevent unwanted litters and reduce pet overpopulation.
               </p>
-              <p className="text-xs font-medium uppercase tracking-wide text-primary">Estimated veterinary savings coming soon</p>
+              <p className="text-sm font-semibold text-primary">$71,000+ estimated veterinary savings</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                Estimated by comparing Safe Haven spay/neuter pricing with published starting prices at a regional full-service veterinary clinic. Individual veterinary costs vary.
+              </p>
             </div>
             <div className="text-center space-y-3">
               <div className="flex justify-center">
