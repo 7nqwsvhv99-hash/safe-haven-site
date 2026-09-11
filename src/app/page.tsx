@@ -11,11 +11,14 @@ export default function HomePage() {
       <section className="hero-gradient">
         <div className="container-custom section-padding">
           <div className="max-w-3xl mx-auto text-center space-y-6">
+            <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
+              Safe Haven Humane Society
+            </p>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-balance">
               Find Your New Best Friend This Week
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground text-balance">
-              Safe Haven connects pets and people in Jo Daviess County. Adopt, foster, or support low-cost vet care.
+              Safe Haven Humane Society connects pets and people across Jo Daviess County through adoption, fostering, community support, and affordable spay/neuter services.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button asChild size="lg">
@@ -258,20 +261,9 @@ export default function HomePage() {
             <p className="text-muted-foreground text-lg">
               Get behind-the-scenes content, adoption spotlights, and daily doses of cuteness.
             </p>
-            <div className="flex gap-4 justify-center pt-4">
+            <div className="flex flex-wrap gap-4 justify-center pt-4">
               <a
-                href="https://tiktok.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-6 py-3 rounded-full bg-white border-2 border-primary text-primary font-semibold hover:bg-primary hover:text-white transition-colors"
-              >
-                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
-                </svg>
-                TikTok
-              </a>
-              <a
-                href="https://instagram.com"
+                href="https://www.instagram.com/safehaven.animalshelter"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-6 py-3 rounded-full bg-white border-2 border-primary text-primary font-semibold hover:bg-primary hover:text-white transition-colors"
@@ -280,7 +272,7 @@ export default function HomePage() {
                 Instagram
               </a>
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/safehavenelizabethil"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-6 py-3 rounded-full bg-white border-2 border-primary text-primary font-semibold hover:bg-primary hover:text-white transition-colors"
