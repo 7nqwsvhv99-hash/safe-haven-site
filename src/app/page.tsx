@@ -152,7 +152,7 @@ export default function HomePage() {
               <div className="flex justify-center">
                 <Syringe className="h-12 w-12 text-primary" />
               </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary">412</div>
+              <div className="text-4xl md:text-5xl font-bold text-primary">419</div>
               <p className="text-muted-foreground font-medium">Spay & Neuter Surgeries</p>
             </div>
             <div className="text-center space-y-2">
