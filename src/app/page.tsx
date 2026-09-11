@@ -343,7 +343,7 @@ const featuredPets = [
 
 const testimonials = [
   {
-    quote: "Watching him go from shelter to our home has been joyous.",
+    quote: "Watching him go from shelter to our home has been joyous. He loves the big yard and walks in the pasture, and he’s a quick learner. He also does great with Chester, our cat who was adopted from Safe Haven.",
     author: "Jane, Dewey's adopter",
   },
   {
