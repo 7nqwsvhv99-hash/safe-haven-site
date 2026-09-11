@@ -31,8 +31,8 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-4">Get Involved</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/adopt" className="text-muted-foreground hover:text-primary transition-colors">Adopt a Pet</Link></li>
-              <li><Link href="/foster" className="text-muted-foreground hover:text-primary transition-colors">Become a Foster</Link></li>
+              <li><Link href="/adopt" className="text-muted-foreground hover:text-primary transition-colors">Adopt</Link></li>
+              <li><Link href="/foster" className="text-muted-foreground hover:text-primary transition-colors">Foster</Link></li>
               <li><Link href="/volunteer" className="text-muted-foreground hover:text-primary transition-colors">Volunteer</Link></li>
               <li><Link href="/donate" className="text-muted-foreground hover:text-primary transition-colors">Donate</Link></li>
             </ul>
@@ -40,10 +40,12 @@ export function Footer() {
 
           {/* Services */}
           <div>
-            <h3 className="font-semibold mb-4">Services</h3>
+            <h3 className="font-semibold mb-4">Explore</h3>
             <ul className="space-y-2 text-sm">
-              <li><Link href="/clinic" className="text-muted-foreground hover:text-primary transition-colors">Spay & Neuter</Link></li>
-              <li><Link href="/clinic" className="text-muted-foreground hover:text-primary transition-colors">Low-Cost Vet Care</Link></li>
+              <li><Link href="/clinic" className="text-muted-foreground hover:text-primary transition-colors">Spay &amp; Neuter Clinic</Link></li>
+              <li><Link href="/adopt" className="text-muted-foreground hover:text-primary transition-colors">Adoption</Link></li>
+              <li><Link href="/foster" className="text-muted-foreground hover:text-primary transition-colors">Foster</Link></li>
+              <li><Link href="/donate" className="text-muted-foreground hover:text-primary transition-colors">Donate</Link></li>
               <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
             </ul>
           </div>
