@@ -151,12 +151,11 @@ export default function HomePage() {
               <div className="flex justify-center">
                 <PackageOpen className="h-12 w-12 text-primary" />
               </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary">—</div>
+              <div className="text-4xl md:text-5xl font-bold text-primary">16,000+</div>
               <p className="text-foreground font-semibold">Pounds of Food Distributed</p>
               <p className="text-sm text-muted-foreground max-w-xs mx-auto">
                 To families, food pantries, and community cat caregivers.
               </p>
-              <p className="text-xs font-medium uppercase tracking-wide text-primary">2026 total coming soon</p>
             </div>
             <div className="text-center space-y-3">
               <div className="flex justify-center">
