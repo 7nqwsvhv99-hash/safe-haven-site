@@ -175,12 +175,11 @@ export default function HomePage() {
               <div className="flex justify-center">
                 <HomeIcon className="h-12 w-12 text-primary" />
               </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary">—</div>
+              <div className="text-4xl md:text-5xl font-bold text-primary">84</div>
               <p className="text-foreground font-semibold">Animals Adopted Into Homes</p>
               <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                Creating lasting connections between shelter animals and their new families.
+                52 cats and 32 dogs connected with new families in 2026.
               </p>
-              <p className="text-xs font-medium uppercase tracking-wide text-primary">2026 total coming soon</p>
             </div>
           </div>
         </div>
