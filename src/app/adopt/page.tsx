@@ -136,7 +136,7 @@ export default function AdoptPage() {
                       Apply to Adopt {pet.name}
                     </Button>
                     <p className="text-xs text-center text-muted-foreground">
-                      Quick and easy application process
+                      Please note: Safe Haven requires an approved adoption application before an animal can go home.
                     </p>
                   </div>
                 </CardContent>
@@ -152,6 +152,12 @@ export default function AdoptPage() {
             <h2 className="text-3xl md:text-4xl font-bold">
               Ready to Adopt?
             </h2>
+            <div className="max-w-2xl mx-auto rounded-2xl bg-primary/5 p-5 text-left">
+              <p className="font-semibold mb-2">Apply first for the smoothest adoption experience.</p>
+              <p className="text-sm text-muted-foreground">
+                To take a pet home, adopters must first submit an application and be approved. Visitors are welcome to meet animals before applying, but same-day adoption may not be possible in that case.
+              </p>
+            </div>
             <p className="text-muted-foreground">
               Our adoption process is straightforward and supportive. We're here to help you find the perfect match.
             </p>
