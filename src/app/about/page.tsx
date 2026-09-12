@@ -20,6 +20,17 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Adoption Impact */}
+      <section className="section-padding bg-primary/5">
+        <div className="container-custom max-w-3xl text-center">
+          <div className="text-5xl md:text-6xl font-bold text-primary">4,193</div>
+          <h2 className="text-2xl md:text-3xl font-bold mt-3">Animals Adopted Through Safe Haven</h2>
+          <p className="text-muted-foreground mt-3">
+            More than four thousand cats and dogs have found homes through Safe Haven Humane Society.
+          </p>
+        </div>
+      </section>
+
       {/* Our Story */}
       <section className="section-padding bg-white">
         <div className="container-custom max-w-4xl">
