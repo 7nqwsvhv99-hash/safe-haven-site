@@ -9,7 +9,68 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Call production integration endpoint
+      - name: Submit test adoption application
         run: |
-          sleep 90
-          curl --fail --show-error --silent https://same-abupp8cny20-latest.netlify.app/api/adoption-integration-test
+          curl --fail --show-error --silent \
+            -X POST https://same-abupp8cny20-latest.netlify.app/api/adoption-applications \
+            -H 'Content-Type: application/json' \
+            --data-binary @- <<'JSON'
+          {
+            "applicationType":"Specific Animal(s)",
+            "speciesInterest":["Cat"],
+            "preferredAnimalIds":["recJhJBc10Fwxwx3m"],
+            "firstName":"Website",
+            "lastName":"Integration Test",
+            "email":"safehaven1471@gmail.com",
+            "phone":"815-858-2265",
+            "preferredContact":"Email",
+            "streetAddress":"1471 US Hwy 20 W",
+            "unitApt":"",
+            "city":"Elizabeth",
+            "state":"IL",
+            "zip":"61028",
+            "applicantIs18Plus":true,
+            "employmentStatus":"Employed",
+            "inSchool":"No",
+            "howHeardAboutUs":"Website integration test",
+            "residenceType":"House",
+            "ownOrRent":"Own",
+            "landlordContact":"",
+            "landlordPhone":"",
+            "otherAdultsInHome":"TEST DATA - none",
+            "childrenInHome":"TEST DATA - none",
+            "petExperience":"TEST DATA - prior cat ownership",
+            "currentPets":"TEST DATA - none",
+            "allHouseholdMembersAgree":"Yes",
+            "householdAllergies":"TEST DATA - none",
+            "longTermCommitment":"Yes",
+            "carePlan":"TEST DATA - contact Safe Haven",
+            "timelyVetCare":"Yes",
+            "primaryFeedingCaregiver":"Website Integration Test",
+            "petSleepLocation":"TEST DATA - indoors",
+            "petLocationWhenAlone":"TEST DATA - indoors",
+            "longestTimeAlone":"TEST DATA - 4 hours",
+            "vacationCarePlan":"TEST DATA - trusted pet sitter",
+            "willingToAllowAdjustmentTime":"Yes",
+            "behaviorsWillingToWorkOn":["Needs Social Skills","Accidents in the House"],
+            "reasonsForAdoption":["Family Companion"],
+            "otherAdoptionReason":"",
+            "readyToAdopt":"TEST DATA - immediately",
+            "otherPetsInterestedIn":"Maple",
+            "anythingElse":"TEST SUBMISSION. Safe to delete after verification.",
+            "reference1Name":"Test Reference One",
+            "reference1Phone":"815-555-0101",
+            "reference1Years":"5",
+            "reference1NonFamily":true,
+            "reference2Name":"Test Reference Two",
+            "reference2Phone":"815-555-0102",
+            "reference2Years":"4",
+            "reference2NonFamily":true,
+            "hasUsedVeterinarian":"No",
+            "vetClinicName":"",
+            "vetClinicPhone":"",
+            "vetClinicEmail":"",
+            "marketingOptIn":false,
+            "authorizationAgreed":true
+          }
+          JSON
