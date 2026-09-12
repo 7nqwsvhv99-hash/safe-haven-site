@@ -1,0 +1,15 @@
+name: Adoption integration test
+
+on:
+  push:
+    paths:
+      - '.github/workflows/adoption-integration-test.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call production integration endpoint
+        run: |
+          sleep 90
+          curl --fail --show-error --silent https://same-abupp8cny20-latest.netlify.app/api/adoption-integration-test
