@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { AdoptionForm } from "@/components/adoption-form"
 import { Filter, Search } from "lucide-react"
 
 type FilterType = "all" | "dogs" | "cats"
@@ -15,8 +13,6 @@ type FilterType = "all" | "dogs" | "cats"
 export default function AdoptPage() {
   const [filter, setFilter] = useState<FilterType>("all")
   const [searchQuery, setSearchQuery] = useState("")
-  const [selectedPet, setSelectedPet] = useState<string | null>(null)
-  const [showApplicationForm, setShowApplicationForm] = useState(false)
 
   const filteredPets = allPets.filter((pet) => {
     if (filter !== "all" && pet.type !== filter) return false
@@ -34,11 +30,6 @@ export default function AdoptPage() {
     return true
   })
 
-  const handleAdoptClick = (petName: string) => {
-    setSelectedPet(petName)
-    setShowApplicationForm(true)
-  }
-
   return (
     <div className="flex flex-col">
       <section className="hero-gradient">
@@ -48,7 +39,7 @@ export default function AdoptPage() {
               Meet Your New Best Friend
             </h1>
             <p className="text-lg text-muted-foreground">
-              All of our pets are spayed/neutered, vaccinated, and ready for their forever homes.
+              Adoptable pets receive age-appropriate veterinary care and preparation before placement.
             </p>
           </div>
         </div>
@@ -132,8 +123,8 @@ export default function AdoptPage() {
                     ))}
                   </div>
                   <div className="pt-2 space-y-2">
-                    <Button className="w-full" onClick={() => handleAdoptClick(pet.name)}>
-                      Apply to Adopt {pet.name}
+                    <Button asChild className="w-full">
+                      <Link href="/adoption-application">Start an Adoption Application</Link>
                     </Button>
                     <p className="text-xs text-center text-muted-foreground">
                       Please note: Safe Haven requires an approved adoption application before an animal can go home.
@@ -147,7 +138,7 @@ export default function AdoptPage() {
       </section>
 
       <section className="section-padding bg-white">
-        <div className="container-custom max-w-3xl">
+        <div className="container-custom max-w-4xl">
           <div className="text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold">
               Ready to Adopt?
@@ -159,40 +150,38 @@ export default function AdoptPage() {
               </p>
             </div>
             <p className="text-muted-foreground">
-              Our adoption process is straightforward and supportive. We're here to help you find the perfect match.
+              Our adoption process is straightforward and supportive. We're here to help you find the right match.
             </p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-left pt-6">
               <div className="space-y-2">
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">1</div>
-                <h3 className="font-semibold">Fill Out Application</h3>
+                <h3 className="font-semibold">Apply</h3>
                 <p className="text-sm text-muted-foreground">Tell us about your home, lifestyle, and what you're looking for.</p>
               </div>
               <div className="space-y-2">
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">2</div>
-                <h3 className="font-semibold">Meet & Greet</h3>
-                <p className="text-sm text-muted-foreground">Visit the shelter to spend time with your potential new friend.</p>
+                <h3 className="font-semibold">Review</h3>
+                <p className="text-sm text-muted-foreground">Our team reviews your application and contacts you if we need more information.</p>
               </div>
               <div className="space-y-2">
                 <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">3</div>
-                <h3 className="font-semibold">Take Them Home</h3>
-                <p className="text-sm text-muted-foreground">Complete the adoption and start your journey together!</p>
+                <h3 className="font-semibold">Meet &amp; Match</h3>
+                <p className="text-sm text-muted-foreground">Meet animals who may be a good fit for your household and needs.</p>
               </div>
+              <div className="space-y-2">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">4</div>
+                <h3 className="font-semibold">Adopt</h3>
+                <p className="text-sm text-muted-foreground">Complete the adoption and welcome your new companion home.</p>
+              </div>
+            </div>
+            <div className="pt-4">
+              <Button asChild size="lg">
+                <Link href="/adoption-application">Start an Adoption Application</Link>
+              </Button>
             </div>
           </div>
         </div>
       </section>
-
-      <Dialog open={showApplicationForm} onOpenChange={setShowApplicationForm}>
-        <DialogContent>
-          <DialogHeader onClose={() => setShowApplicationForm(false)}>
-            <DialogTitle>Adoption Application</DialogTitle>
-          </DialogHeader>
-          <AdoptionForm
-            petName={selectedPet || ""}
-            onClose={() => setShowApplicationForm(false)}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
