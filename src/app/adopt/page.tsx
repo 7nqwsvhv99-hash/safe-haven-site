@@ -39,7 +39,7 @@ export default function AdoptPage() {
               Meet Your New Best Friend
             </h1>
             <p className="text-lg text-muted-foreground">
-              Adoptable pets receive age-appropriate veterinary care and preparation before placement.
+              All animals are spayed or neutered before going home with an adopter. Animals are also vaccinated before adoption unless they are too young for a required vaccine; in those cases, adopters can return to Safe Haven’s clinic for rabies and FVRCP/DAPP when due.
             </p>
           </div>
         </div>
