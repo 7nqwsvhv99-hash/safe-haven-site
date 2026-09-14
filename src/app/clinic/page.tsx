@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Scissors, Syringe, Heart, Calendar, Phone, Mail } from "lucide-react"
+import { Scissors, Syringe, Heart } from "lucide-react"
 
 export default function ClinicPage() {
   return (
@@ -17,7 +17,11 @@ export default function ClinicPage() {
               Safe Haven Humane Society provides low-cost spay/neuter services, with select vaccines and other clinic services available when appropriate.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg"><a href="https://clinicday.com/safehavenhumanesociety">Complete the Intake Form</a></Button>
+              <Button asChild size="lg">
+                <a href="https://airtable.com/app3AcoD2G64aMsEz/pag18veN4frVCtuOz/form" target="_blank" rel="noopener noreferrer">
+                  Complete the Intake Form
+                </a>
+              </Button>
               <Button asChild variant="outline" size="lg"><Link href="#pricing">View Pricing</Link></Button>
             </div>
           </div>
@@ -100,24 +104,6 @@ export default function ClinicPage() {
             Safe Haven may be able to help when financial hardship makes clinic care difficult. Contact us to ask about current options and eligibility.
           </p>
           <Button asChild variant="outline"><a href="mailto:safehaven1471@gmail.com">Ask About Financial Help</a></Button>
-        </div>
-      </section>
-
-      {/* Contact */}
-      <section id="contact" className="section-padding bg-white">
-        <div className="container-custom max-w-2xl text-center">
-          <Calendar className="h-16 w-16 text-primary mx-auto mb-6" />
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Ask About a Clinic Appointment</h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            Clinic dates and availability vary. Contact Safe Haven for current scheduling information.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button asChild size="lg"><a href="tel:815-858-2265"><Phone className="h-4 w-4 mr-2" />(815) 858-2265</a></Button>
-            <Button asChild variant="outline" size="lg"><a href="mailto:safehaven1471@gmail.com"><Mail className="h-4 w-4 mr-2" />Email Safe Haven</a></Button>
-          </div>
-          <p className="text-sm text-muted-foreground mt-8">
-            Safe Haven's clinic is focused on spay/neuter services and does not replace a full-service veterinary practice or provide after-hours care.
-          </p>
         </div>
       </section>
     </div>
