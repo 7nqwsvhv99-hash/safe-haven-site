@@ -15,7 +15,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 function Field({ label, children, note }: { label: string; children: React.ReactNode; note?: string }) {
-  return <div className="space-y-2"><Label>{label}</Label>{children}{note && <p className="text-xs text-muted-foreground">{note}</p>}</div>
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      {note && <p className="text-xs text-muted-foreground">{note}</p>}
+      {children}
+    </div>
+  )
 }
 
 export default function FosterApplicationPage() {
