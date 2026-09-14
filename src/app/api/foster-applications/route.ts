@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     const fosterInterests = asStringArray(body.fosterInterests)
     const consideringCat = speciesInterest.includes("Cat")
     const consideringDog = speciesInterest.includes("Dog")
-    const interestedInBottleBabies = fosterInterests.includes("Bottle Babies") || fosterInterests.includes("Orphaned Litter")
+    const interestedInBottleBabies = fosterInterests.includes("Bottle Babies")
     const interestedInPregnantMom = fosterInterests.includes("Pregnant Mom") || fosterInterests.includes("Nursing Mom with Litter")
 
     const requiredCore: Array<[string, unknown]> = [
@@ -63,8 +63,7 @@ export async function POST(request: Request) {
       ["Ready to foster", body.readyToFoster],
       ["Medical-needs comfort", body.willingMedicalNeeds],
       ["Behavior-needs comfort", body.willingBehaviorChallenges],
-      ["Veterinary transport", body.willingVetTransport],
-      ["Progress updates", body.willingProgressUpdates],
+      ["Veterinary transportation", body.willingVetTransport],
       ["Potential adopter visits", body.willingAdopterVisits],
       ["Safe Haven approval acknowledgement", body.safeHavenApprovalAcknowledged],
       ["Reference name", body.referenceName],
@@ -88,8 +87,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Veterinary clinic name and phone are required when you have used a veterinarian." }, { status: 400 })
     }
 
-    if (consideringCat && missing(body.catIndoorOnlyAgreement)) {
-      return NextResponse.json({ error: "Please confirm the indoor-only requirement for foster cats." }, { status: 400 })
+    if (consideringCat) {
+      if (missing(body.catIndoorOnlyAgreement)) {
+        return NextResponse.json({ error: "Please confirm the indoor-only requirement for foster cats." }, { status: 400 })
+      }
+      if (missing(body.catSeparateSafeRoomAvailable)) {
+        return NextResponse.json({ error: "Please confirm that you have a separate safe room available for foster cats." }, { status: 400 })
+      }
     }
 
     if (consideringDog) {
@@ -120,8 +124,8 @@ export async function POST(request: Request) {
     }
 
     if (interestedInPregnantMom) {
-      if (missing(body.pregnantNursingExperience) || missing(body.pregnantMomPrivateSpaceAvailable)) {
-        return NextResponse.json({ error: "Please complete the pregnant or nursing-mom readiness questions." }, { status: 400 })
+      if (missing(body.pregnantNursingExperience) || missing(body.pregnantMomPrivateSpaceAvailable) || missing(body.specialFosterNotes)) {
+        return NextResponse.json({ error: "Please complete the pregnant or nursing-mom readiness questions, including a description of the private space you would use." }, { status: 400 })
       }
     }
 
@@ -162,10 +166,11 @@ export async function POST(request: Request) {
       "Willing to Foster Medical Needs": asString(body.willingMedicalNeeds),
       "Willing to Foster Behavior Challenges": asString(body.willingBehaviorChallenges),
       "Willing to Transport for Veterinary Care": asString(body.willingVetTransport),
-      "Willing to Provide Progress Updates": asString(body.willingProgressUpdates),
+      "Willing to Provide Progress Updates": "Yes",
       "Willing to Accommodate Potential Adopter Visits": asString(body.willingAdopterVisits),
       "Understands Safe Haven Approval Required for Veterinary / Placement Decisions": asBoolean(body.safeHavenApprovalAcknowledged),
       "Cat - Indoor Only Agreement": consideringCat ? asString(body.catIndoorOnlyAgreement) : "Not Applicable",
+      "Cat - Separate Safe Room Available": consideringCat ? asBoolean(body.catSeparateSafeRoomAvailable) : false,
       "Dog - Has Yard": consideringDog ? asString(body.dogHasYard) : "Not Applicable",
       "Dog - Yard Fenced": consideringDog ? asString(body.dogYardFenced || "Not Applicable") : "Not Applicable",
       "Dog - Fence Height": consideringDog ? asString(body.dogFenceHeight || "Not Applicable") : "Not Applicable",
@@ -176,7 +181,7 @@ export async function POST(request: Request) {
       "Bottle Baby Overnight Care Acknowledged": interestedInBottleBabies ? asBoolean(body.bottleBabyOvernightCareAcknowledged) : false,
       "Pregnant / Nursing Mom Experience": interestedInPregnantMom ? asString(body.pregnantNursingExperience) : "Not interested",
       "Pregnant Mom Private Space Available": interestedInPregnantMom ? asBoolean(body.pregnantMomPrivateSpaceAvailable) : false,
-      "Special Foster Notes": asString(body.specialFosterNotes),
+      "Special Foster Notes": interestedInPregnantMom ? asString(body.specialFosterNotes) : "",
       "Reference Name": asString(body.referenceName),
       "Reference Phone": asString(body.referencePhone),
       "Reference Email": asString(body.referenceEmail),
