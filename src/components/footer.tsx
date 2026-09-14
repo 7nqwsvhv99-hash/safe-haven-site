@@ -27,7 +27,7 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Quick Links */}
+          {/* Get Involved */}
           <div>
             <h3 className="font-semibold mb-4">Get Involved</h3>
             <ul className="space-y-2 text-sm">
@@ -38,14 +38,21 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Services */}
+          {/* Resources */}
           <div>
-            <h3 className="font-semibold mb-4">Explore</h3>
+            <h3 className="font-semibold mb-4">Resources</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/clinic" className="text-muted-foreground hover:text-primary transition-colors">Spay &amp; Neuter Clinic</Link></li>
-              <li><Link href="/adopt" className="text-muted-foreground hover:text-primary transition-colors">Adoption</Link></li>
-              <li><Link href="/foster" className="text-muted-foreground hover:text-primary transition-colors">Foster</Link></li>
-              <li><Link href="/donate" className="text-muted-foreground hover:text-primary transition-colors">Donate</Link></li>
+              <li>
+                <a
+                  href="https://airtable.com/app3AcoD2G64aMsEz/pag18veN4frVCtuOz/form"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Clinic Intake Form
+                </a>
+              </li>
               <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
             </ul>
           </div>
