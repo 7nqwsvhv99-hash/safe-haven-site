@@ -17,7 +17,7 @@ export default function ClinicPage() {
               Safe Haven Humane Society provides low-cost spay/neuter services, with select vaccines and other clinic services available when appropriate.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg"><Link href="#contact">Ask About an Appointment</Link></Button>
+              <Button asChild size="lg"><a href="https://clinicday.com/safehavenhumanesociety">Complete the Intake Form</a></Button>
               <Button asChild variant="outline" size="lg"><Link href="#pricing">View Pricing</Link></Button>
             </div>
           </div>
