@@ -4,8 +4,8 @@ import {
   Cat,
   CheckCircle2,
   ClipboardCheck,
-  Dog,
   FileText,
+  Heart,
   HeartPulse,
   CreditCard,
   ShieldCheck,
@@ -22,10 +22,8 @@ const intakeFormUrl =
 const prices = [
   { service: "Cat spay", price: "$70" },
   { service: "Cat neuter", price: "$50" },
-  { service: "Dog spay", price: "$200" },
-  { service: "Dog neuter", price: "$125" },
   { service: "Rabies vaccine", price: "$10" },
-  { service: "FVRCP or DAPP vaccine", price: "$10" },
+  { service: "FVRCP vaccine", price: "$10" },
   { service: "Microchip", price: "$20" },
   { service: "FeLV/FIV test for cats", price: "$35" },
   { service: "Parasite treatment", price: "$10" },
@@ -68,9 +66,8 @@ export default function ClinicPage() {
               Spay &amp; Neuter Clinic
             </h1>
             <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-              Safe Haven Humane Society offers scheduled spay and neuter
-              services for cats and dogs, with select vaccines and other
-              services available as part of a clinic visit.
+              Safe Haven Humane Society provides low-cost spay/neuter services
+              for cats, with select add-on services available when appropriate.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
               <Button asChild size="lg">
@@ -86,10 +83,6 @@ export default function ClinicPage() {
               Submitting the form is a request for an appointment. Your
               appointment is not scheduled until Safe Haven contacts you with
               confirmation.
-            </p>
-            <p className="mx-auto mt-2 max-w-2xl text-sm font-medium text-foreground">
-              The current online intake form is for cat spay and neuter
-              requests. A dog intake form will be added later.
             </p>
           </div>
         </div>
@@ -145,29 +138,24 @@ export default function ClinicPage() {
             </p>
           </div>
 
-          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
             <Card className="p-6">
               <Cat className="mb-4 h-9 w-9 text-primary" />
-              <h3 className="text-lg font-bold">Cats</h3>
+              <h3 className="text-lg font-bold">Spay &amp; Neuter</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Spay or neuter, FVRCP vaccine, FeLV/FIV testing, microchipping,
-                and other available add-on care.
-              </p>
-            </Card>
-            <Card className="p-6">
-              <Dog className="mb-4 h-9 w-9 text-primary" />
-              <h3 className="text-lg font-bold">Dogs</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Safe Haven provides dog spay and neuter services, but the public
-                dog intake form is not yet available online.
+                Surgical sterilization for cats through scheduled clinic days.
+                Availability and eligibility vary by clinic date. Clinics are
+                currently held four times each month, typically on two
+                Wednesdays and two Saturdays.
               </p>
             </Card>
             <Card className="p-6">
               <Syringe className="mb-4 h-9 w-9 text-primary" />
-              <h3 className="text-lg font-bold">Rabies protection</h3>
+              <h3 className="text-lg font-bold">Select Add-On Services</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Upload proof if your animal is currently vaccinated. A one-year
-                rabies vaccine is available when needed.
+                Rabies, FVRCP, microchipping, FeLV/FIV testing, and parasite
+                treatment may be available depending on the animal and
+                appointment.
               </p>
             </Card>
           </div>
@@ -194,7 +182,40 @@ export default function ClinicPage() {
         </div>
       </section>
 
+
       <section className="bg-white section-padding">
+        <div className="container-custom max-w-4xl">
+          <h2 className="mb-12 text-center text-3xl font-bold md:text-4xl">
+            Why Spay or Neuter?
+          </h2>
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
+            <div className="space-y-4 text-center">
+              <h3 className="flex items-center justify-center gap-2 text-xl font-bold">
+                <Heart className="h-5 w-5 text-primary" />
+                For Animals &amp; Families
+              </h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>• Prevents unwanted litters</li>
+                <li>• Can reduce certain reproductive health risks</li>
+                <li>• Helps more families access an essential veterinary service</li>
+              </ul>
+            </div>
+            <div className="space-y-4 text-center">
+              <h3 className="flex items-center justify-center gap-2 text-xl font-bold">
+                <Heart className="h-5 w-5 text-primary" />
+                For Our Community
+              </h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>• Helps reduce pet overpopulation</li>
+                <li>• Supports rescue and community cat efforts</li>
+                <li>• Helps reduce future shelter intake</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-slate-50 section-padding">
         <div className="container-custom max-w-5xl">
           <div className="grid items-start gap-10 lg:grid-cols-[0.9fr_1.1fr]">
             <div>
