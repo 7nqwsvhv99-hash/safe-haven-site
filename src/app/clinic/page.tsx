@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Scissors, Syringe, Heart } from "lucide-react"
+import { Scissors, Syringe, Heart, ClipboardCheck, Clock3, CreditCard } from "lucide-react"
 
 export default function ClinicPage() {
   return (
@@ -14,7 +14,7 @@ export default function ClinicPage() {
               Affordable Spay & Neuter Care
             </h1>
             <p className="text-lg text-muted-foreground">
-              Safe Haven Humane Society provides low-cost spay/neuter services, with select vaccines and other clinic services available when appropriate.
+              Safe Haven Humane Society provides low-cost spay/neuter services for cats and dogs, with select add-on services available when appropriate.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button asChild size="lg">
@@ -24,6 +24,9 @@ export default function ClinicPage() {
               </Button>
               <Button asChild variant="outline" size="lg"><Link href="#pricing">View Pricing</Link></Button>
             </div>
+            <p className="text-sm text-muted-foreground">
+              The current public intake form is for cat spay/neuter requests. A dog intake form will be added later.
+            </p>
           </div>
         </div>
       </section>
@@ -44,7 +47,45 @@ export default function ClinicPage() {
               <div className="flex justify-center"><Syringe className="h-12 w-12 text-primary" /></div>
               <h3 className="font-bold text-xl">Select Add-On Services</h3>
               <p className="text-muted-foreground text-sm">
-                Rabies, FVRCP, DAPP, microchipping, FeLV/FIV testing, parasite treatment, and other services may be available depending on the animal and appointment.
+                Rabies, FVRCP, DAPP, microchipping, FeLV/FIV testing, and parasite treatment may be available depending on the animal and appointment.
+              </p>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* How Intake Works */}
+      <section className="section-padding bg-slate-50">
+        <div className="container-custom">
+          <div className="max-w-3xl mx-auto text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">How to Request a Clinic Appointment</h2>
+            <p className="text-muted-foreground">
+              Start with the online intake form. A submitted form is a request for care, not a confirmed appointment.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-5xl mx-auto">
+            <Card className="p-6 space-y-4">
+              <ClipboardCheck className="h-10 w-10 text-primary" />
+              <p className="text-sm font-semibold uppercase tracking-wide text-primary">Step 1</p>
+              <h3 className="font-bold text-xl">Complete the Intake Form</h3>
+              <p className="text-muted-foreground text-sm">
+                Share your contact information, your cat&apos;s information, requested services, and required acknowledgements.
+              </p>
+            </Card>
+            <Card className="p-6 space-y-4">
+              <Clock3 className="h-10 w-10 text-primary" />
+              <p className="text-sm font-semibold uppercase tracking-wide text-primary">Step 2</p>
+              <h3 className="font-bold text-xl">Watch for Follow-Up</h3>
+              <p className="text-muted-foreground text-sm">
+                A clinic volunteer will review your request and respond within 72 hours with availability and next steps.
+              </p>
+            </Card>
+            <Card className="p-6 space-y-4">
+              <CreditCard className="h-10 w-10 text-primary" />
+              <p className="text-sm font-semibold uppercase tracking-wide text-primary">Step 3</p>
+              <h3 className="font-bold text-xl">Prepare for Check-In</h3>
+              <p className="text-muted-foreground text-sm">
+                If an appointment is scheduled, payment is due at check-in. Safe Haven accepts cash, check, credit card, or Venmo at @safehaven1471.
               </p>
             </Card>
           </div>
@@ -80,7 +121,7 @@ export default function ClinicPage() {
       <section id="pricing" className="section-padding bg-white">
         <div className="container-custom max-w-4xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">Current Clinic Pricing</h2>
-          <p className="text-center text-muted-foreground mb-10">Pricing shown reflects the current ClinicDay service catalog and may change as services are updated.</p>
+          <p className="text-center text-muted-foreground mb-10">These are Safe Haven&apos;s current clinic prices. Availability and pricing may change.</p>
           <Card className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
               <div className="flex justify-between items-center py-3 border-b"><span>Cat Spay</span><span className="font-semibold text-primary">$70</span></div>
