@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server"
 
 const AIRTABLE_BASE_ID = "app2vpch2JJVrP9pu"
-const AIRTABLE_TABLE_ID = "tblmDw2mrdg40JyoF"
+const AIRTABLE_APPLICATIONS_TABLE_ID = "tblmDw2mrdg40JyoF"
+const AIRTABLE_ANIMALS_TABLE_ID = "tbliTXWvG7gdf023E"
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : ""
@@ -21,6 +22,30 @@ function missing(value: unknown) {
   return asString(value).length === 0
 }
 
+async function deriveSpeciesFromAnimals(token: string, animalIds: string[]) {
+  const species = new Set<string>()
+
+  for (const animalId of animalIds) {
+    const response = await fetch(
+      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_ANIMALS_TABLE_ID}/${animalId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(`Could not verify selected animal ${animalId}`)
+    }
+
+    const animal = await response.json()
+    const animalSpecies = asString(animal?.fields?.Species)
+    if (animalSpecies === "Cat" || animalSpecies === "Dog") species.add(animalSpecies)
+  }
+
+  return Array.from(species)
+}
+
 export async function POST(request: Request) {
   try {
     const token = process.env.AIRTABLE_ACCESS_TOKEN
@@ -31,8 +56,14 @@ export async function POST(request: Request) {
     const body = await request.json()
 
     const applicationType = asString(body.applicationType)
-    const speciesInterest = asStringArray(body.speciesInterest)
     const preferredAnimalIds = asStringArray(body.preferredAnimalIds)
+    const submittedSpeciesInterest = asStringArray(body.speciesInterest)
+
+    let speciesInterest = submittedSpeciesInterest
+    if (applicationType === "Specific Animal(s)" && preferredAnimalIds.length > 0) {
+      speciesInterest = await deriveSpeciesFromAnimals(token, preferredAnimalIds)
+    }
+
     const consideringDog = speciesInterest.includes("Dog")
 
     const requiredCore: Array<[string, unknown]> = [
@@ -204,7 +235,7 @@ export async function POST(request: Request) {
       fields["Dog - Willing to Work on Digging"] = asString(body.dogDiggingTolerance)
     }
 
-    const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_TABLE_ID}`, {
+    const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${AIRTABLE_APPLICATIONS_TABLE_ID}`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
