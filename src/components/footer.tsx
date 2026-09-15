@@ -11,7 +11,7 @@ export function Footer() {
           <div className="space-y-4">
             <Link href="/" className="inline-flex items-center gap-3 group">
               <img
-                src="/images/safe-haven-logo-header.png"
+                src="/images/safe-haven-logo-header.svg"
                 alt="Safe Haven Humane Society"
                 width={64}
                 height={64}
@@ -54,6 +54,7 @@ export function Footer() {
                 </a>
               </li>
               <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
+              <li><Link href="/about#newsletters" className="text-muted-foreground hover:text-primary transition-colors">Newsletter Archive</Link></li>
             </ul>
           </div>
 
