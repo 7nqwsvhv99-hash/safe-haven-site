@@ -31,23 +31,16 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Our Story */}
+      {/* Mission */}
       <section className="section-padding bg-white">
-        <div className="container-custom max-w-4xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
-            Our Story
-          </h2>
-          <div className="space-y-6 text-lg text-muted-foreground">
-            <p>
-              Safe Haven Humane Society was founded in 1994 by a small group of volunteers who saw a need for compassionate animal welfare services in Jo Daviess County. What started as a handful of foster homes has grown into a full-service shelter and clinic serving thousands of animals each year.
-            </p>
-            <p>
-              We believe every animal deserves a second chance. Whether they come to us as strays, surrenders, or transfers from overcrowded shelters, each one receives medical care, love, and the time they need to find the perfect home.
-            </p>
-            <p>
-              Today, Safe Haven operates a shelter, low-cost spay/neuter clinic, and active foster network. We work with local veterinarians, rescue partners, and community members to reduce pet overpopulation and ensure no animal is left behind.
-            </p>
-          </div>
+        <div className="container-custom max-w-4xl text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-8">Our Mission</h2>
+          <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+            Safe Haven&apos;s mission is to provide a haven and any necessary treatment for adoptable cats and dogs, place them in forever homes, increase the awareness of the humane treatment of animals, and promote spay and neuter programs to reduce the overpopulation of cats and dogs in Jo Daviess County.
+          </p>
+          <p className="text-base text-muted-foreground mt-6">
+            Safe Haven is a small nonprofit 501(c)(3) organization located in Jo Daviess County and supported by community donations and memberships.
+          </p>
         </div>
       </section>
 
@@ -111,11 +104,35 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Newsletter Archive */}
+      <section id="newsletters" className="section-padding bg-white">
+        <div className="container-custom max-w-5xl">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">Newsletter Archive</h2>
+            <p className="text-muted-foreground">Read recent stories, updates, and news from Safe Haven.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              ["Summer/Fall 2025", "https://safehavenforpets.org/wp-content/uploads/2026/02/SH-Summer-Fall-Newsletter-2025.pdf"],
+              ["Fall/Winter 2024", "https://safehavenforpets.org/wp-content/uploads/2025/04/Safe-Haven-2024-Newsletter.pdf"],
+              ["Fall/Winter 2023", "https://safehavenforpets.org/wp-content/uploads/2024/03/23Fall_Newsletter.pdf"],
+            ].map(([title, href]) => (
+              <Card key={title} className="p-6 text-center space-y-4">
+                <h3 className="font-bold text-lg">{title}</h3>
+                <Button asChild variant="outline" className="w-full">
+                  <a href={href} target="_blank" rel="noopener noreferrer">Read Newsletter</a>
+                </Button>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Visit Us */}
       <section className="section-padding bg-slate-50">
         <div className="container-custom">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Visit Safe Haven</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             <Card className="p-6 space-y-4">
               <h3 className="font-bold text-xl">Location</h3>
               <div className="flex items-start gap-3">
@@ -125,7 +142,16 @@ export default function AboutPage() {
                   <p className="text-sm text-muted-foreground">1471 US Hwy 20 W<br />Elizabeth, IL 61028</p>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground">For current visiting hours or questions before your trip, please call or email us.</p>
+              <Button asChild className="w-full">
+                <a href="https://www.google.com/maps/search/?api=1&query=1471+US+Hwy+20+W+Elizabeth+IL+61028" target="_blank" rel="noopener noreferrer">Get Directions</a>
+              </Button>
+            </Card>
+            <Card className="p-6 space-y-4">
+              <h3 className="font-bold text-xl">Hours of Operation</h3>
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between gap-4"><dt>Monday through Saturday</dt><dd className="font-semibold whitespace-nowrap">10 AM to 3 PM</dd></div>
+                <div className="flex justify-between gap-4"><dt>Sunday</dt><dd className="font-semibold">Closed</dd></div>
+              </dl>
             </Card>
             <Card className="p-6 space-y-4">
               <h3 className="font-bold text-xl">Contact Information</h3>
@@ -144,11 +170,6 @@ export default function AboutPage() {
                     <a href="mailto:safehaven1471@gmail.com" className="text-sm text-muted-foreground hover:text-primary">safehaven1471@gmail.com</a>
                   </div>
                 </div>
-              </div>
-              <div className="pt-2">
-                <Button asChild className="w-full">
-                  <a href="https://www.google.com/maps/search/?api=1&query=1471+US+Hwy+20+W+Elizabeth+IL+61028" target="_blank" rel="noopener noreferrer">Get Directions</a>
-                </Button>
               </div>
             </Card>
           </div>
