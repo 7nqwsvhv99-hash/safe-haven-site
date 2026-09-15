@@ -25,7 +25,7 @@ export function Navigation() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <img
-              src="/images/safe-haven-logo-header.png"
+              src="/images/safe-haven-logo-header.svg"
               alt="Safe Haven Humane Society"
               width="56"
               height="56"
