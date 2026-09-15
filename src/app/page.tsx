@@ -276,7 +276,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-8 md:gap-14 items-center max-w-6xl mx-auto">
             <div className="flex justify-center">
               <img
-                src="/images/safe-haven-humane-society-logo.png"
+                src="/images/safe-haven-logo-header.svg"
                 alt="Safe Haven Humane Society"
                 width={320}
                 height={320}
@@ -295,6 +295,13 @@ export default function HomePage() {
               <p className="text-lg text-muted-foreground">
                 Safe Haven provides compassionate care for adoptable cats and dogs, helps them find suitable homes, promotes humane treatment, and supports spay/neuter programs that reduce pet overpopulation in our community.
               </p>
+              <div className="rounded-2xl border border-primary/20 bg-white/70 p-5 text-center md:text-left">
+                <div className="text-4xl md:text-5xl font-bold text-primary">4,193</div>
+                <h3 className="text-lg font-bold mt-1">Animals Adopted Through Safe Haven</h3>
+                <p className="text-sm text-muted-foreground mt-2">
+                  More than four thousand cats and dogs have found homes through Safe Haven Humane Society.
+                </p>
+              </div>
               <Button asChild variant="outline" size="lg">
                 <Link href="/about">Learn More About Safe Haven</Link>
               </Button>
