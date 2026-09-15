@@ -104,12 +104,12 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Newsletter Archive */}
+      {/* Past Newsletters */}
       <section id="newsletters" className="section-padding bg-white">
         <div className="container-custom max-w-5xl">
           <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">Newsletter Archive</h2>
-            <p className="text-muted-foreground">Read recent stories, updates, and news from Safe Haven.</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">Past Newsletters</h2>
+            <p className="text-muted-foreground">Read previous issues and see the animals, people, and community support behind Safe Haven&apos;s work.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
@@ -125,6 +125,9 @@ export default function AboutPage() {
               </Card>
             ))}
           </div>
+          <p className="text-xs text-muted-foreground text-center mt-6 max-w-3xl mx-auto">
+            These publications are provided as an archive. Contact details, programs, and other information in older issues may no longer be current.
+          </p>
         </div>
       </section>
 
@@ -147,7 +150,7 @@ export default function AboutPage() {
               </Button>
             </Card>
             <Card className="p-6 space-y-4">
-              <h3 className="font-bold text-xl">Hours of Operation</h3>
+              <h3 className="font-bold text-xl">Shelter Hours</h3>
               <dl className="space-y-2 text-sm">
                 <div className="flex justify-between gap-4"><dt>Monday through Saturday</dt><dd className="font-semibold whitespace-nowrap">10 AM to 3 PM</dd></div>
                 <div className="flex justify-between gap-4"><dt>Sunday</dt><dd className="font-semibold">Closed</dd></div>

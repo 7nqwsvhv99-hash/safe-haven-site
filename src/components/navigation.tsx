@@ -13,6 +13,7 @@ export function Navigation() {
     { href: "/adopt", label: "Adopt" },
     { href: "/foster", label: "Foster" },
     { href: "/clinic", label: "Clinic" },
+    { href: "/resources", label: "Resources" },
     { href: "/volunteer", label: "Volunteer" },
     { href: "/donate", label: "Donate" },
     { href: "/about", label: "About" },
@@ -38,7 +39,7 @@ export function Navigation() {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-4 lg:gap-6">
             {navItems.map((item) => (
               <Link
                 key={item.href}

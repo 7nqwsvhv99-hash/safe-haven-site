@@ -43,6 +43,7 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Resources</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/clinic" className="text-muted-foreground hover:text-primary transition-colors">Spay &amp; Neuter Clinic</Link></li>
+              <li><Link href="/resources" className="text-muted-foreground hover:text-primary transition-colors">Pet Owner Resources</Link></li>
               <li>
                 <a
                   href="https://airtable.com/app3AcoD2G64aMsEz/pag18veN4frVCtuOz/form"
@@ -54,7 +55,7 @@ export function Footer() {
                 </a>
               </li>
               <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
-              <li><Link href="/about#newsletters" className="text-muted-foreground hover:text-primary transition-colors">Newsletter Archive</Link></li>
+              <li><Link href="/about#newsletters" className="text-muted-foreground hover:text-primary transition-colors">Past Newsletters</Link></li>
             </ul>
           </div>
 
@@ -75,6 +76,12 @@ export function Footer() {
                 <a href="mailto:safehaven1471@gmail.com" className="hover:text-primary transition-colors">safehaven1471@gmail.com</a>
               </li>
             </ul>
+
+            <div className="mt-5 text-sm">
+              <h4 className="font-semibold mb-2">Shelter Hours</h4>
+              <p className="text-muted-foreground">Monday–Saturday: 10 AM–3 PM</p>
+              <p className="text-muted-foreground">Sunday: Closed</p>
+            </div>
 
             {/* Social Media */}
             <div className="flex gap-3 mt-4">

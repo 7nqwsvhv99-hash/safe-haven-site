@@ -10,7 +10,7 @@ import {
   Hammer,
   Heart,
   Leaf,
-  PackageHeart,
+  PackageOpen,
   Share2,
   Truck,
   Users,
@@ -233,7 +233,7 @@ const volunteerRoles = [
   },
   {
     title: "Pet Food Pantry",
-    icon: <PackageHeart className="h-5 w-5 text-primary" />,
+    icon: <PackageOpen className="h-5 w-5 text-primary" />,
     description: "Help organize, prepare, and distribute pet food and supplies for community members.",
   },
   {
