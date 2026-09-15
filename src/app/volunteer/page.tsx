@@ -30,7 +30,7 @@ export default function VolunteerPage() {
               <span className="block">Find a volunteer role that fits your skills and schedule.</span>
             </p>
             <Button asChild size="lg">
-              <Link href="#roles">See Volunteer Roles</Link>
+              <Link href="/volunteer-application">Complete the Volunteer Application</Link>
             </Button>
           </div>
         </div>

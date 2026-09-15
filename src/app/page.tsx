@@ -276,11 +276,11 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-8 md:gap-14 items-center max-w-6xl mx-auto">
             <div className="flex justify-center">
               <img
-                src="/images/safe-haven-logo-header.svg"
+                src="/images/safe-haven-logo-header.png"
                 alt="Safe Haven Humane Society"
                 width={320}
                 height={320}
-                className="h-60 w-60 md:h-72 md:w-72 object-contain"
+                className="h-60 w-60 md:h-72 md:w-72 object-contain mix-blend-multiply"
               />
             </div>
             <div className="space-y-5 text-center md:text-left">

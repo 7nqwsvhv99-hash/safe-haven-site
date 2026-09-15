@@ -234,9 +234,12 @@ export default function DonatePage() {
       <section className="section-padding bg-white">
         <div className="container-custom max-w-5xl">
           <div className="rounded-2xl bg-slate-50 p-6 md:p-8 text-center">
-            <p className="text-sm md:text-base text-muted-foreground">
-              Safe Haven Humane Society is a 501(c)(3) nonprofit organization. Questions about giving or directing a larger gift? Call <a href="tel:815-858-2265" className="font-semibold text-primary hover:underline">(815) 858-2265</a> or email <a href="mailto:safehaven1471@gmail.com" className="font-semibold text-primary hover:underline">safehaven1471@gmail.com</a>.
-            </p>
+            <div className="space-y-2 text-sm md:text-base text-muted-foreground">
+              <p>Safe Haven Humane Society is a 501(c)(3) nonprofit organization. Questions about giving or directing a larger gift?</p>
+              <p>
+                Call <a href="tel:815-858-2265" className="font-semibold text-primary hover:underline">(815) 858-2265</a> or email <a href="mailto:safehaven1471@gmail.com" className="font-semibold text-primary hover:underline">safehaven1471@gmail.com</a>.
+              </p>
+            </div>
           </div>
         </div>
       </section>

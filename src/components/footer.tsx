@@ -11,11 +11,11 @@ export function Footer() {
           <div className="space-y-4">
             <Link href="/" className="inline-flex items-center gap-3 group">
               <img
-                src="/images/safe-haven-logo-header.svg"
+                src="/images/safe-haven-logo-header.png"
                 alt="Safe Haven Humane Society"
                 width={64}
                 height={64}
-                className="h-16 w-16 shrink-0 object-contain transition-transform group-hover:scale-105"
+                className="h-16 w-16 shrink-0 object-contain mix-blend-multiply transition-transform group-hover:scale-105"
               />
               <div className="flex flex-col">
                 <span className="font-bold text-lg leading-tight">Safe Haven</span>
