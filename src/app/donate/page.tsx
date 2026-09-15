@@ -106,12 +106,19 @@ export default function DonatePage() {
                 <h3 className="font-bold text-xl mb-2">Send Needed Supplies</h3>
                 <p className="text-sm text-muted-foreground">Purchase food, cleaning supplies, toys, and other items Safe Haven needs.</p>
               </div>
-              <Button asChild variant="outline" size="lg" className="w-full">
-                <a href="https://www.amazon.com/hz/wishlist/ls/MICZ1RISU5X1" target="_blank" rel="noopener noreferrer">
-                  View Our Amazon Wishlist
-                </a>
-              </Button>
-              <p className="text-xs text-muted-foreground">Purchase items directly from Safe Haven's current Amazon Wishlist.</p>
+              <div className="space-y-3">
+                <Button asChild variant="outline" size="lg" className="w-full">
+                  <a href="https://www.chewy.com/g/safe-haven-humane-society_b77075904" target="_blank" rel="noopener noreferrer">
+                    View Our Chewy Wishlist
+                  </a>
+                </Button>
+                <Button asChild variant="outline" size="lg" className="w-full">
+                  <a href="https://www.amazon.com/hz/wishlist/ls/MICZ1RISU5X1" target="_blank" rel="noopener noreferrer">
+                    View Our Amazon Wishlist
+                  </a>
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">Purchase items directly from Safe Haven's current wishlists.</p>
             </Card>
           </div>
         </div>
