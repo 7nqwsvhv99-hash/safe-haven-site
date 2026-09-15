@@ -13,10 +13,10 @@ export function Navigation() {
     { href: "/adopt", label: "Adopt" },
     { href: "/foster", label: "Foster" },
     { href: "/clinic", label: "Clinic" },
-    { href: "/resources", label: "Resources" },
     { href: "/volunteer", label: "Volunteer" },
     { href: "/donate", label: "Donate" },
     { href: "/about", label: "About" },
+    { href: "/resources", label: "Resources" },
   ]
 
   return (
