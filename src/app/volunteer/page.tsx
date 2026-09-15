@@ -183,7 +183,7 @@ export default function VolunteerPage() {
             Join our team of dedicated volunteers and help animals in our community.
           </p>
           <Button asChild size="lg">
-            <Link href="/volunteer-application">Complete the Volunteer Application</Link>
+            <a href="https://safehavenforpets.org/apply-to-volunteer/" target="_blank" rel="noreferrer">Complete the Volunteer Application</a>
           </Button>
         </div>
       </section>
