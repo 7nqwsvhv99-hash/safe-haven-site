@@ -2,7 +2,6 @@ import Link from "next/link"
 import {
   CalendarCheck,
   Cat,
-  CheckCircle2,
   ClipboardCheck,
   FileText,
   Heart,
@@ -48,7 +47,7 @@ const steps = [
     icon: CalendarCheck,
     title: "Watch for confirmation",
     description:
-      "We will contact you if an appointment is available and provide the clinic date and drop-off instructions.",
+      "We will contact you when an appointment is available and provide the clinic date and drop-off instructions.",
   },
 ]
 
@@ -79,11 +78,6 @@ export default function ClinicPage() {
                 <Link href="#pricing">View Services &amp; Pricing</Link>
               </Button>
             </div>
-            <p className="mx-auto mt-5 max-w-2xl text-sm leading-relaxed text-muted-foreground">
-              Submitting the form is a request for an appointment. Your
-              appointment is not scheduled until Safe Haven contacts you with
-              confirmation.
-            </p>
           </div>
         </div>
       </section>
@@ -131,11 +125,6 @@ export default function ClinicPage() {
             <h2 className="text-3xl font-bold md:text-4xl">
               Straightforward, low-cost care
             </h2>
-            <p className="mt-4 leading-relaxed text-muted-foreground">
-              Select the services you are requesting on the intake form. Final
-              services depend on your animal&apos;s health, eligibility, and the
-              veterinarian&apos;s clinical judgment.
-            </p>
           </div>
 
           <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -144,9 +133,8 @@ export default function ClinicPage() {
               <h3 className="text-lg font-bold">Spay &amp; Neuter</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Surgical sterilization for cats through scheduled clinic days.
-                Availability and eligibility vary by clinic date. Clinics are
-                currently held four times each month, typically on two
-                Wednesdays and two Saturdays.
+                Clinics are currently held four times each month, typically on
+                two Wednesdays and two Saturdays.
               </p>
             </Card>
             <Card className="p-6">
@@ -154,8 +142,7 @@ export default function ClinicPage() {
               <h3 className="text-lg font-bold">Select Add-On Services</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Rabies, FVRCP, microchipping, FeLV/FIV testing, and parasite
-                treatment may be available depending on the animal and
-                appointment.
+                treatment are available.
               </p>
             </Card>
           </div>
@@ -176,8 +163,7 @@ export default function ClinicPage() {
             </div>
           </Card>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Prices and service availability may change. Additional care is
-            provided only when appropriate and available.
+            Prices and service availability may change.
           </p>
         </div>
       </section>
@@ -217,41 +203,6 @@ export default function ClinicPage() {
 
       <section className="bg-slate-50 section-padding">
         <div className="container-custom max-w-5xl">
-          <div className="grid items-start gap-10 lg:grid-cols-[0.9fr_1.1fr]">
-            <div>
-              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
-                Before you begin
-              </p>
-              <h2 className="text-3xl font-bold md:text-4xl">
-                Have a few details ready
-              </h2>
-              <p className="mt-4 leading-relaxed text-muted-foreground">
-                The form is designed to collect the information our team needs
-                to review your request and prepare for safe care.
-              </p>
-            </div>
-            <Card className="p-6 md:p-8">
-              <ul className="space-y-5">
-                {[
-                  "Your contact information and preferred way to be reached",
-                  "Your cat's age, sex, color or breed, and other basic details",
-                  "The services you would like to request",
-                  "Current rabies documentation, if your animal is already vaccinated",
-                  "Time to read the clinic policies and medical consent statements",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    <span className="leading-relaxed">{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      <section className="bg-slate-50 section-padding">
-        <div className="container-custom max-w-5xl">
           <div className="mx-auto mb-10 max-w-3xl text-center">
             <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
               Important to know
@@ -266,8 +217,8 @@ export default function ClinicPage() {
               <div>
                 <h3 className="text-lg font-bold">Clinic requirements</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  You will review fasting, animal health, contagious illness,
-                  parasite, cancellation, and no-show information before
+                  You will review fasting requirements, general animal health,
+                  rabies vaccination status, and cancellation information before
                   submitting.
                 </p>
               </div>
@@ -304,9 +255,12 @@ export default function ClinicPage() {
             Ready to request an appointment?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl leading-relaxed text-primary-foreground/85">
-            Complete the intake form and our clinic team will review your
-            request. Please wait for confirmation before making plans for a
-            clinic day.
+            <span className="block">
+              Complete the intake form and our clinic team will review your request.
+            </span>
+            <span className="mt-1 block">
+              Please wait for confirmation before making plans for a clinic day.
+            </span>
           </p>
           <Button
             asChild
