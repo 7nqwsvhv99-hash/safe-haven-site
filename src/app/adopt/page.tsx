@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -10,34 +10,93 @@ import { Filter, Search } from "lucide-react"
 
 type FilterType = "all" | "dogs" | "cats"
 
+type Animal = {
+  id: string
+  animalId: string
+  name: string
+  species: "Cat" | "Dog" | string
+  status: "Available" | "Pending" | "Getting Ready for Adoption" | string
+  sex: string
+  age: string
+  breed: string
+  fee: number | null
+  feeStatus: "Standard" | "Reduced" | "Waived" | "Sponsored" | string
+  bio: string
+  traits: string[]
+  bondedPair: boolean
+  bondedWith: Array<{ id: string; name: string }>
+  primaryPhoto: string
+}
+
+function feeText(animal: Animal) {
+  if (animal.feeStatus === "Waived") return "Adoption fee waived"
+  if (animal.feeStatus === "Sponsored") return "Adoption fee sponsored"
+  if (animal.feeStatus === "Reduced" && animal.fee !== null) return `Reduced adoption fee: $${animal.fee.toFixed(0)}`
+  if (animal.fee !== null) return `Adoption fee: $${animal.fee.toFixed(0)}`
+  return ""
+}
+
+function statusLabel(status: string) {
+  if (status === "Getting Ready for Adoption") return "Getting Ready for Adoption"
+  if (status === "Pending") return "Adoption Pending"
+  return "Available"
+}
+
 export default function AdoptPage() {
   const [filter, setFilter] = useState<FilterType>("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [animals, setAnimals] = useState<Animal[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState("")
 
-  const filteredPets = allPets.filter((pet) => {
-    if (filter !== "all" && pet.type !== filter) return false
+  useEffect(() => {
+    let cancelled = false
 
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      return (
-        pet.name.toLowerCase().includes(query) ||
-        pet.breed.toLowerCase().includes(query) ||
-        pet.description.toLowerCase().includes(query) ||
-        pet.traits.some(trait => trait.toLowerCase().includes(query))
-      )
+    async function loadAnimals() {
+      try {
+        const response = await fetch("/api/animals", { cache: "no-store" })
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || "Could not load animals")
+        if (!cancelled) setAnimals(Array.isArray(data.animals) ? data.animals : [])
+      } catch (error) {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : "Could not load animals")
+      } finally {
+        if (!cancelled) setIsLoading(false)
+      }
     }
 
-    return true
-  })
+    loadAnimals()
+    return () => { cancelled = true }
+  }, [])
+
+  const filteredPets = useMemo(() => {
+    return animals.filter((pet) => {
+      if (filter === "dogs" && pet.species !== "Dog") return false
+      if (filter === "cats" && pet.species !== "Cat") return false
+
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        return (
+          pet.name.toLowerCase().includes(query) ||
+          pet.breed.toLowerCase().includes(query) ||
+          pet.bio.toLowerCase().includes(query) ||
+          pet.traits.some((trait) => trait.toLowerCase().includes(query))
+        )
+      }
+
+      return true
+    })
+  }, [animals, filter, searchQuery])
+
+  const dogCount = animals.filter((pet) => pet.species === "Dog").length
+  const catCount = animals.filter((pet) => pet.species === "Cat").length
 
   return (
     <div className="flex flex-col">
       <section className="hero-gradient">
         <div className="container-custom section-padding">
           <div className="max-w-3xl mx-auto text-center space-y-4">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Meet Your New Best Friend
-            </h1>
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Meet Your New Best Friend</h1>
             <p className="text-lg text-muted-foreground">
               All animals are spayed or neutered before going home with an adopter. Animals are also vaccinated before adoption unless they are too young for a required vaccine; in those cases, adopters can return to Safe Haven’s clinic for rabies and FVRCP/DAPP when due.
             </p>
@@ -65,28 +124,13 @@ export default function AdoptPage() {
                 <span className="font-semibold">Filter by type:</span>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button
-                  variant={filter === "all" ? "default" : "outline"}
-                  onClick={() => setFilter("all")}
-                >
-                  All Pets ({allPets.length})
-                </Button>
-                <Button
-                  variant={filter === "dogs" ? "default" : "outline"}
-                  onClick={() => setFilter("dogs")}
-                >
-                  Dogs ({allPets.filter(p => p.type === "dogs").length})
-                </Button>
-                <Button
-                  variant={filter === "cats" ? "default" : "outline"}
-                  onClick={() => setFilter("cats")}
-                >
-                  Cats ({allPets.filter(p => p.type === "cats").length})
-                </Button>
+                <Button variant={filter === "all" ? "default" : "outline"} onClick={() => setFilter("all")}>All Pets ({animals.length})</Button>
+                <Button variant={filter === "dogs" ? "default" : "outline"} onClick={() => setFilter("dogs")}>Dogs ({dogCount})</Button>
+                <Button variant={filter === "cats" ? "default" : "outline"} onClick={() => setFilter("cats")}>Cats ({catCount})</Button>
               </div>
             </div>
 
-            {(searchQuery || filter !== "all") && (
+            {(searchQuery || filter !== "all") && !isLoading && (
               <p className="text-sm text-muted-foreground">
                 Showing {filteredPets.length} {filteredPets.length === 1 ? "pet" : "pets"}
               </p>
@@ -95,89 +139,117 @@ export default function AdoptPage() {
         </div>
       </section>
 
-      <section className="section-padding bg-slate-50">
+      <section className="section-padding bg-slate-50 min-h-[420px]">
         <div className="container-custom">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPets.map((pet) => (
-              <Card key={pet.id} className="overflow-hidden group">
-                <div className="aspect-square overflow-hidden bg-slate-200">
-                  <img
-                    src={pet.image}
-                    alt={pet.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <CardContent className="p-5 space-y-4">
-                  <div>
-                    <h3 className="font-bold text-xl">{pet.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {pet.age} • {pet.gender} • {pet.breed}
-                    </p>
-                  </div>
-                  <p className="text-sm line-clamp-2">{pet.description}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {pet.traits.map((trait) => (
-                      <Badge key={trait} variant="default">
-                        {trait}
-                      </Badge>
-                    ))}
-                  </div>
-                  <div className="pt-2 space-y-2">
-                    <Button asChild className="w-full">
-                      <Link href="/adoption-application">Start an Adoption Application</Link>
-                    </Button>
-                    <p className="text-xs text-center text-muted-foreground">
-                      Please note: Safe Haven requires an approved adoption application before an animal can go home.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {isLoading && <p className="text-center text-muted-foreground py-12">Loading Safe Haven animals...</p>}
+
+          {loadError && (
+            <div className="max-w-xl mx-auto text-center py-12 space-y-3">
+              <h2 className="text-2xl font-bold">We couldn’t load the animals right now.</h2>
+              <p className="text-muted-foreground">Please refresh the page or try again shortly.</p>
+            </div>
+          )}
+
+          {!isLoading && !loadError && filteredPets.length === 0 && (
+            <div className="max-w-xl mx-auto text-center py-12 space-y-3">
+              <h2 className="text-2xl font-bold">No matches found</h2>
+              <p className="text-muted-foreground">Try a different search or filter.</p>
+            </div>
+          )}
+
+          {!isLoading && !loadError && filteredPets.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPets.map((pet) => {
+                const canApply = pet.status === "Available"
+                const bondedNames = pet.bondedWith.map((companion) => companion.name).join(" & ")
+
+                return (
+                  <Card key={pet.id} className="overflow-hidden group flex flex-col">
+                    <Link href={`/adopt/${pet.id}`} className="block aspect-square overflow-hidden bg-slate-100">
+                      {pet.primaryPhoto ? (
+                        <img
+                          src={pet.primaryPhoto}
+                          alt={pet.status === "Pending" ? `${pet.name} adoption pending` : pet.name}
+                          className={`w-full h-full transition-transform duration-300 ${pet.status === "Pending" ? "object-contain" : "object-cover group-hover:scale-105"}`}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-muted-foreground">Photo coming soon</div>
+                      )}
+                    </Link>
+
+                    <CardContent className="p-5 space-y-4 flex-1 flex flex-col">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2 items-center justify-between">
+                          <Link href={`/adopt/${pet.id}`} className="font-bold text-xl hover:text-primary transition-colors">{pet.name}</Link>
+                          <Badge variant={pet.status === "Available" ? "default" : "secondary"}>{statusLabel(pet.status)}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {[pet.age, pet.sex, pet.breed].filter(Boolean).join(" • ")}
+                        </p>
+                        {pet.bondedPair && bondedNames && (
+                          <p className="text-sm font-medium text-primary">Bonded with {bondedNames}</p>
+                        )}
+                      </div>
+
+                      <p className="text-sm line-clamp-3">{pet.bio}</p>
+
+                      {pet.traits.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {pet.traits.slice(0, 4).map((trait) => <Badge key={trait} variant="outline">{trait}</Badge>)}
+                        </div>
+                      )}
+
+                      <div className="mt-auto pt-2 space-y-3">
+                        {feeText(pet) && <p className="font-semibold text-sm">{feeText(pet)}</p>}
+                        <Button asChild variant="outline" className="w-full">
+                          <Link href={`/adopt/${pet.id}`}>Meet {pet.name}</Link>
+                        </Button>
+                        {canApply ? (
+                          <Button asChild className="w-full">
+                            <Link href={`/adoption-application?animalId=${encodeURIComponent(pet.id)}&animalName=${encodeURIComponent(pet.name)}&species=${encodeURIComponent(pet.species)}`}>Start an Adoption Application</Link>
+                          </Button>
+                        ) : (
+                          <p className="text-xs text-center text-muted-foreground">
+                            {pet.status === "Pending" ? "An adoption is currently pending for this animal." : "This animal is getting ready for adoption and is not accepting applications yet."}
+                          </p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
         </div>
       </section>
 
       <section className="section-padding bg-white">
         <div className="container-custom max-w-4xl">
           <div className="text-center space-y-6">
-            <h2 className="text-3xl md:text-4xl font-bold">
-              Ready to Adopt?
-            </h2>
+            <h2 className="text-3xl md:text-4xl font-bold">Ready to Adopt?</h2>
             <div className="max-w-2xl mx-auto rounded-2xl bg-primary/5 p-5 text-left">
               <p className="font-semibold mb-2">Apply first for the smoothest adoption experience.</p>
               <p className="text-sm text-muted-foreground">
                 To take a pet home, adopters must first submit an application and be approved. Visitors are welcome to meet animals before applying, but same-day adoption may not be possible in that case.
               </p>
             </div>
-            <p className="text-muted-foreground">
-              Our adoption process is straightforward and supportive. We're here to help you find the right match.
-            </p>
+            <p className="text-muted-foreground">Our adoption process is straightforward and supportive. We’re here to help you find the right match.</p>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-left pt-6">
-              <div className="space-y-2">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">1</div>
-                <h3 className="font-semibold">Apply</h3>
-                <p className="text-sm text-muted-foreground">Tell us about your home, lifestyle, and what you're looking for.</p>
-              </div>
-              <div className="space-y-2">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">2</div>
-                <h3 className="font-semibold">Review</h3>
-                <p className="text-sm text-muted-foreground">Our team reviews your application and contacts you if we need more information.</p>
-              </div>
-              <div className="space-y-2">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">3</div>
-                <h3 className="font-semibold">Meet &amp; Match</h3>
-                <p className="text-sm text-muted-foreground">Meet animals who may be a good fit for your household and needs.</p>
-              </div>
-              <div className="space-y-2">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">4</div>
-                <h3 className="font-semibold">Adopt</h3>
-                <p className="text-sm text-muted-foreground">Complete the adoption and welcome your new companion home.</p>
-              </div>
+              {[
+                ["1", "Apply", "Tell us about your home, lifestyle, and what you're looking for."],
+                ["2", "Review", "Our team reviews your application and contacts you if we need more information."],
+                ["3", "Meet & Match", "Meet animals who may be a good fit for your household and needs."],
+                ["4", "Adopt", "Complete the adoption and welcome your new companion home."],
+              ].map(([number, title, description]) => (
+                <div key={number} className="space-y-2">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">{number}</div>
+                  <h3 className="font-semibold">{title}</h3>
+                  <p className="text-sm text-muted-foreground">{description}</p>
+                </div>
+              ))}
             </div>
             <div className="pt-4">
-              <Button asChild size="lg">
-                <Link href="/adoption-application">Start an Adoption Application</Link>
-              </Button>
+              <Button asChild size="lg"><Link href="/adoption-application">Start a General Adoption Application</Link></Button>
             </div>
           </div>
         </div>
@@ -185,15 +257,3 @@ export default function AdoptPage() {
     </div>
   )
 }
-
-const allPets = [
-  { id: 1, name: "Luna", type: "cats" as const, age: "2 years", gender: "Female", breed: "Tabby Mix", image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&h=800&fit=crop", traits: ["Playful", "Good with kids", "House trained"], description: "Luna is a sweet and energetic cat who loves to play and cuddle. She's great with children and other cats." },
-  { id: 2, name: "Max", type: "dogs" as const, age: "3 years", gender: "Male", breed: "Labrador Mix", image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&h=800&fit=crop", traits: ["Friendly", "Loves walks", "Loyal"], description: "Max is a loyal companion who loves long walks and playing fetch. He's well-trained and great with families." },
-  { id: 3, name: "Whiskers", type: "cats" as const, age: "1 year", gender: "Male", breed: "Orange Tabby", image: "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=800&h=800&fit=crop", traits: ["Cuddly", "Quiet", "Independent"], description: "Whiskers is a gentle soul who enjoys quiet companionship and sunny windowsills." },
-  { id: 4, name: "Bella", type: "dogs" as const, age: "4 years", gender: "Female", breed: "Beagle Mix", image: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&h=800&fit=crop", traits: ["Gentle", "Good with pets", "Calm"], description: "Bella is calm and affectionate, perfect for a relaxed household. She gets along great with other pets." },
-  { id: 5, name: "Charlie", type: "dogs" as const, age: "6 months", gender: "Male", breed: "Golden Retriever Mix", image: "https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=800&h=800&fit=crop", traits: ["Energetic", "Playful", "Learning fast"], description: "Charlie is a happy puppy who loves to learn and play. He's working on his basic commands." },
-  { id: 6, name: "Mittens", type: "cats" as const, age: "3 years", gender: "Female", breed: "Calico", image: "https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&h=800&fit=crop", traits: ["Sweet", "Lap cat", "Purrs a lot"], description: "Mittens loves nothing more than curling up in your lap for hours of purring and cuddles." },
-  { id: 7, name: "Rocky", type: "dogs" as const, age: "5 years", gender: "Male", breed: "Pit Bull Mix", image: "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&h=800&fit=crop", traits: ["Loyal", "Protective", "Gentle giant"], description: "Rocky is a sweet, gentle giant who loves his people. He's great with kids and very protective of his family." },
-  { id: 8, name: "Cleo", type: "cats" as const, age: "2 years", gender: "Female", breed: "Siamese Mix", image: "https://images.unsplash.com/photo-1596854407944-bf87f6fdd49e?w=800&h=800&fit=crop", traits: ["Talkative", "Social", "Smart"], description: "Cleo is a chatty cat who loves conversation and attention. She's very smart and learns tricks quickly." },
-  { id: 9, name: "Buddy", type: "dogs" as const, age: "7 years", gender: "Male", breed: "Terrier Mix", image: "https://images.unsplash.com/photo-1558788353-f76d92427f16?w=800&h=800&fit=crop", traits: ["Calm", "Senior", "Affectionate"], description: "Buddy is a calm senior looking for a quiet home to retire in. He loves gentle walks and cozy naps." },
-]
