@@ -6,7 +6,7 @@ import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Cat, Dog, Heart, Home, PawPrint, Ruler, ShieldCheck } from "lucide-react"
+import { ArrowLeft, Heart, PawPrint, ShieldCheck } from "lucide-react"
 
 type Animal = {
   id: string
