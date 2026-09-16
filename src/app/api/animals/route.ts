@@ -74,7 +74,7 @@ function attachments(value: unknown) {
 }
 
 function pendingImage(species: string) {
-  return species === "Dog" ? "/images/adoption-pending-dog.png" : "/images/adoption-pending-cat.png"
+  return species === "Dog" ? "/images/adoption-pending-dog.webp" : "/images/adoption-pending-cat.webp"
 }
 
 export async function GET() {
