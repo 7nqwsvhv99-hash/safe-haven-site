@@ -168,8 +168,18 @@ export default function AnimalProfilePage() {
                 {animal.bondedPair && <Badge variant="outline">Bonded Pair</Badge>}
               </div>
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Meet {animal.name}</h1>
-              {animal.bondedPair && bondedNames && (
-                <p className="text-lg font-medium text-primary">Bonded with {bondedNames}</p>
+              {animal.bondedPair && animal.bondedWith.length > 0 && (
+                <p className="text-lg font-medium text-primary">
+                  Bonded with{" "}
+                  {animal.bondedWith.map((companion, index) => (
+                    <span key={companion.id}>
+                      {index > 0 && " & "}
+                      <Link href={`/adopt/${companion.id}`} className="underline-offset-4 hover:underline">
+                        {companion.name}
+                      </Link>
+                    </span>
+                  ))}
+                </p>
               )}
               {feeText(animal) && <p className="text-xl font-semibold">{feeText(animal)}</p>}
             </div>
