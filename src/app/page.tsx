@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card } from "@/components/ui/card"
+import { FeaturedPets } from "@/components/featured-pets"
 import { Heart, Search, FileCheck, Home as HomeIcon, Users, DollarSign, Syringe, PackageOpen, Instagram, Facebook } from "lucide-react"
 
 export default function HomePage() {
@@ -94,39 +94,7 @@ export default function HomePage() {
               These pets are ready for their forever homes
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {featuredPets.map((pet) => (
-              <Card key={pet.name} className="overflow-hidden group">
-                <div className="aspect-square overflow-hidden bg-slate-200">
-                  <img
-                    src={pet.image}
-                    alt={pet.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-                <CardContent className="p-5 space-y-3">
-                  <div>
-                    <h3 className="font-bold text-xl">{pet.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {pet.age} • {pet.gender}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {pet.traits.map((trait) => (
-                      <Badge key={trait} variant="default">
-                        {trait}
-                      </Badge>
-                    ))}
-                  </div>
-                  <Button asChild className="w-full">
-                    <Link href={`/adopt#${pet.name.toLowerCase()}`}>
-                      Meet {pet.name}
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <FeaturedPets />
           <div className="text-center mt-10">
             <Button asChild size="lg" variant="outline">
               <Link href="/adopt">View All Adoptable Pets</Link>
@@ -346,51 +314,6 @@ export default function HomePage() {
     </div>
   )
 }
-
-const featuredPets = [
-  {
-    name: "Luna",
-    age: "2 years",
-    gender: "Female",
-    image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&h=800&fit=crop",
-    traits: ["Playful", "Good with kids", "House trained"],
-  },
-  {
-    name: "Max",
-    age: "3 years",
-    gender: "Male",
-    image: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=800&h=800&fit=crop",
-    traits: ["Friendly", "Loves walks", "Loyal"],
-  },
-  {
-    name: "Whiskers",
-    age: "1 year",
-    gender: "Male",
-    image: "https://images.unsplash.com/photo-1574158622682-e40e69881006?w=800&h=800&fit=crop",
-    traits: ["Cuddly", "Quiet", "Independent"],
-  },
-  {
-    name: "Bella",
-    age: "4 years",
-    gender: "Female",
-    image: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&h=800&fit=crop",
-    traits: ["Gentle", "Good with pets", "Calm"],
-  },
-  {
-    name: "Charlie",
-    age: "6 months",
-    gender: "Male",
-    image: "https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=800&h=800&fit=crop",
-    traits: ["Energetic", "Playful", "Learning fast"],
-  },
-  {
-    name: "Mittens",
-    age: "3 years",
-    gender: "Female",
-    image: "https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?w=800&h=800&fit=crop",
-    traits: ["Sweet", "Lap cat", "Purrs a lot"],
-  },
-]
 
 const testimonials = [
   {
