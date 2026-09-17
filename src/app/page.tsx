@@ -2,7 +2,8 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { FeaturedPets } from "@/components/featured-pets"
-import { Heart, Search, FileCheck, Home as HomeIcon, Users, DollarSign, Syringe, PackageOpen, Instagram, Facebook } from "lucide-react"
+import { CommunityImpact } from "@/components/community-impact"
+import { Heart, Search, FileCheck, Home as HomeIcon, Users, DollarSign, Instagram, Facebook } from "lucide-react"
 
 export default function HomePage() {
   return (
@@ -103,55 +104,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2026 Community Impact */}
-      <section className="section-padding bg-primary/5">
-        <div className="container-custom">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">
-              2026 Community Impact
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Keeping pets fed. Preventing unwanted litters. Helping shelter animals go home.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center space-y-3">
-              <div className="flex justify-center">
-                <PackageOpen className="h-12 w-12 text-primary" />
-              </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary">16,000+</div>
-              <p className="text-foreground font-semibold">Pounds of Food Distributed</p>
-              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                To families, food pantries, and community cat caregivers.
-              </p>
-            </div>
-            <div className="text-center space-y-3">
-              <div className="flex justify-center">
-                <Syringe className="h-12 w-12 text-primary" />
-              </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary">419</div>
-              <p className="text-foreground font-semibold">Spay &amp; Neuter Surgeries</p>
-              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                Helping prevent unwanted litters and reduce pet overpopulation.
-              </p>
-              <p className="text-sm font-semibold text-primary">$71,000+ estimated veterinary savings</p>
-              <p className="text-xs text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                Estimated by comparing Safe Haven spay/neuter pricing with published starting prices at a regional full-service veterinary clinic. Individual veterinary costs vary.
-              </p>
-            </div>
-            <div className="text-center space-y-3">
-              <div className="flex justify-center">
-                <HomeIcon className="h-12 w-12 text-primary" />
-              </div>
-              <div className="text-4xl md:text-5xl font-bold text-primary">84</div>
-              <p className="text-foreground font-semibold">Animals Adopted Into Homes</p>
-              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                52 cats and 32 dogs connected with new families in 2026.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <CommunityImpact />
 
       {/* Social Proof */}
       <section className="section-padding bg-white">
