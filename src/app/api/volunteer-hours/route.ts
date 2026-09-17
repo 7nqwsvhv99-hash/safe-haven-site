@@ -148,8 +148,14 @@ export async function POST(request: Request) {
     const date = text(body.date)
     const activity = text(body.activity)
     const hours = typeof body.hours === "number" ? body.hours : Number(body.hours)
-    const volunteerIds = Array.isArray(body.volunteerIds)
-      ? Array.from(new Set(body.volunteerIds.filter((value: unknown): value is string => typeof value === "string" && value.startsWith("rec"))))
+    const volunteerIds: string[] = Array.isArray(body.volunteerIds)
+      ? Array.from(
+          new Set<string>(
+            body.volunteerIds.filter(
+              (value: unknown): value is string => typeof value === "string" && value.startsWith("rec")
+            )
+          )
+        )
       : []
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
