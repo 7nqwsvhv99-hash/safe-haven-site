@@ -17,6 +17,7 @@ type NewsletterFormData = z.infer<typeof newsletterSchema>
 export function NewsletterSignup() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
     register,
@@ -29,20 +30,27 @@ export function NewsletterSignup() {
 
   const onSubmit = async (data: NewsletterFormData) => {
     setIsSubmitting(true)
+    setSubmitError(null)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    try {
+      const response = await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
 
-    // In production, integrate with Mailchimp, SendGrid, etc.
-    console.log("Newsletter Signup:", data)
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result?.error || "We could not complete your subscription. Please try again.")
+      }
 
-    setIsSubmitting(false)
-    setIsSubmitted(true)
-
-    setTimeout(() => {
-      setIsSubmitted(false)
+      setIsSubmitted(true)
       reset()
-    }, 3000)
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "We could not complete your subscription. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -53,22 +61,26 @@ export function NewsletterSignup() {
           <span>Thanks for subscribing!</span>
         </div>
       ) : (
-        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1">
-            <Input
-              {...register("email")}
-              type="email"
-              placeholder="Enter your email"
-              className={errors.email ? "border-destructive" : ""}
-            />
-            {errors.email && (
-              <p className="text-xs text-destructive mt-1">{errors.email.message}</p>
-            )}
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <Input
+                {...register("email")}
+                type="email"
+                autoComplete="email"
+                placeholder="Enter your email"
+                className={errors.email ? "border-destructive" : ""}
+              />
+              {errors.email && (
+                <p className="text-xs text-destructive mt-1">{errors.email.message}</p>
+              )}
+            </div>
+            <Button type="submit" disabled={isSubmitting}>
+              <Mail className="h-4 w-4 mr-2" />
+              {isSubmitting ? "Subscribing..." : "Subscribe"}
+            </Button>
           </div>
-          <Button type="submit" disabled={isSubmitting}>
-            <Mail className="h-4 w-4 mr-2" />
-            {isSubmitting ? "Subscribing..." : "Subscribe"}
-          </Button>
+          {submitError && <p className="text-xs text-destructive">{submitError}</p>}
         </form>
       )}
     </div>
