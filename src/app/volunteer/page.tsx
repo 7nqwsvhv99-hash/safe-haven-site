@@ -29,9 +29,14 @@ export default function VolunteerPage() {
               <span className="block">Make a real difference in the lives of animals.</span>
               <span className="block">Find a volunteer role that fits your skills and schedule.</span>
             </p>
-            <Button asChild size="lg">
-              <Link href="/volunteer-application">Complete the Volunteer Application</Link>
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button asChild size="lg">
+                <Link href="/volunteer-application">Complete the Volunteer Application</Link>
+              </Button>
+              <Button asChild size="lg" variant="outline">
+                <Link href="/volunteer-hours">Log Volunteer Hours</Link>
+              </Button>
+            </div>
           </div>
         </div>
       </section>
@@ -153,7 +158,7 @@ export default function VolunteerPage() {
               loading="lazy"
             />
           </Card>
-          <div className="text-center mt-6">
+          <div className="text-center mt-6 flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild variant="outline">
               <a
                 href="https://www.calendarwiz.com/calendars/calendar.php?crd=safehavenil&nolog=0&cid[]=all"
@@ -162,6 +167,9 @@ export default function VolunteerPage() {
               >
                 Open Calendar in a New Window
               </a>
+            </Button>
+            <Button asChild>
+              <Link href="/volunteer-hours">Log Volunteer Hours</Link>
             </Button>
           </div>
         </div>
