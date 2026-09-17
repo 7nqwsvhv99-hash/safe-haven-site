@@ -227,19 +227,19 @@ export default function AdoptPage() {
         <div className="container-custom max-w-4xl">
           <div className="text-center space-y-6">
             <h2 className="text-3xl md:text-4xl font-bold">Ready to Adopt?</h2>
-            <div className="max-w-2xl mx-auto rounded-2xl bg-primary/5 p-5 text-left">
-              <p className="font-semibold mb-2">Apply first for the smoothest adoption experience.</p>
-              <p className="text-sm text-muted-foreground">
-                To take a pet home, adopters must first submit an application and be approved. Visitors are welcome to meet animals before applying, but same-day adoption may not be possible in that case.
+            <div className="max-w-3xl mx-auto space-y-4 text-muted-foreground">
+              <p>Our adoption process is straightforward and supportive. We’re here to help you find the right match.</p>
+              <p>
+                <strong className="text-foreground">We recommend applying before your visit for the smoothest adoption experience.</strong>{" "}
+                You’re welcome to meet our animals before applying, but an approved application is required before an adoption can be completed. Once you’ve found a pet you’d like to adopt, we’ll review your application and contact your references.
               </p>
             </div>
-            <p className="text-muted-foreground">Our adoption process is straightforward and supportive. We’re here to help you find the right match.</p>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-left pt-6">
               {[
-                ["1", "Apply", "Tell us about your home, lifestyle, and what you're looking for."],
-                ["2", "Review", "Our team reviews your application and contacts you if we need more information."],
+                ["1", "Apply", "Tell us about your home, lifestyle, and what you’re looking for."],
+                ["2", "Review", "We’ll review your application, contact your references, and follow up if we need more information."],
                 ["3", "Meet & Match", "Meet animals who may be a good fit for your household and needs."],
-                ["4", "Adopt", "Complete the adoption and welcome your new companion home."],
+                ["4", "Adopt", "Once you’re approved and have found the right match, complete the adoption and welcome your new companion home."],
               ].map(([number, title, description]) => (
                 <div key={number} className="space-y-2">
                   <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">{number}</div>
