@@ -21,7 +21,6 @@ function Field({ label, children, note }: { label: string; children: React.React
 }
 
 const interestOptions = [
-  "Shelter Care",
   "Adoption & Community Events",
   "Host an Event or Fundraiser",
   "Transportation",
