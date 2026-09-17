@@ -94,13 +94,6 @@ export default function VolunteerPage() {
                   <h3 className="font-bold text-lg">{role.title}</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">{role.description}</p>
-                {role.time && (
-                  <div className="pt-2">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Time commitment:</strong> {role.time}
-                    </p>
-                  </div>
-                )}
               </Card>
             ))}
           </div>
@@ -193,28 +186,19 @@ export default function VolunteerPage() {
 
 const volunteerRoles = [
   {
-    title: "Shelter Care",
-    icon: <Dog className="h-5 w-5 text-primary" />,
-    description: "Help with animal socialization by spending time with cats and walking dogs. Perfect for hands-on animal lovers.",
-    time: "2-3 hours/month",
-  },
-  {
     title: "Adoption & Community Events",
     icon: <Calendar className="h-5 w-5 text-primary" />,
     description: "Represent Safe Haven at adoption and community events. Share pet stories and help families find their match.",
-    time: "2 hours/month",
   },
   {
     title: "Host an Event or Fundraiser",
     icon: <Heart className="h-5 w-5 text-primary" />,
     description: "Organize an event or fundraiser that supports Safe Haven and introduces our work to more people.",
-    time: "Flexible",
   },
   {
     title: "Transportation",
     icon: <Truck className="h-5 w-5 text-primary" />,
     description: "Drive animals to vet appointments, foster homes, or adoption events.",
-    time: "As needed",
   },
   {
     title: "Gardening & Grounds",
@@ -245,24 +229,20 @@ const volunteerRoles = [
     title: "Photography",
     icon: <Camera className="h-5 w-5 text-primary" />,
     description: "Take engaging photos of adoptable animals, events, and everyday life at Safe Haven.",
-    time: "Flexible",
   },
   {
     title: "Social Media & Content",
     icon: <Share2 className="h-5 w-5 text-primary" />,
     description: "Love animals and TikTok? Create content, take photos, write bios, and contribute to our social media presence.",
-    time: "Flexible, remote",
   },
   {
     title: "Administrative Support",
     icon: <ClipboardList className="h-5 w-5 text-primary" />,
     description: "Help with applications, data entry, phone calls, and other behind-the-scenes tasks.",
-    time: "Flexible",
   },
   {
     title: "Fundraising & Event Support",
     icon: <Users className="h-5 w-5 text-primary" />,
     description: "Help plan fundraisers, support donor outreach, and assist with Safe Haven events.",
-    time: "Flexible",
   },
 ]
