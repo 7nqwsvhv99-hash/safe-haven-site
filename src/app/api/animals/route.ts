@@ -61,6 +61,10 @@ function strings(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
 }
 
+function yes(value: unknown) {
+  return text(value).trim().toLowerCase() === "yes"
+}
+
 function attachments(value: unknown) {
   if (!Array.isArray(value)) return []
   return value
@@ -149,7 +153,7 @@ export async function GET() {
         adoptionIncludes: text(fields["Adoption Includes"]),
         housingType: text(fields["Housing Type"]),
         availableSince: text(fields["Available Since"]),
-        bondedPair: text(fields["Bonded Pair?"]) === "Yes",
+        bondedPair: yes(fields["Bonded Pair?"]),
         bondedWith,
         primaryPhoto: status === "Pending" ? pendingImage(species) : primaryPhotos[0]?.url || "",
         photos: status === "Pending" ? [pendingImage(species)] : [...primaryPhotos, ...additionalPhotos].map((photo) => photo.url),
