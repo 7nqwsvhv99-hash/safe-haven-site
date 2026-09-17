@@ -111,11 +111,12 @@ export default function AboutPage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-3">Past Newsletters</h2>
             <p className="text-muted-foreground">Read previous issues and see the animals, people, and community support behind Safe Haven&apos;s work.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              ["Summer/Fall 2025", "https://safehavenforpets.org/wp-content/uploads/2026/02/SH-Summer-Fall-Newsletter-2025.pdf"],
-              ["Fall/Winter 2024", "https://safehavenforpets.org/wp-content/uploads/2025/04/Safe-Haven-2024-Newsletter.pdf"],
-              ["Fall/Winter 2023", "https://safehavenforpets.org/wp-content/uploads/2024/03/23Fall_Newsletter.pdf"],
+              ["Summer 2026", "/newsletters/safe-haven-summer-2026.pdf"],
+              ["Spring 2026", "/newsletters/safe-haven-spring-2026.pdf"],
+              ["Summer/Fall 2025", "/newsletters/safe-haven-summer-fall-2025.pdf"],
+              ["Spring/Summer 2025", "/newsletters/safe-haven-spring-summer-2025.pdf"],
             ].map(([title, href]) => (
               <Card key={title} className="p-6 text-center space-y-4">
                 <h3 className="font-bold text-lg">{title}</h3>
@@ -125,9 +126,6 @@ export default function AboutPage() {
               </Card>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground text-center mt-6 max-w-3xl mx-auto">
-            These publications are provided as an archive. Contact details, programs, and other information in older issues may no longer be current.
-          </p>
         </div>
       </section>
 
