@@ -14,6 +14,7 @@ type Animal = {
   sex: string
   age: string
   traits: string[]
+  bondedPair: boolean
   primaryPhoto: string
 }
 
@@ -108,9 +109,12 @@ export function FeaturedPets() {
                 {[pet.age, pet.sex].filter(Boolean).join(" • ")}
               </p>
             </div>
-            {pet.traits.length > 0 && (
+            {(pet.bondedPair || pet.traits.length > 0) && (
               <div className="flex flex-wrap gap-2">
-                {pet.traits.slice(0, 3).map((trait) => (
+                {pet.bondedPair && (
+                  <Badge variant="secondary">Bonded Pair</Badge>
+                )}
+                {pet.traits.slice(0, pet.bondedPair ? 2 : 3).map((trait) => (
                   <Badge key={trait} variant="default">{trait}</Badge>
                 ))}
               </div>
