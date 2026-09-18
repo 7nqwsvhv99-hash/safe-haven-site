@@ -77,3 +77,48 @@
 .container-custom {
   @apply max-w-7xl mx-auto;
 }
+
+
+/* About page community-card animation */
+.community-card {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.community-card::before {
+  content: "";
+  position: absolute;
+  inset: -35%;
+  z-index: -1;
+  background: radial-gradient(circle, rgba(247, 127, 39, 0.20) 0%, rgba(247, 127, 39, 0.10) 24%, rgba(247, 127, 39, 0) 62%);
+  opacity: 0;
+  transform: translateX(-32%);
+  animation: community-card-glow 9s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.community-card:nth-child(2)::before {
+  animation-delay: 3s;
+}
+
+.community-card:nth-child(3)::before {
+  animation-delay: 6s;
+}
+
+@keyframes community-card-glow {
+  0%, 24%, 100% {
+    opacity: 0;
+    transform: translateX(-32%);
+  }
+  8%, 16% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-card::before {
+    animation: none;
+    opacity: 0;
+  }
+}
