@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { FeaturedPets } from "@/components/featured-pets"
 import { CommunityImpact } from "@/components/community-impact"
+import { Testimonials } from "@/components/testimonials"
 import { Heart, Search, FileCheck, Home as HomeIcon, Users, DollarSign, Instagram, Facebook } from "lucide-react"
 
 export default function HomePage() {
@@ -106,34 +107,7 @@ export default function HomePage() {
 
       <CommunityImpact />
 
-      {/* Social Proof */}
-      <section className="section-padding bg-white">
-        <div className="container-custom">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">
-              Real Families. Real Second Chances.
-            </h2>
-            <p className="text-muted-foreground">
-              Adoption changes more than one life.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="p-6">
-                <div className="space-y-4">
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <Heart key={i} className="h-4 w-4 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <p className="text-sm italic">{testimonial.quote}</p>
-                  <p className="text-sm font-semibold">— {testimonial.author}</p>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+      <Testimonials />
 
       {/* Ways To Get Involved */}
       <section className="section-padding bg-slate-50">
@@ -268,17 +242,3 @@ export default function HomePage() {
   )
 }
 
-const testimonials = [
-  {
-    quote: "Watching him go from shelter to our home has been joyous. He loves the big yard and walks in the pasture, and he’s a quick learner. He also does great with Chester, our cat who was adopted from Safe Haven.",
-    author: "Jane, Dewey's adopter",
-  },
-  {
-    quote: "Mila is fitting in perfectly with my grandpa! She has brought him so much joy in the few days they've been together.",
-    author: "Kelcie, Mila's family",
-  },
-  {
-    quote: "Scout is doing great in his new home with us! We are completely in love with him! Thank you for letting him come home with us.",
-    author: "Karen, Scout's adopter",
-  },
-]
