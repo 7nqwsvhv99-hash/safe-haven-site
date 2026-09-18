@@ -50,7 +50,12 @@ export function FeaturedPets() {
 
     const cats = available.filter((animal) => animal.species === "Cat").slice(0, 3)
     const dogs = available.filter((animal) => animal.species === "Dog").slice(0, 3)
-    const selected = [...cats, ...dogs]
+    const selected: Animal[] = []
+
+    for (let index = 0; index < 3; index += 1) {
+      if (cats[index]) selected.push(cats[index])
+      if (dogs[index]) selected.push(dogs[index])
+    }
 
     if (selected.length < 6) {
       const selectedIds = new Set(selected.map((animal) => animal.id))
