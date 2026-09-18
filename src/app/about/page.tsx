@@ -90,7 +90,7 @@ export default function AboutPage() {
             <div className="lg:sticky lg:top-24">
               <div className="overflow-hidden rounded-3xl bg-slate-100 shadow-sm">
                 <img
-                  src="/images/about-safe-haven-community.jpg"
+                  src="/images/about-safe-haven-community.png"
                   alt="Safe Haven Humane Society volunteers and supporters gathered beside the Safe Haven van"
                   className="w-full h-auto object-cover"
                 />
