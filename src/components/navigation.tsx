@@ -2,11 +2,15 @@
 
 import Link from "next/link"
 import { useState } from "react"
+import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
+  const pathname = usePathname()
+
+  const isActive = (href: string) => href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/")
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -44,7 +48,7 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="text-sm font-medium transition-colors hover:text-primary"
+                className={`text-sm font-medium transition-colors hover:text-primary ${isActive(item.href) ? "text-primary" : ""}`}
               >
                 {item.label}
               </Link>
@@ -75,7 +79,7 @@ export function Navigation() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="block py-2 text-base font-medium hover:text-primary transition-colors"
+                className={`block py-2 text-base font-medium hover:text-primary transition-colors ${isActive(item.href) ? "text-primary" : ""}`}
                 onClick={() => setIsOpen(false)}
               >
                 {item.label}
