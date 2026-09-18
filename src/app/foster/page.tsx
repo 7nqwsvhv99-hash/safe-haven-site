@@ -77,9 +77,10 @@ export default function FosterPage() {
       <section className="section-padding bg-slate-50">
         <div className="container-custom">
           <div className="max-w-3xl mx-auto text-center mb-12"><h2 className="text-3xl md:text-4xl font-bold mb-4">What to Expect</h2><p className="text-muted-foreground">We want foster families to understand the commitment before accepting a placement and to have the practical support needed to care for the animal.</p></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="p-6 space-y-3"><h3 className="font-bold text-xl">Food &amp; Supplies Provided</h3><p className="text-muted-foreground">Safe Haven provides the food and supplies needed for foster care.</p></Card>
-            <Card className="p-6 space-y-3"><h3 className="font-bold text-xl">Veterinary Care Covered</h3><p className="text-muted-foreground">Safe Haven covers veterinary expenses for foster animals.</p></Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="p-6 space-y-3"><h3 className="font-bold text-xl">Food &amp; Supplies Provided</h3><p className="text-muted-foreground">Safe Haven provides the food, supplies, medications, crates, bedding, toys, and other items needed for each foster placement.</p></Card>
+            <Card className="p-6 space-y-3"><h3 className="font-bold text-xl">Veterinary Care Covered</h3><p className="text-muted-foreground">Safe Haven covers medical expenses for foster animals. If you need to buy something for your foster in a pinch, save the receipt and Safe Haven will reimburse you. Contact Safe Haven before arranging non-emergency veterinary care.</p></Card>
+            <Card className="p-6 space-y-3"><h3 className="font-bold text-xl">After-Hours Support</h3><p className="text-muted-foreground">Foster families receive direct after-hours contact information and an emergency veterinary plan based on where they live.</p></Card>
             <Card className="p-6 space-y-3"><h3 className="font-bold text-xl">Expectations Discussed Up Front</h3><p className="text-muted-foreground">Some placements are short and others last several weeks or longer. We will discuss the animal's needs and expected commitment before placement.</p></Card>
           </div>
         </div>
@@ -104,12 +105,13 @@ const responsibilities = [
 const steps = [
   { title: "Apply", description: "Tell us about your household, experience, schedule, and the kinds of animals or needs you are comfortable fostering." },
   { title: "Review & Match", description: "Safe Haven reviews the application and identifies a foster placement that fits your household and the animal's needs." },
-  { title: "Welcome Your Foster", description: "Bring the animal into your home with the food, supplies, and care information needed for the placement." },
+  { title: "Welcome Your Foster", description: "Bring the animal into your home with the food, supplies, care instructions, direct contact information, and emergency veterinary plan needed for the placement." },
   { title: "Stay Connected", description: "Share updates, communicate concerns, and help Safe Haven learn what kind of permanent home may be the best fit." },
 ]
 
 const faqs = [
-  { question: "What does Safe Haven provide?", answer: "Safe Haven provides foster food and supplies and covers veterinary expenses for foster animals." },
+  { question: "What does Safe Haven provide?", answer: "Safe Haven provides the food, supplies, medications, crates, bedding, toys, and other items needed for each foster placement. Safe Haven also covers medical expenses for foster animals. Foster families receive direct contact information for questions, including after-hours support, and an emergency veterinary plan based on where they live." },
+  { question: "What if I need help after hours?", answer: "Foster families receive direct after-hours contact information when a placement begins. Safe Haven also helps determine which emergency veterinary clinic is appropriate based on where the foster family lives." },
   { question: "How long does fostering last?", answer: "It varies by animal and situation. Some placements are short, while others last several weeks or longer. We will discuss the expected commitment before you agree to a placement." },
   { question: "What if I rent my home?", answer: "Renters may be able to foster if their housing allows pets. The application asks about your housing situation so Safe Haven can confirm that a placement is appropriate." },
   { question: "What if I already have pets or children?", answer: "That does not automatically prevent you from fostering. We use information about your household and current animals to help determine which placements may be a good fit." },
