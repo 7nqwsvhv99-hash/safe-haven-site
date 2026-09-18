@@ -44,21 +44,18 @@ const communityWork = [
     description:
       "Staff, volunteers, and foster families provide daily care, enrichment, and a safe place while animals wait for home.",
     icon: PawPrint,
-    className: "lg:col-span-5",
   },
   {
     title: "Clinic Team",
     description:
       "Veterinary professionals and clinic volunteers work together to make spay/neuter and preventive care more accessible.",
     icon: Stethoscope,
-    className: "lg:col-span-3",
   },
   {
     title: "Community Support",
     description:
       "Adopters, donors, rescue partners, food-distribution volunteers, and community cat caregivers extend Safe Haven's impact far beyond the shelter.",
     icon: HandHeart,
-    className: "lg:col-span-4",
   },
 ]
 
@@ -68,16 +65,16 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="hero-gradient">
         <div className="container-custom section-padding">
-          <div className="max-w-4xl mx-auto text-center space-y-6">
+          <div className="max-w-6xl mx-auto text-center space-y-6">
             <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
               Serving Jo Daviess County Since 1994
             </p>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight lg:whitespace-nowrap">
               About Safe Haven Humane Society
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              For more than three decades, Safe Haven has brought people together around one shared purpose:
-              giving cats and dogs the care, protection, and second chances they deserve.
+            <p className="text-lg md:text-xl text-muted-foreground max-w-5xl mx-auto leading-relaxed">
+              <span className="lg:block">For more than three decades, Safe Haven has brought people together around one shared purpose:</span>
+              <span className="lg:block">giving cats and dogs the care, protection, and second chances they deserve.</span>
             </p>
           </div>
         </div>
@@ -86,7 +83,7 @@ export default function AboutPage() {
       {/* Mission + Values */}
       <section className="section-padding bg-white">
         <div className="container-custom">
-          <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-10 lg:gap-16 items-start max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-[0.9fr_1.1fr] gap-10 lg:gap-14 items-start max-w-7xl mx-auto">
             <div className="lg:sticky lg:top-24">
               <div className="overflow-hidden rounded-3xl bg-slate-100 shadow-sm">
                 <img
@@ -105,8 +102,9 @@ export default function AboutPage() {
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary mb-3">
                   Our Mission
                 </p>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                  A haven for animals. A community committed to their future.
+                <h2 className="text-3xl lg:text-[32px] xl:text-4xl font-bold mb-6 leading-tight">
+                  <span className="lg:block lg:whitespace-nowrap">A haven for animals.</span>
+                  <span className="lg:block lg:whitespace-nowrap">A community committed to their future.</span>
                 </h2>
                 <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
                   Safe Haven&apos;s mission is to provide a haven and any necessary treatment for adoptable
@@ -175,9 +173,9 @@ export default function AboutPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-6xl">
-            {communityWork.map(({ title, description, icon: Icon, className }) => (
-              <Card key={title} className={"p-7 md:p-8 space-y-5 " + className}>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl">
+            {communityWork.map(({ title, description, icon: Icon }) => (
+              <Card key={title} className="community-card relative p-7 md:p-8 space-y-5 h-full">
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
                   <Icon className="h-6 w-6 text-primary" />
                 </div>
