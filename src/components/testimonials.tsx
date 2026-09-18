@@ -74,7 +74,7 @@ export function Testimonials() {
             {testimonials.map((testimonial) => (
               <Card
                 key={testimonial.id}
-                className="overflow-hidden flex-none w-[88%] sm:w-[70%] md:w-[calc((100%-3rem)/3)] snap-start"
+                className="overflow-hidden flex-none w-[88%] sm:w-[70%] md:w-[32%] snap-start"
               >
                 {testimonial.image && (
                   <div className="aspect-[4/3] overflow-hidden bg-slate-100">
