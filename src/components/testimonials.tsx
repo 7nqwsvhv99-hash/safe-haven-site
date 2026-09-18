@@ -14,6 +14,19 @@ type Testimonial = {
   displayOrder: number | null
 }
 
+function getTestimonialImageStyle(animalName: string) {
+  switch (animalName.toLowerCase()) {
+    case "mila":
+      return { objectPosition: "50% 42%", transform: "scale(1.14)" }
+    case "scout":
+      return { objectPosition: "50% 30%", transform: "scale(1.1)" }
+    case "dewey":
+      return { objectPosition: "58% 28%", transform: "scale(1.16)" }
+    default:
+      return { objectPosition: "50% 50%", transform: "scale(1.1)" }
+  }
+}
+
 export function Testimonials() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -81,7 +94,8 @@ export function Testimonials() {
                     <img
                       src={testimonial.image}
                       alt={testimonial.animalName || "Safe Haven adoption story"}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-cover transition-transform duration-300"
+                      style={getTestimonialImageStyle(testimonial.animalName)}
                     />
                   </div>
                 )}
