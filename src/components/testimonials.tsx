@@ -14,19 +14,6 @@ type Testimonial = {
   displayOrder: number | null
 }
 
-function getTestimonialImageStyle(animalName: string) {
-  switch (animalName.toLowerCase()) {
-    case "mila":
-      return { objectPosition: "50% 42%", transform: "scale(1.14)" }
-    case "scout":
-      return { objectPosition: "50% 30%", transform: "scale(1.1)" }
-    case "dewey":
-      return { objectPosition: "58% 28%", transform: "scale(1.16)" }
-    default:
-      return { objectPosition: "50% 50%", transform: "scale(1.1)" }
-  }
-}
-
 export function Testimonials() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -73,7 +60,7 @@ export function Testimonials() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {Array.from({ length: 3 }).map((_, index) => (
               <Card key={index} className="overflow-hidden">
-                <div className="aspect-[4/3] bg-slate-200 animate-pulse" />
+                <div className="aspect-square bg-slate-200 animate-pulse" />
                 <div className="p-6 space-y-3">
                   <div className="h-4 w-full rounded bg-slate-200 animate-pulse" />
                   <div className="h-4 w-5/6 rounded bg-slate-200 animate-pulse" />
@@ -90,12 +77,11 @@ export function Testimonials() {
                 className="overflow-hidden flex-none w-[88%] sm:w-[70%] md:w-[32%] snap-start"
               >
                 {testimonial.image && (
-                  <div className="aspect-[4/3] overflow-hidden bg-slate-100">
+                  <div className="aspect-square overflow-hidden bg-slate-100">
                     <img
                       src={testimonial.image}
                       alt={testimonial.animalName || "Safe Haven adoption story"}
-                      className="h-full w-full object-cover transition-transform duration-300"
-                      style={getTestimonialImageStyle(testimonial.animalName)}
+                      className="h-full w-full object-contain"
                     />
                   </div>
                 )}
