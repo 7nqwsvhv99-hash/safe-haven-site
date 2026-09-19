@@ -55,7 +55,7 @@ export default function FosterPage() {
               <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
                 <li>Be prepared for frequent feeding, including overnight depending on age and condition.</li>
                 <li>Keep babies warm and follow Safe Haven's feeding and care instructions closely.</li>
-                <li><strong>Formula matters:</strong> use kitten milk replacer (KMR). Never use cow's milk.</li>
+                <li><strong>Formula matters:</strong> use <a href="https://www.amazon.com/s?k=kitten+milk+replacer+KMR" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary underline underline-offset-2 hover:no-underline">kitten milk replacer (KMR)</a>. Never use cow's milk.</li>
                 <li>Young babies may need help eliminating after feeding.</li>
                 <li>Monitor weight, appetite, energy, stool, and other changes and report concerns promptly.</li>
               </ul>
