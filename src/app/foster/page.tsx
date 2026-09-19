@@ -51,11 +51,11 @@ export default function FosterPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="p-6 md:p-8 space-y-4">
               <div className="flex items-center gap-3"><Baby className="h-8 w-8 text-primary" /><h3 className="font-bold text-2xl">Bottle Babies</h3></div>
-              <p className="text-muted-foreground">Very young kittens or puppies may need round-the-clock support until they can eat on their own.</p>
+              <p className="text-muted-foreground">Very young kittens may need round-the-clock support until they can eat on their own.</p>
               <ul className="space-y-2 text-sm text-muted-foreground list-disc pl-5">
                 <li>Be prepared for frequent feeding, including overnight depending on age and condition.</li>
                 <li>Keep babies warm and follow Safe Haven's feeding and care instructions closely.</li>
-                <li><strong>Formula matters:</strong> use kitten milk replacer (KMR) for kittens and the appropriate milk replacer for puppies. Never use cow's milk.</li>
+                <li><strong>Formula matters:</strong> use kitten milk replacer (KMR). Never use cow's milk.</li>
                 <li>Young babies may need help eliminating after feeding.</li>
                 <li>Monitor weight, appetite, energy, stool, and other changes and report concerns promptly.</li>
               </ul>
