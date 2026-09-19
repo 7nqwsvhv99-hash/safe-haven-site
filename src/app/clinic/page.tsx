@@ -116,6 +116,18 @@ export default function ClinicPage() {
         </div>
       </section>
 
+      <section className="bg-white px-4 pb-4 md:px-6 md:pb-6">
+        <div className="container-custom max-w-6xl">
+          <div className="overflow-hidden rounded-3xl">
+            <img
+              src="/images/clinic-team-wide.svg"
+              alt="Safe Haven spay and neuter clinic team"
+              className="w-full h-auto object-cover"
+            />
+          </div>
+        </div>
+      </section>
+
       <section id="pricing" className="bg-slate-50 section-padding scroll-mt-24">
         <div className="container-custom max-w-5xl">
           <div className="mx-auto mb-10 max-w-3xl text-center">
@@ -245,49 +257,67 @@ export default function ClinicPage() {
       </section>
 
       <section className="bg-slate-50 section-padding">
-        <div className="container-custom max-w-5xl">
-          <div className="mx-auto mb-10 max-w-3xl text-center">
-            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
-              Important to know
-            </p>
-            <h2 className="text-3xl font-bold md:text-4xl">
-              What the intake form covers
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            <Card className="flex gap-4 p-6">
-              <ShieldCheck className="h-7 w-7 shrink-0 text-primary" />
-              <div>
-                <h3 className="text-lg font-bold">Clinic requirements</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  You will review fasting requirements, general animal health,
-                  rabies vaccination status, and cancellation information before
-                  submitting.
-                </p>
+        <div className="container-custom max-w-6xl">
+          <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:gap-14">
+            <div className="lg:sticky lg:top-24">
+              <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+                <img
+                  src="/images/clinic-vet-cat-square.JPG"
+                  alt="Safe Haven clinic team providing veterinary care"
+                  className="aspect-square w-full object-cover"
+                />
               </div>
-            </Card>
-            <Card className="flex gap-4 p-6">
-              <CreditCard className="h-7 w-7 shrink-0 text-primary" />
-              <div>
-                <h3 className="text-lg font-bold">Payment at check-in</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  If an appointment is scheduled, payment is due at check-in.
-                  Safe Haven accepts cash, check, credit card, or Venmo at
-                  @safehaven1471.
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                Clinic days depend on skilled veterinary care, careful preparation,
+                and volunteers working together for each patient.
+              </p>
+            </div>
+
+            <div>
+              <div className="mb-8">
+                <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
+                  Important to know
                 </p>
+                <h2 className="text-3xl font-bold md:text-4xl">
+                  What the intake form covers
+                </h2>
               </div>
-            </Card>
-            <Card className="flex gap-4 p-6">
-              <Stethoscope className="h-7 w-7 shrink-0 text-primary" />
-              <div>
-                <h3 className="text-lg font-bold">Medical authorization</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  The form includes consent for requested services, treatment of
-                  unforeseen medical conditions, medical risk acknowledgement,
-                  and liability release.
-                </p>
+              <div className="grid grid-cols-1 gap-6">
+                <Card className="flex gap-4 p-6">
+                  <ShieldCheck className="h-7 w-7 shrink-0 text-primary" />
+                  <div>
+                    <h3 className="text-lg font-bold">Clinic requirements</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      You will review fasting requirements, general animal health,
+                      rabies vaccination status, and cancellation information before
+                      submitting.
+                    </p>
+                  </div>
+                </Card>
+                <Card className="flex gap-4 p-6">
+                  <CreditCard className="h-7 w-7 shrink-0 text-primary" />
+                  <div>
+                    <h3 className="text-lg font-bold">Payment at check-in</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      If an appointment is scheduled, payment is due at check-in.
+                      Safe Haven accepts cash, check, credit card, or Venmo at
+                      @safehaven1471.
+                    </p>
+                  </div>
+                </Card>
+                <Card className="flex gap-4 p-6">
+                  <Stethoscope className="h-7 w-7 shrink-0 text-primary" />
+                  <div>
+                    <h3 className="text-lg font-bold">Medical authorization</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      The form includes consent for requested services, treatment of
+                      unforeseen medical conditions, medical risk acknowledgement,
+                      and liability release.
+                    </p>
+                  </div>
+                </Card>
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       </section>
