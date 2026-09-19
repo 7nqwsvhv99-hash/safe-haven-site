@@ -171,25 +171,7 @@ export default function ClinicPage() {
 
       <section className="bg-white section-padding">
         <div className="container-custom max-w-5xl">
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_0.72fr] lg:gap-16">
-            <div className="max-w-xl">
-              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
-                Inside the clinic
-              </p>
-              <h2 className="text-3xl font-bold md:text-4xl">
-                See the Clinic in Action
-              </h2>
-              <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-                Safe Haven&apos;s spay/neuter clinics bring veterinary professionals
-                and volunteers together to provide thoughtful, affordable care for
-                cats in our community.
-              </p>
-              <p className="mt-4 leading-relaxed text-muted-foreground">
-                Take a quick look behind the scenes at the people, patients, and
-                teamwork that make each clinic day possible.
-              </p>
-            </div>
-
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[0.72fr_1fr] lg:gap-16">
             <div className="mx-auto w-full max-w-[360px]">
               <div className="overflow-hidden rounded-3xl border bg-black shadow-lg">
                 <video
@@ -207,6 +189,24 @@ export default function ClinicPage() {
                   Your browser does not support embedded video.
                 </video>
               </div>
+            </div>
+
+            <div className="max-w-xl">
+              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
+                Inside the clinic
+              </p>
+              <h2 className="text-3xl font-bold md:text-4xl">
+                See the Clinic in Action
+              </h2>
+              <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+                Safe Haven&apos;s spay/neuter clinics bring veterinary professionals
+                and volunteers together to provide thoughtful, affordable care for
+                cats in our community.
+              </p>
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                Take a quick look behind the scenes at the people, patients, and
+                teamwork that make each clinic day possible.
+              </p>
             </div>
           </div>
         </div>
