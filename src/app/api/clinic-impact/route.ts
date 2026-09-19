@@ -14,7 +14,7 @@ const TIME_ZONE = "America/Chicago"
 // These baselines reconcile the live Airtable records to the verified Canva
 // Community Impact presentation.
 const ANIMALS_SERVED_2026_BASELINE = 99
-const SURGERY_2026_BASELINE = 78
+const SURGERY_2026_BASELINE = 20
 const SERVICES_2026_BASELINE = 69
 
 type AirtableRecord = {
