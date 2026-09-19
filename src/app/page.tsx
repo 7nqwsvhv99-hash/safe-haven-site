@@ -11,7 +11,7 @@ export default function HomePage() {
     <div className="flex flex-col">
       {/* Hero Section */}
       <section className="hero-gradient">
-        <div className="container-custom section-padding">
+        <div className="container-custom py-10 md:py-12 lg:py-14">
           <div className="max-w-5xl mx-auto text-center space-y-6">
             <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
               Safe Haven Humane Society
