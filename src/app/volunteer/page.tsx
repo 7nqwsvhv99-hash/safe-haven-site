@@ -56,11 +56,6 @@ export default function VolunteerPage() {
                   <h3 className="font-bold text-lg">{role.title}</h3>
                 </div>
                 <p className="text-sm leading-relaxed text-muted-foreground">{role.description}</p>
-                {role.commitment && (
-                  <p className="text-xs font-semibold uppercase tracking-wide text-primary">
-                    Typical commitment: {role.commitment}
-                  </p>
-                )}
               </Card>
             ))}
           </div>
@@ -135,14 +130,12 @@ const volunteerRoles = [
     icon: <Dog className="h-5 w-5 text-primary" />,
     description:
       "Walk, play with, socialize, and provide enrichment for dogs while they wait for their new homes.",
-    commitment: "2–3 hours/month",
   },
   {
     title: "Cat Socializing & Enrichment",
     icon: <Cat className="h-5 w-5 text-primary" />,
     description:
       "Spend time with cats and provide play, attention, socialization, and enrichment while they wait for adoption.",
-    commitment: "2–3 hours/month",
   },
   {
     title: "Events & Fundraising",
