@@ -103,7 +103,7 @@ export function ClinicImpactCarousel() {
   return (
     <section className="section-padding bg-primary/5">
       <div className="container-custom max-w-5xl">
-        <div className="text-center mb-10">
+        <div className="text-center mb-6">
           <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
             Community Impact {impact.year}
           </p>
@@ -117,12 +117,12 @@ export function ClinicImpactCarousel() {
           onFocusCapture={() => setPaused(true)}
           onBlurCapture={() => setPaused(false)}
         >
-          <div className="min-h-[320px] md:min-h-[360px] flex items-center justify-center px-8 py-14 md:px-16">
+          <div className="min-h-[220px] md:min-h-[250px] flex items-center justify-center px-8 py-8 md:px-16 md:py-10">
             <div className="text-center max-w-3xl" aria-live="polite">
               <div className="text-6xl md:text-8xl font-bold tracking-tight text-primary">
                 {slides[activeIndex].value}
               </div>
-              <p className="mt-6 text-xl md:text-2xl font-semibold leading-snug">
+              <p className="mt-4 text-xl md:text-2xl font-semibold leading-snug">
                 {slides[activeIndex].label}
               </p>
             </div>
@@ -146,7 +146,7 @@ export function ClinicImpactCarousel() {
             <ChevronRight className="h-5 w-5" />
           </button>
 
-          <div className="flex justify-center gap-2 px-6 pb-7" aria-label="Clinic impact slides">
+          <div className="flex justify-center gap-2 px-6 pb-5" aria-label="Clinic impact slides">
             {slides.map((slide, index) => (
               <button
                 key={slide.label}
