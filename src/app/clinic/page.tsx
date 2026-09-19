@@ -13,6 +13,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { ClinicImpactCarousel } from "@/components/clinic-impact-carousel"
 
 const intakeFormUrl =
   "https://airtable.com/app3AcoD2G64aMsEz/pag18veN4frVCtuOz/form"
@@ -179,6 +180,8 @@ export default function ClinicPage() {
           </div>
         </div>
       </section>
+
+      <ClinicImpactCarousel />
 
       <section className="bg-slate-50 section-padding">
         <div className="container-custom max-w-6xl">
