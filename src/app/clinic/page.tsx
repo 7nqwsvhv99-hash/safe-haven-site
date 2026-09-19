@@ -83,7 +83,7 @@ export default function ClinicPage() {
             {steps.map((step, index) => {
               const Icon = step.icon
               return (
-                <Card key={step.title} className="relative p-6">
+                <Card key={step.title} className="community-card relative p-6 h-full">
                   <div className="mb-5 flex items-center justify-between">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
                       <Icon className="h-6 w-6 text-primary" />
