@@ -3,10 +3,9 @@ import {
   CalendarCheck,
   Cat,
   ClipboardCheck,
-  FileText,
-  Heart,
-  HeartPulse,
   CreditCard,
+  FileText,
+  HeartPulse,
   ShieldCheck,
   Stethoscope,
   Syringe,
@@ -17,18 +16,6 @@ import { Card } from "@/components/ui/card"
 
 const intakeFormUrl =
   "https://airtable.com/app3AcoD2G64aMsEz/pag18veN4frVCtuOz/form"
-
-const prices = [
-  { service: "Cat spay", price: "$70" },
-  { service: "Cat neuter", price: "$50" },
-  { service: "Rabies vaccine", price: "$10" },
-  { service: "FVRCP vaccine", price: "$10" },
-  { service: "Microchip", price: "$20" },
-  { service: "FeLV/FIV test for cats", price: "$35" },
-  { service: "Parasite treatment", price: "$10" },
-  { service: "E-collar", price: "$10" },
-  { service: "Pain medication", price: "$10" },
-]
 
 const steps = [
   {
@@ -75,7 +62,7 @@ export default function ClinicPage() {
                 </a>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link href="#pricing">View Services &amp; Pricing</Link>
+                <Link href="#services">View Services</Link>
               </Button>
             </div>
           </div>
@@ -116,72 +103,7 @@ export default function ClinicPage() {
         </div>
       </section>
 
-      <section className="bg-white px-4 pb-4 md:px-6 md:pb-6">
-        <div className="container-custom max-w-6xl">
-          <div className="overflow-hidden rounded-3xl">
-            <img
-              src="/images/clinic-team-wide.svg"
-              alt="Safe Haven spay and neuter clinic team"
-              className="w-full h-auto object-cover"
-            />
-          </div>
-        </div>
-      </section>
-
-      <section id="pricing" className="bg-slate-50 section-padding scroll-mt-24">
-        <div className="container-custom max-w-5xl">
-          <div className="mx-auto mb-10 max-w-3xl text-center">
-            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
-              Services &amp; pricing
-            </p>
-            <h2 className="text-3xl font-bold md:text-4xl">
-              Straightforward, low-cost care
-            </h2>
-          </div>
-
-          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
-            <Card className="p-6">
-              <Cat className="mb-4 h-9 w-9 text-primary" />
-              <h3 className="text-lg font-bold">Spay &amp; Neuter</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Surgical sterilization for cats through scheduled clinic days.
-                Clinics are currently held four times each month, typically on
-                two Wednesdays and two Saturdays.
-              </p>
-            </Card>
-            <Card className="p-6">
-              <Syringe className="mb-4 h-9 w-9 text-primary" />
-              <h3 className="text-lg font-bold">Select Add-On Services</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Rabies, FVRCP, microchipping, FeLV/FIV testing, and parasite
-                treatment are available.
-              </p>
-            </Card>
-          </div>
-
-          <Card className="overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              {prices.map((item) => (
-                <div
-                  key={item.service}
-                  className="flex items-center justify-between gap-6 border-b px-5 py-4 last:border-b-0 md:[&:nth-last-child(2)]:border-b-0 md:odd:border-r"
-                >
-                  <span>{item.service}</span>
-                  <span className="shrink-0 font-bold text-primary">
-                    {item.price}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Card>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Prices and service availability may change.
-          </p>
-        </div>
-      </section>
-
-
-      <section className="bg-white section-padding">
+      <section className="bg-slate-50 section-padding">
         <div className="container-custom max-w-5xl">
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[0.72fr_1fr] lg:gap-16">
             <div className="mx-auto w-full max-w-[360px]">
@@ -224,34 +146,36 @@ export default function ClinicPage() {
         </div>
       </section>
 
-      <section className="bg-white section-padding">
-        <div className="container-custom max-w-4xl">
-          <h2 className="mb-12 text-center text-3xl font-bold md:text-4xl">
-            Why Spay or Neuter?
-          </h2>
-          <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
-            <div className="space-y-4 text-center">
-              <h3 className="flex items-center justify-center gap-2 text-xl font-bold">
-                <Heart className="h-5 w-5 text-primary" />
-                For Animals &amp; Families
-              </h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>• Prevents unwanted litters</li>
-                <li>• Can reduce certain reproductive health risks</li>
-                <li>• Helps more families access an essential veterinary service</li>
-              </ul>
-            </div>
-            <div className="space-y-4 text-center">
-              <h3 className="flex items-center justify-center gap-2 text-xl font-bold">
-                <Heart className="h-5 w-5 text-primary" />
-                For Our Community
-              </h3>
-              <ul className="space-y-2 text-muted-foreground">
-                <li>• Helps reduce pet overpopulation</li>
-                <li>• Supports rescue and community cat efforts</li>
-                <li>• Helps reduce future shelter intake</li>
-              </ul>
-            </div>
+      <section id="services" className="bg-white section-padding scroll-mt-24">
+        <div className="container-custom max-w-5xl">
+          <div className="mx-auto mb-10 max-w-3xl text-center">
+            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
+              Available services
+            </p>
+            <h2 className="text-3xl font-bold md:text-4xl">
+              Focused care for cats
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Card className="p-7">
+              <Cat className="mb-4 h-9 w-9 text-primary" />
+              <h3 className="text-xl font-bold">Spay &amp; Neuter</h3>
+              <p className="mt-3 leading-relaxed text-muted-foreground">
+                Surgical sterilization for cats through scheduled clinic days.
+                Clinics are currently held four times each month, typically on
+                two Wednesdays and two Saturdays.
+              </p>
+            </Card>
+
+            <Card className="p-7">
+              <Syringe className="mb-4 h-9 w-9 text-primary" />
+              <h3 className="text-xl font-bold">Additional Services</h3>
+              <p className="mt-3 leading-relaxed text-muted-foreground">
+                Rabies, FVRCP, microchipping, FeLV/FIV testing, and parasite
+                treatment are available.
+              </p>
+            </Card>
           </div>
         </div>
       </section>
@@ -279,9 +203,10 @@ export default function ClinicPage() {
                   Important to know
                 </p>
                 <h2 className="text-3xl font-bold md:text-4xl">
-                  What the intake form covers
+                  Before you submit the intake form
                 </h2>
               </div>
+
               <div className="grid grid-cols-1 gap-6">
                 <Card className="flex gap-4 p-6">
                   <ShieldCheck className="h-7 w-7 shrink-0 text-primary" />
@@ -294,6 +219,7 @@ export default function ClinicPage() {
                     </p>
                   </div>
                 </Card>
+
                 <Card className="flex gap-4 p-6">
                   <CreditCard className="h-7 w-7 shrink-0 text-primary" />
                   <div>
@@ -305,6 +231,7 @@ export default function ClinicPage() {
                     </p>
                   </div>
                 </Card>
+
                 <Card className="flex gap-4 p-6">
                   <Stethoscope className="h-7 w-7 shrink-0 text-primary" />
                   <div>
