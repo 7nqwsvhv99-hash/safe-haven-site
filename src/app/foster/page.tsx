@@ -1,7 +1,8 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Heart, Home, PawPrint, HelpCircle, Baby, ShieldCheck, ChevronDown } from "lucide-react"
+import { Heart, Home, PawPrint, Baby, ShieldCheck } from "lucide-react"
+import { ExclusiveFaq } from "@/components/exclusive-faq"
 
 export default function FosterPage() {
   return (
@@ -91,23 +92,7 @@ export default function FosterPage() {
       <section className="section-padding bg-slate-50">
         <div className="container-custom max-w-3xl">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Common Questions</h2>
-          <div className="space-y-4">
-            {faqs.map((faq) => (
-              <details
-                key={faq.question}
-                className="group rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md"
-              >
-                <summary className="flex cursor-pointer list-none items-center gap-3 p-6 [&::-webkit-details-marker]:hidden">
-                  <HelpCircle className="h-5 w-5 text-primary flex-shrink-0" />
-                  <h3 className="flex-1 font-semibold">{faq.question}</h3>
-                  <ChevronDown className="h-5 w-5 flex-shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
-                </summary>
-                <div className="faq-answer hidden px-6 pb-6 pl-14 group-hover:block group-open:block">
-                  <p className="text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
-                </div>
-              </details>
-            ))}
-          </div>
+          <ExclusiveFaq faqs={faqs} />
         </div>
       </section>
 
