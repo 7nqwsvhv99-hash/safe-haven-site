@@ -55,7 +55,7 @@ export default function ResourcesPage() {
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               Pet Owner Resources
             </h1>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-muted-foreground md:whitespace-nowrap">
               Find trusted starting points for veterinary costs, low-cost spay and neuter services, and responsible rehoming.
             </p>
           </div>
