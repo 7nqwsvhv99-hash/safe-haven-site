@@ -48,7 +48,7 @@ export default function VolunteerPage() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {volunteerRoles.map((role) => (
-              <Card key={role.title} className="p-6 space-y-4 hover:shadow-lg transition-shadow">
+              <Card key={role.title} className="volunteer-role-glow-card relative p-6 space-y-4 h-full">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     {role.icon}
