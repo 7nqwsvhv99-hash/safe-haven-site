@@ -25,9 +25,9 @@ export default function FosterPage() {
             <p className="text-lg text-muted-foreground">Foster care gives animals time to adjust, build confidence, and show us who they are outside the shelter environment.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            <Card className="p-6 text-center space-y-4"><div className="flex justify-center"><Heart className="h-12 w-12 text-primary" /></div><h3 className="font-bold text-xl">Expand Safe Haven's Capacity</h3><p className="text-muted-foreground">Every foster home creates more room for Safe Haven to help another animal in need.</p></Card>
-            <Card className="p-6 text-center space-y-4"><div className="flex justify-center"><Home className="h-12 w-12 text-primary" /></div><h3 className="font-bold text-xl">Help an Animal Thrive</h3><p className="text-muted-foreground">Home life can provide routine, socialization, and valuable insight into an animal's personality and needs.</p></Card>
-            <Card className="p-6 text-center space-y-4"><div className="flex justify-center"><PawPrint className="h-12 w-12 text-primary" /></div><h3 className="font-bold text-xl">Support the Right Match</h3><p className="text-muted-foreground">What you learn about your foster can help Safe Haven find a permanent home that fits the animal well.</p></Card>
+            <Card className="community-card relative p-6 text-center space-y-4 h-full"><div className="flex justify-center"><Heart className="h-12 w-12 text-primary" /></div><h3 className="font-bold text-xl">Expand Safe Haven's Capacity</h3><p className="text-muted-foreground">Every foster home creates more room for Safe Haven to help another animal in need.</p></Card>
+            <Card className="community-card relative p-6 text-center space-y-4 h-full"><div className="flex justify-center"><Home className="h-12 w-12 text-primary" /></div><h3 className="font-bold text-xl">Help an Animal Thrive</h3><p className="text-muted-foreground">Home life can provide routine, socialization, and valuable insight into an animal's personality and needs.</p></Card>
+            <Card className="community-card relative p-6 text-center space-y-4 h-full"><div className="flex justify-center"><PawPrint className="h-12 w-12 text-primary" /></div><h3 className="font-bold text-xl">Support the Right Match</h3><p className="text-muted-foreground">What you learn about your foster can help Safe Haven find a permanent home that fits the animal well.</p></Card>
           </div>
         </div>
       </section>
