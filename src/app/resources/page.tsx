@@ -48,14 +48,14 @@ export default function ResourcesPage() {
     <div className="flex flex-col">
       <section className="hero-gradient">
         <div className="container-custom section-padding">
-          <div className="max-w-3xl mx-auto text-center space-y-6">
+          <div className="mx-auto text-center space-y-6">
             <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
               Help for Pet Owners
             </p>
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               Pet Owner Resources
             </h1>
-            <p className="text-lg text-muted-foreground md:whitespace-nowrap">
+            <p className="mx-auto max-w-none text-lg text-muted-foreground md:w-max md:whitespace-nowrap">
               Find trusted starting points for veterinary costs, low-cost spay and neuter services, and responsible rehoming.
             </p>
           </div>
