@@ -170,6 +170,49 @@ export default function ClinicPage() {
 
 
       <section className="bg-white section-padding">
+        <div className="container-custom max-w-5xl">
+          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_0.72fr] lg:gap-16">
+            <div className="max-w-xl">
+              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
+                Inside the clinic
+              </p>
+              <h2 className="text-3xl font-bold md:text-4xl">
+                See the Clinic in Action
+              </h2>
+              <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+                Safe Haven&apos;s spay/neuter clinics bring veterinary professionals
+                and volunteers together to provide thoughtful, affordable care for
+                cats in our community.
+              </p>
+              <p className="mt-4 leading-relaxed text-muted-foreground">
+                Take a quick look behind the scenes at the people, patients, and
+                teamwork that make each clinic day possible.
+              </p>
+            </div>
+
+            <div className="mx-auto w-full max-w-[360px]">
+              <div className="overflow-hidden rounded-3xl border bg-black shadow-lg">
+                <video
+                  className="aspect-[9/16] w-full object-cover"
+                  controls
+                  muted
+                  playsInline
+                  preload="metadata"
+                  aria-label="Safe Haven spay and neuter clinic video"
+                >
+                  <source
+                    src="/videos/spay-neuter-clinic-promo-web.mp4"
+                    type="video/mp4"
+                  />
+                  Your browser does not support embedded video.
+                </video>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-white section-padding">
         <div className="container-custom max-w-4xl">
           <h2 className="mb-12 text-center text-3xl font-bold md:text-4xl">
             Why Spay or Neuter?
