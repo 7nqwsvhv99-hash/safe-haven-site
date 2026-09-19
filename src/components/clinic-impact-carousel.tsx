@@ -103,7 +103,7 @@ export function ClinicImpactCarousel() {
   return (
     <section className="section-padding bg-primary/5">
       <div className="container-custom max-w-5xl">
-        <div className="text-center mb-4">
+        <div className="text-center mb-3">
           <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
             Community Impact {impact.year}
           </p>
@@ -117,12 +117,12 @@ export function ClinicImpactCarousel() {
           onFocusCapture={() => setPaused(true)}
           onBlurCapture={() => setPaused(false)}
         >
-          <div className="min-h-[170px] md:min-h-[190px] flex items-center justify-center px-8 py-5 md:px-16 md:py-6">
+          <div className="min-h-[135px] md:min-h-[150px] flex items-center justify-center px-8 py-3 md:px-16 md:py-4">
             <div className="text-center max-w-3xl" aria-live="polite">
               <div className="text-6xl md:text-8xl font-bold tracking-tight text-primary">
                 {slides[activeIndex].value}
               </div>
-              <p className="mt-3 text-xl md:text-2xl font-semibold leading-snug">
+              <p className="mt-2 text-xl md:text-2xl font-semibold leading-snug">
                 {slides[activeIndex].label}
               </p>
             </div>
@@ -146,7 +146,7 @@ export function ClinicImpactCarousel() {
             <ChevronRight className="h-5 w-5" />
           </button>
 
-          <div className="flex justify-center gap-2 px-6 pb-3" aria-label="Clinic impact slides">
+          <div className="flex justify-center gap-2 px-6 pb-2" aria-label="Clinic impact slides">
             {slides.map((slide, index) => (
               <button
                 key={slide.label}
@@ -162,7 +162,7 @@ export function ClinicImpactCarousel() {
           </div>
         </div>
 
-        <p className="mt-3 text-center text-xs leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
           Figures update from Safe Haven&apos;s ClinicDay records. Savings figures are estimates based on Safe Haven pricing and full-service veterinary comparison benchmarks.
         </p>
       </div>
