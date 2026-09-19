@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Heart, Home, PawPrint, HelpCircle, Baby, ShieldCheck } from "lucide-react"
+import { Heart, Home, PawPrint, HelpCircle, Baby, ShieldCheck, ChevronDown } from "lucide-react"
 
 export default function FosterPage() {
   return (
@@ -88,7 +88,28 @@ export default function FosterPage() {
 
       <section className="section-padding bg-white"><div className="container-custom max-w-4xl"><h2 className="text-3xl md:text-4xl font-bold text-center mb-12">How It Works</h2><div className="grid grid-cols-1 md:grid-cols-4 gap-6">{steps.map((step, index) => <div key={step.title} className="space-y-3"><div className="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">{index + 1}</div><h3 className="font-bold text-lg">{step.title}</h3><p className="text-sm text-muted-foreground">{step.description}</p></div>)}</div></div></section>
 
-      <section className="section-padding bg-slate-50"><div className="container-custom max-w-3xl"><h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Common Questions</h2><div className="space-y-6">{faqs.map((faq) => <Card key={faq.question} className="p-6"><div className="flex gap-3"><HelpCircle className="h-5 w-5 text-primary flex-shrink-0 mt-1" /><div className="space-y-2"><h3 className="font-semibold">{faq.question}</h3><p className="text-sm text-muted-foreground">{faq.answer}</p></div></div></Card>)}</div></div></section>
+      <section className="section-padding bg-slate-50">
+        <div className="container-custom max-w-3xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">Common Questions</h2>
+          <div className="space-y-4">
+            {faqs.map((faq) => (
+              <details
+                key={faq.question}
+                className="group rounded-2xl border bg-white shadow-sm transition-shadow hover:shadow-md"
+              >
+                <summary className="flex cursor-pointer list-none items-center gap-3 p-6 [&::-webkit-details-marker]:hidden">
+                  <HelpCircle className="h-5 w-5 text-primary flex-shrink-0" />
+                  <h3 className="flex-1 font-semibold">{faq.question}</h3>
+                  <ChevronDown className="h-5 w-5 flex-shrink-0 text-muted-foreground transition-transform duration-200 group-open:rotate-180" />
+                </summary>
+                <div className="faq-answer hidden px-6 pb-6 pl-14 group-hover:block group-open:block">
+                  <p className="text-sm leading-relaxed text-muted-foreground">{faq.answer}</p>
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
 
       <section id="apply" className="section-padding bg-primary/5"><div className="container-custom max-w-2xl text-center"><h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to Foster?</h2><p className="text-lg text-muted-foreground mb-8">Tell us about your household and the types of foster placements you could support.</p><Button asChild size="lg"><Link href="/foster-application">Start Foster Application</Link></Button><p className="text-sm text-muted-foreground mt-4">Questions? Call us at (815) 858-2265.</p></div></section>
     </div>
