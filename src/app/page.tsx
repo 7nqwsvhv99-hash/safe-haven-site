@@ -38,6 +38,26 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Featured Pets */}
+      <section className="section-padding bg-slate-50">
+        <div className="container-custom">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+              Meet Some Friends
+            </h2>
+            <p className="text-muted-foreground">
+              These pets are ready for their forever homes
+            </p>
+          </div>
+          <FeaturedPets />
+          <div className="text-center mt-10">
+            <Button asChild size="lg" variant="outline">
+              <Link href="/adopt">View All Adoptable Pets</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section className="section-padding bg-white">
         <div className="container-custom">
@@ -84,30 +104,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Featured Pets */}
-      <section className="section-padding bg-slate-50">
-        <div className="container-custom">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">
-              Meet Some Friends
-            </h2>
-            <p className="text-muted-foreground">
-              These pets are ready for their forever homes
-            </p>
-          </div>
-          <FeaturedPets />
-          <div className="text-center mt-10">
-            <Button asChild size="lg" variant="outline">
-              <Link href="/adopt">View All Adoptable Pets</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      <CommunityImpact />
-
-      <Testimonials />
 
       {/* Ways To Get Involved */}
       <section className="section-padding bg-slate-50">
@@ -164,6 +160,10 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <CommunityImpact />
+
+      <Testimonials />
 
       {/* About Safe Haven */}
       <section className="section-padding bg-primary/5">
