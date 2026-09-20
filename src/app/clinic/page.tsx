@@ -104,7 +104,7 @@ export default function ClinicPage() {
         </div>
       </section>
 
-      <section className="bg-slate-50 section-padding">
+      <section className="hero-gradient section-padding">
         <div className="container-custom max-w-5xl">
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[0.72fr_1fr] lg:gap-16">
             <div className="mx-auto w-full max-w-[360px]">
