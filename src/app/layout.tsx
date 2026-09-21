@@ -1,3 +1,4 @@
+import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -36,12 +37,14 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning className="antialiased">
-        <ClientBody>
+        <ClerkProvider>
+          <ClientBody>
           <Navigation />
           <main className="min-h-screen">{children}</main>
           <Footer />
           <MobileCTA />
-        </ClientBody>
+          </ClientBody>
+        </ClerkProvider>
       </body>
     </html>
   );
