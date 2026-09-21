@@ -1,7 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { Heart, Home, PawPrint, Baby, ShieldCheck } from "lucide-react"
+import { Heart, Home, PawPrint, Baby, ShieldCheck, ClipboardCheck, Eye, HouseHeart, HeartHandshake } from "lucide-react"
 import { ExclusiveFaq } from "@/components/exclusive-faq"
 
 export default function FosterPage() {
@@ -34,10 +34,28 @@ export default function FosterPage() {
       </section>
 
       <section className="section-padding bg-slate-50">
-        <div className="container-custom max-w-5xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">What Foster Families Do</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {responsibilities.map((item) => <div key={item.title} className="rounded-2xl border bg-white p-6"><h3 className="font-semibold text-lg mb-2">{item.title}</h3><p className="text-sm text-muted-foreground">{item.description}</p></div>)}
+        <div className="container-custom max-w-6xl">
+          <div className="mx-auto max-w-3xl text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold">What Foster Families Do</h2>
+            <p className="mt-4 text-muted-foreground">
+              Foster care is a simple progression: care for the animal, learn what they need, follow the plan, and help Safe Haven prepare them for the right home.
+            </p>
+          </div>
+
+          <div className="relative grid grid-cols-1 gap-8 md:grid-cols-4">
+            <div className="absolute left-[12.5%] right-[12.5%] top-6 hidden h-px bg-primary/20 md:block" aria-hidden="true" />
+            {responsibilities.map((item, index) => {
+              const Icon = responsibilityIcons[index]
+              return (
+                <div key={item.title} className="relative text-center md:text-left">
+                  <div className="relative z-10 mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white border border-primary/20 shadow-sm md:mx-0">
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <h3 className="mt-4 font-bold text-lg">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
+                </div>
+              )
+            })}
           </div>
         </div>
       </section>
@@ -103,11 +121,13 @@ export default function FosterPage() {
 }
 
 const responsibilities = [
-  { title: "Provide daily care", description: "Give your foster animal a safe environment, food, water, affection, exercise or play, and age-appropriate care." },
-  { title: "Observe and share what you learn", description: "Help Safe Haven understand the animal's personality, habits, comfort level, and the kind of home where they may thrive." },
-  { title: "Follow the care plan", description: "Follow the instructions provided for the individual animal and stay in communication with Safe Haven about concerns or changes." },
-  { title: "Help with the path to adoption", description: "Share updates and work with Safe Haven when a potential adopter may be a good match." },
+  { title: "Provide Daily Care", description: "Give your foster animal a safe environment, food, water, affection, exercise or play, and age-appropriate care." },
+  { title: "Observe & Learn", description: "Help Safe Haven understand the animal's personality, habits, comfort level, and the kind of home where they may thrive." },
+  { title: "Follow the Care Plan", description: "Follow the instructions provided for the individual animal and stay in communication with Safe Haven about concerns or changes." },
+  { title: "Help With Adoption", description: "Share updates and work with Safe Haven when a potential adopter may be a good match." },
 ]
+
+const responsibilityIcons = [HouseHeart, Eye, ClipboardCheck, HeartHandshake]
 
 const steps = [
   { title: "Apply", description: "Tell us about your household, experience, schedule, and the kinds of animals or needs you are comfortable fostering." },
