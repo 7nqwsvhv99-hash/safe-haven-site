@@ -8,6 +8,7 @@ import {
   PawPrint,
   Phone,
   Stethoscope,
+  ArrowRight,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -145,6 +146,45 @@ export default function ResourcesPage() {
           <p className="text-xs text-muted-foreground mt-7 leading-relaxed">
             Safe Haven Humane Society does not administer these programs, determine eligibility, or guarantee that assistance will be available. Program details can change, so confirm current requirements directly with each provider.
           </p>
+        </div>
+      </section>
+
+      <section id="newsletters" className="py-14 md:py-16 bg-primary/5">
+        <div className="container-custom max-w-6xl">
+          <div className="mb-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary mb-2">
+              Stay Connected
+            </p>
+            <h2 className="text-3xl md:text-4xl font-bold">Past Newsletters</h2>
+            <p className="text-muted-foreground mt-2 max-w-2xl">
+              Read previous issues and see the animals, people, and community support behind Safe Haven&apos;s work.
+            </p>
+          </div>
+
+          <div className="divide-y divide-primary/15 border-y border-primary/15">
+            {[
+              ["Summer 2026", "/newsletters/safe-haven-summer-2026.pdf"],
+              ["Spring 2026", "/newsletters/safe-haven-spring-2026.pdf"],
+              ["Summer/Fall 2025", "/newsletters/safe-haven-summer-fall-2025.pdf"],
+              ["Spring/Summer 2025", "/newsletters/safe-haven-spring-summer-2025.pdf"],
+            ].map(([title, href]) => (
+              <a
+                key={title}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center justify-between gap-6 py-5"
+              >
+                <span className="font-semibold text-lg group-hover:text-primary transition-colors">
+                  {title}
+                </span>
+                <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                  Read Newsletter
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </span>
+              </a>
+            ))}
+          </div>
         </div>
       </section>
 
