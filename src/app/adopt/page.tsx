@@ -98,7 +98,7 @@ export default function AdoptPage() {
           <div className="max-w-3xl mx-auto text-center space-y-4">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Meet Your New Best Friend</h1>
             <p className="text-lg text-muted-foreground">
-              All animals are spayed or neutered before going home with an adopter. Animals are also vaccinated before adoption unless they are too young for a required vaccine; in those cases, adopters can return to Safe Haven’s clinic for rabies and FVRCP/DAPP when due.
+              Meet cats and dogs looking for the right home, and find the companion who feels like the right fit for yours.
             </p>
           </div>
         </div>
@@ -229,6 +229,9 @@ export default function AdoptPage() {
             <h2 className="text-3xl md:text-4xl font-bold">Ready to Adopt?</h2>
             <div className="max-w-3xl mx-auto space-y-4 text-muted-foreground">
               <p>Our adoption process is straightforward and supportive. We’re here to help you find the right match.</p>
+              <p className="text-sm">
+                All animals are spayed or neutered before going home with an adopter. Animals are also vaccinated before adoption unless they are too young for a required vaccine; in those cases, adopters can return to Safe Haven&apos;s clinic for rabies and FVRCP/DAPP when due.
+              </p>
               <p>
                 <strong className="text-foreground">We recommend applying before your visit for the smoothest adoption experience.</strong>{" "}
                 You’re welcome to meet our animals before applying, but an approved application is required before an adoption can be completed. Once you’ve found a pet you’d like to adopt, we’ll review your application and contact your references.
