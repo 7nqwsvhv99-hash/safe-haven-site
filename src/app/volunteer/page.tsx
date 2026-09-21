@@ -27,9 +27,8 @@ export default function VolunteerPage() {
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
               Volunteer With Us
             </h1>
-            <p className="text-lg text-muted-foreground space-y-1">
-              <span className="block">Make a real difference in the lives of animals.</span>
-              <span className="block">Find a volunteer role that fits your skills and schedule.</span>
+            <p className="text-lg text-muted-foreground md:whitespace-nowrap">
+              Make a real difference in the lives of animals. Find a volunteer role that fits your skills and schedule.
             </p>
             <Button asChild size="lg">
               <Link href="/volunteer-application">Complete the Volunteer Application</Link>
@@ -43,7 +42,7 @@ export default function VolunteerPage() {
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
             Volunteer Opportunities
           </h2>
-          <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-12">
+          <p className="text-center text-muted-foreground mx-auto mb-12 md:whitespace-nowrap">
             Explore hands-on animal care, events, transportation, creative work, and behind-the-scenes support.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -82,42 +81,47 @@ export default function VolunteerPage() {
       </section>
 
       <section className="section-padding bg-white">
-        <div className="container-custom max-w-3xl">
-          <Card className="p-8 md:p-10 text-center">
-            <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
-              Current volunteers
-            </p>
-            <h2 className="text-3xl md:text-4xl font-bold">
-              Already Volunteering With Safe Haven?
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              View upcoming volunteer coverage and activities or log the hours you have completed.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <Button asChild variant="outline" size="lg">
-                <a href={volunteerCalendarUrl} target="_blank" rel="noreferrer">
-                  View Volunteer Calendar
-                </a>
-              </Button>
-              <Button asChild size="lg">
-                <Link href="/volunteer-hours">Log Volunteer Hours</Link>
-              </Button>
-            </div>
-          </Card>
-        </div>
-      </section>
+        <div className="container-custom max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="p-8 md:p-10 text-center h-full">
+              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
+                Current volunteers
+              </p>
+              <h2 className="text-3xl font-bold">
+                Already Volunteering With Safe Haven?
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                View upcoming volunteer coverage and activities or log the hours you have completed.
+              </p>
+              <div className="mt-8 flex flex-col gap-3">
+                <Button asChild variant="outline" size="lg">
+                  <a href={volunteerCalendarUrl} target="_blank" rel="noreferrer">
+                    View Volunteer Calendar
+                  </a>
+                </Button>
+                <Button asChild size="lg">
+                  <Link href="/volunteer-hours">Log Volunteer Hours</Link>
+                </Button>
+              </div>
+            </Card>
 
-      <section className="section-padding bg-primary/5">
-        <div className="container-custom max-w-2xl text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Ready to Make a Difference?
-          </h2>
-          <p className="text-lg text-muted-foreground mb-8">
-            Tell us where you would like to help and when you are available.
-          </p>
-          <Button asChild size="lg">
-            <Link href="/volunteer-application">Complete the Volunteer Application</Link>
-          </Button>
+            <Card className="p-8 md:p-10 text-center h-full bg-primary/5 border-primary/20">
+              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
+                Future volunteers
+              </p>
+              <h2 className="text-3xl font-bold">
+                Ready to Make a Difference?
+              </h2>
+              <p className="mt-4 text-muted-foreground">
+                Tell us where you would like to help and when you are available.
+              </p>
+              <div className="mt-8">
+                <Button asChild size="lg" className="w-full">
+                  <Link href="/volunteer-application">Complete the Volunteer Application</Link>
+                </Button>
+              </div>
+            </Card>
+          </div>
         </div>
       </section>
     </div>
