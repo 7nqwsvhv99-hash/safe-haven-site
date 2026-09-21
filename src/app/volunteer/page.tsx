@@ -88,10 +88,11 @@ export default function VolunteerPage() {
                 Current volunteers
               </p>
               <h2 className="text-3xl font-bold">
-                Already Volunteering With Safe Haven?
+                <span className="block">Already Volunteering With</span>
+                <span className="block">Safe Haven?</span>
               </h2>
               <p className="mt-4 text-muted-foreground">
-                View upcoming volunteer coverage and activities or log the hours you have completed.
+                View upcoming volunteer coverage or log the hours you have completed.
               </p>
               <div className="mt-8 flex flex-col gap-3">
                 <Button asChild variant="outline" size="lg">
