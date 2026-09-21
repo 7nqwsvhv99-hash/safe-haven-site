@@ -55,7 +55,7 @@ export function Footer() {
                 </a>
               </li>
               <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
-              <li><Link href="/about#newsletters" className="text-muted-foreground hover:text-primary transition-colors">Past Newsletters</Link></li>
+              <li><Link href="/resources#newsletters" className="text-muted-foreground hover:text-primary transition-colors">Past Newsletters</Link></li>
             </ul>
           </div>
 
