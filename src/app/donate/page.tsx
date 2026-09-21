@@ -24,8 +24,137 @@ export default function DonatePage() {
         </div>
       </section>
 
-      {/* Give Now */}
+      {/* Nellie's Story */}
       <section className="section-padding bg-white">
+        <div className="container-custom max-w-6xl">
+          <div className="grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr] gap-10 lg:gap-14 items-start">
+            <div className="space-y-6">
+              <div className="overflow-hidden rounded-3xl bg-slate-100 shadow-sm">
+                <img
+                  src="/images/nellie/nellie-resting.webp"
+                  alt="Nellie, a young beagle, resting comfortably in foster care"
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <figure className="space-y-2">
+                  <div className="overflow-hidden rounded-2xl bg-slate-100">
+                    <img
+                      src="/images/nellie/nellie-xray-before.webp"
+                      alt="X-ray showing Nellie's broken femur before orthopedic repair"
+                      className="w-full h-auto"
+                    />
+                  </div>
+                  <figcaption className="text-xs text-muted-foreground text-center">
+                    Nellie&apos;s fractured femur before treatment
+                  </figcaption>
+                </figure>
+
+                <figure className="space-y-2">
+                  <div className="overflow-hidden rounded-2xl bg-slate-100">
+                    <img
+                      src="/images/nellie/nellie-xray-after.webp"
+                      alt="X-ray showing Nellie's femur stabilized with a surgical plate and screws"
+                      className="w-full h-auto"
+                    />
+                  </div>
+                  <figcaption className="text-xs text-muted-foreground text-center">
+                    Nellie&apos;s femur after orthopedic repair
+                  </figcaption>
+                </figure>
+              </div>
+
+              <div className="space-y-2">
+                <div className="overflow-hidden rounded-2xl bg-black shadow-sm">
+                  <video
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="w-full h-auto"
+                    aria-label="Video of Nellie"
+                  >
+                    <source src="/videos/nellie/nellie-recovery.mp4" type="video/mp4" />
+                    Your browser does not support embedded video.
+                  </video>
+                </div>
+                <p className="text-xs text-muted-foreground text-center">
+                  A glimpse of Nellie&apos;s personality while in foster care.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary mb-3">
+                  Help Nellie Heal
+                </p>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                  Safe Haven said &ldquo;yes&rdquo; to saving Nellie&apos;s life. Now we need your help.
+                </h2>
+              </div>
+
+              <div className="space-y-5 text-muted-foreground leading-relaxed">
+                <p>
+                  When Nellie, a 1-year-old beagle, arrived at a local veterinary clinic with a devastatingly broken femur, euthanasia had been requested.
+                </p>
+
+                <p className="text-foreground font-semibold text-lg">
+                  But Nellie&apos;s story didn&apos;t end there.
+                </p>
+
+                <p>
+                  The veterinary team contacted Safe Haven, and we said <strong className="text-foreground">yes</strong>.
+                </p>
+
+                <p>
+                  Working with Dr. Dulce Coulson, our Shelter Manager, and our Board President, a lifesaving treatment plan quickly came together. Nellie was transported to TLC in Freeport, where she was stabilized, kept comfortable, and prepared for major orthopedic surgery.
+                </p>
+
+                <p>
+                  Her broken femur was carefully realigned and repaired with a surgical plate and 10 screws.
+                </p>
+
+                <p>
+                  Today, just three weeks after surgery, Nellie is recovering in foster care with Safe Haven volunteer Rachel O. She reports that Nellie is active, happy, and making progress every day.
+                </p>
+
+                <p>
+                  Nellie still has several weeks of healing and rehabilitation ahead of her. When she is fully recovered, she will be ready for the next chapter of her story: finding a loving forever home.
+                </p>
+              </div>
+
+              <div className="rounded-2xl bg-primary/5 border border-primary/15 p-6 md:p-7 space-y-4">
+                <p className="font-bold text-xl">This is what your support makes possible.</p>
+
+                <p className="text-muted-foreground leading-relaxed">
+                  The medical expenses shared with Safe Haven for Nellie&apos;s care total <strong className="text-foreground">$3,885</strong>. It was an unexpected expense that was not in our budget, but when the opportunity existed to save her life, Safe Haven chose to help.
+                </p>
+
+                <div className="rounded-xl bg-white p-5 border border-primary/15">
+                  <p className="text-3xl font-bold text-primary">$414 donated</p>
+                  <p className="text-sm text-muted-foreground mt-1">toward Nellie&apos;s care</p>
+                </div>
+
+                <p className="text-muted-foreground leading-relaxed">
+                  We still need your help. Your gift will help Safe Haven cover Nellie&apos;s medical expenses and continue providing the care she needs as she recovers.
+                </p>
+
+                <p className="font-semibold">
+                  Every gift matters. Every gift helps us keep saying &ldquo;yes.&rdquo;
+                </p>
+
+                <Button asChild size="lg">
+                  <a href="#give-now">Help Cover Nellie&apos;s Care</a>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Give Now */}
+      <section id="give-now" className="section-padding bg-primary/5">
         <div className="container-custom">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-3">Choose the Way You Want to Give</h2>
@@ -125,7 +254,7 @@ export default function DonatePage() {
       </section>
 
       {/* Directed Giving */}
-      <section className="section-padding bg-primary/5">
+      <section className="section-padding bg-white">
         <div className="container-custom max-w-5xl">
           <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-3">Direct Your Donation</h2>
@@ -160,7 +289,7 @@ export default function DonatePage() {
       </section>
 
       {/* What Your Gift Can Do */}
-      <section className="section-padding bg-white">
+      <section className="section-padding bg-primary/5">
         <div className="container-custom max-w-6xl">
           <div className="text-center mb-10">
             <Heart className="h-12 w-12 text-primary mx-auto mb-4" />
@@ -191,7 +320,7 @@ export default function DonatePage() {
       </section>
 
       {/* More Ways to Give */}
-      <section className="section-padding bg-primary/5">
+      <section className="section-padding bg-white">
         <div className="container-custom max-w-6xl">
           <div className="text-center mb-10">
             <h2 className="text-3xl md:text-4xl font-bold mb-3">More Ways to Give</h2>
@@ -231,7 +360,7 @@ export default function DonatePage() {
       </section>
 
       {/* Nonprofit note */}
-      <section className="section-padding bg-white">
+      <section className="section-padding bg-primary/5">
         <div className="container-custom max-w-5xl">
           <div className="rounded-2xl bg-slate-50 p-6 md:p-8 text-center">
             <div className="space-y-2 text-sm md:text-base text-muted-foreground">
