@@ -113,7 +113,7 @@ export default function HomePage() {
             Ways To Get Involved
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            <Card className="p-6 md:p-8 text-center space-y-4 hover:shadow-lg transition-shadow">
+            <Card className="home-involvement-glow-card p-6 md:p-8 text-center space-y-4">
               <div className="flex justify-center">
                 <Heart className="h-12 w-12 text-primary" />
               </div>
@@ -130,7 +130,7 @@ export default function HomePage() {
                 </Button>
               </div>
             </Card>
-            <Card className="p-6 md:p-8 text-center space-y-4 hover:shadow-lg transition-shadow">
+            <Card className="home-involvement-glow-card p-6 md:p-8 text-center space-y-4">
               <div className="flex justify-center">
                 <Users className="h-12 w-12 text-primary" />
               </div>
@@ -144,7 +144,7 @@ export default function HomePage() {
                 </Button>
               </div>
             </Card>
-            <Card className="p-6 md:p-8 text-center space-y-4 hover:shadow-lg transition-shadow">
+            <Card className="home-involvement-glow-card p-6 md:p-8 text-center space-y-4">
               <div className="flex justify-center">
                 <DollarSign className="h-12 w-12 text-primary" />
               </div>
@@ -228,15 +228,6 @@ export default function HomePage() {
             </p>
             <div className="flex flex-wrap gap-4 justify-center pt-4">
               <a
-                href="https://www.instagram.com/safehaven.animalshelter"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-6 py-3 rounded-full bg-white border-2 border-primary text-primary font-semibold hover:bg-primary hover:text-white transition-colors"
-              >
-                <Instagram className="h-5 w-5" />
-                Instagram
-              </a>
-              <a
                 href="https://www.facebook.com/safehavenelizabethil"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -244,6 +235,15 @@ export default function HomePage() {
               >
                 <Facebook className="h-5 w-5" />
                 Facebook
+              </a>
+              <a
+                href="https://www.instagram.com/safehaven.animalshelter"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-6 py-3 rounded-full bg-white border-2 border-primary text-primary font-semibold hover:bg-primary hover:text-white transition-colors"
+              >
+                <Instagram className="h-5 w-5" />
+                Instagram
               </a>
             </div>
           </div>
