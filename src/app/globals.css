@@ -172,17 +172,17 @@
   overflow: visible;
   isolation: isolate;
   transition: box-shadow 600ms ease, border-color 600ms ease;
-  animation: volunteer-role-glow 22.5s ease-in-out infinite;
+  animation: volunteer-role-glow 30s ease-in-out infinite;
 }
 
-.volunteer-role-glow-card:nth-child(2) { animation-delay: 2.5s; }
-.volunteer-role-glow-card:nth-child(3) { animation-delay: 5s; }
-.volunteer-role-glow-card:nth-child(4) { animation-delay: 7.5s; }
-.volunteer-role-glow-card:nth-child(5) { animation-delay: 10s; }
-.volunteer-role-glow-card:nth-child(6) { animation-delay: 12.5s; }
-.volunteer-role-glow-card:nth-child(7) { animation-delay: 15s; }
-.volunteer-role-glow-card:nth-child(8) { animation-delay: 17.5s; }
-.volunteer-role-glow-card:nth-child(9) { animation-delay: 20s; }
+.volunteer-role-glow-card:nth-child(2) { animation-delay: 3.33s; }
+.volunteer-role-glow-card:nth-child(3) { animation-delay: 6.66s; }
+.volunteer-role-glow-card:nth-child(4) { animation-delay: 9.99s; }
+.volunteer-role-glow-card:nth-child(5) { animation-delay: 13.32s; }
+.volunteer-role-glow-card:nth-child(6) { animation-delay: 16.65s; }
+.volunteer-role-glow-card:nth-child(7) { animation-delay: 19.98s; }
+.volunteer-role-glow-card:nth-child(8) { animation-delay: 23.31s; }
+.volunteer-role-glow-card:nth-child(9) { animation-delay: 26.64s; }
 
 @keyframes volunteer-role-glow {
   0%, 10%, 100% {
@@ -212,20 +212,20 @@
   overflow: visible;
   isolation: isolate;
   transition: box-shadow 600ms ease, border-color 600ms ease;
-  animation: home-involvement-glow 12s ease-in-out infinite;
+  animation: home-involvement-glow 10.5s ease-in-out infinite;
 }
 
-.home-involvement-glow-card:nth-child(2) { animation-delay: 4s; }
-.home-involvement-glow-card:nth-child(3) { animation-delay: 8s; }
+.home-involvement-glow-card:nth-child(2) { animation-delay: 3.5s; }
+.home-involvement-glow-card:nth-child(3) { animation-delay: 7s; }
 
 @keyframes home-involvement-glow {
-  0%, 22%, 100% {
+  0%, 28%, 100% {
     border-color: hsl(var(--border));
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.04),
       0 0 0 0 rgba(247, 127, 39, 0);
   }
-  7%, 15% {
+  5%, 23% {
     border-color: rgba(247, 127, 39, 0.42);
     box-shadow:
       0 5px 16px rgba(247, 127, 39, 0.08),
