@@ -87,9 +87,8 @@ export default function VolunteerPage() {
               <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
                 Current volunteers
               </p>
-              <h2 className="text-3xl font-bold">
-                <span className="block">Already Volunteering With</span>
-                <span className="block">Safe Haven?</span>
+              <h2 className="text-3xl font-bold tracking-tight lg:text-[2rem] lg:whitespace-nowrap">
+                Already Volunteering With Safe Haven?
               </h2>
               <p className="mt-4 text-muted-foreground">
                 View upcoming volunteer coverage or log the hours you have completed.
