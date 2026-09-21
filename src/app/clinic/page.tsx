@@ -104,10 +104,10 @@ export default function ClinicPage() {
         </div>
       </section>
 
-      <section className="hero-gradient section-padding">
+      <section className="bg-white py-10 md:py-12">
         <div className="container-custom max-w-5xl">
-          <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[0.72fr_1fr] lg:gap-16">
-            <div className="mx-auto w-full max-w-[360px]">
+          <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-[0.72fr_1fr] lg:gap-10">
+            <div className="mx-auto w-full max-w-[330px]">
               <div className="overflow-hidden rounded-3xl border bg-black shadow-lg">
                 <video
                   className="aspect-[9/16] w-full object-cover"
@@ -126,7 +126,7 @@ export default function ClinicPage() {
               </div>
             </div>
 
-            <div className="max-w-xl">
+            <div className="rounded-3xl bg-primary/5 p-7 md:p-9">
               <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
                 Inside the clinic
               </p>
