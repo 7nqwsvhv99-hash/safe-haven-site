@@ -147,6 +147,19 @@ export default function ClinicPage() {
         </div>
       </section>
 
+      <section className="bg-white pb-10 md:pb-12">
+        <div className="container-custom max-w-5xl">
+          <Card className="border-primary/15 bg-primary/5 p-7 text-center md:p-9">
+            <p className="mx-auto max-w-4xl text-lg italic leading-relaxed text-foreground md:text-xl">
+              “We love Safe Haven because it is a miraculous true Safe Haven for these precious animals and all of the people there are truly angels for all these animals! They are both out of their box and snuggled together in the living room in their favorite place! Thank you so much for being such wonderful people! Xo”
+            </p>
+            <p className="mt-4 text-sm font-semibold text-primary">
+              Dawn M. · Clinic Client
+            </p>
+          </Card>
+        </div>
+      </section>
+
       <section id="services" className="bg-white section-padding scroll-mt-24">
         <div className="container-custom max-w-5xl">
           <div className="mx-auto mb-10 max-w-3xl text-center">
