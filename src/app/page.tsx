@@ -40,10 +40,10 @@ export default function HomePage() {
       </section>
 
       {/* Featured Pets */}
-      <section className="section-padding bg-slate-50">
+      <section className="bg-slate-50 px-4 pt-8 pb-12 md:px-6 md:pt-10 md:pb-16 lg:pt-12 lg:pb-20">
         <div className="container-custom">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-3">
+          <div className="text-center mb-7 md:mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold mb-2">
               Meet Some Friends
             </h2>
             <p className="text-muted-foreground">
