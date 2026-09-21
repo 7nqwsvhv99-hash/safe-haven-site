@@ -94,7 +94,7 @@ export default function AdoptPage() {
   return (
     <div className="flex flex-col">
       <section className="hero-gradient">
-        <div className="container-custom section-padding">
+        <div className="container-custom px-4 pt-10 pb-8 md:px-6 md:pt-12 md:pb-9 lg:pt-14 lg:pb-10">
           <div className="max-w-3xl mx-auto text-center space-y-4">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Meet Your New Best Friend</h1>
             <p className="text-lg text-muted-foreground md:whitespace-nowrap">
@@ -104,7 +104,7 @@ export default function AdoptPage() {
         </div>
       </section>
 
-      <section className="section-padding bg-white border-b">
+      <section className="bg-white border-b px-4 py-7 md:px-6 md:py-8">
         <div className="container-custom">
           <div className="space-y-4">
             <div className="relative max-w-2xl">
