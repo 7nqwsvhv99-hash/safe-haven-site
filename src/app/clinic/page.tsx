@@ -142,23 +142,22 @@ export default function ClinicPage() {
                 Take a quick look behind the scenes at the people, patients, and
                 teamwork that make each clinic day possible.
               </p>
+
+              <div className="mt-7 border-t border-primary/15 pt-6">
+                <p className="text-lg italic leading-relaxed text-foreground">
+                  “We love Safe Haven because it is a true safe haven for these precious animals.
+                  They were both out of their box and snuggled together in their favorite place.
+                  Thank you so much for being such wonderful people.”
+                </p>
+                <p className="mt-3 text-sm font-semibold text-primary">
+                  Dawn M. · Clinic Client
+                </p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-white pb-10 md:pb-12">
-        <div className="container-custom max-w-5xl">
-          <Card className="border-primary/15 bg-primary/5 p-7 text-center md:p-9">
-            <p className="mx-auto max-w-4xl text-lg italic leading-relaxed text-foreground md:text-xl">
-              “We love Safe Haven because it is a miraculous true Safe Haven for these precious animals and all of the people there are truly angels for all these animals! They are both out of their box and snuggled together in the living room in their favorite place! Thank you so much for being such wonderful people! Xo”
-            </p>
-            <p className="mt-4 text-sm font-semibold text-primary">
-              Dawn M. · Clinic Client
-            </p>
-          </Card>
-        </div>
-      </section>
 
       <section id="services" className="bg-white section-padding scroll-mt-24">
         <div className="container-custom max-w-5xl">
