@@ -18,7 +18,16 @@ export function Testimonials() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [paused, setPaused] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
   const carouselRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const media = window.matchMedia("(min-width: 768px)")
+    const update = () => setIsDesktop(media.matches)
+    update()
+    media.addEventListener("change", update)
+    return () => media.removeEventListener("change", update)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -44,9 +53,11 @@ export function Testimonials() {
     }
   }, [])
 
+  const shouldLoop = testimonials.length > (isDesktop ? 3 : 1)
+
   useEffect(() => {
     const carousel = carouselRef.current
-    if (!carousel || testimonials.length < 2) return
+    if (!carousel || !shouldLoop) return
 
     const positionAtMiddleSet = () => {
       const cycleWidth = carousel.scrollWidth / 3
@@ -60,10 +71,10 @@ export function Testimonials() {
       cancelAnimationFrame(frame)
       window.removeEventListener("resize", positionAtMiddleSet)
     }
-  }, [testimonials.length])
+  }, [shouldLoop, testimonials.length])
 
   useEffect(() => {
-    if (paused || testimonials.length < 2) return
+    if (paused || !shouldLoop) return
 
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
     if (reduceMotion) return
@@ -73,11 +84,11 @@ export function Testimonials() {
     }, 5200)
 
     return () => window.clearInterval(timer)
-  }, [paused, testimonials.length])
+  }, [paused, shouldLoop, testimonials.length])
 
   function handleCarouselScroll() {
     const carousel = carouselRef.current
-    if (!carousel || testimonials.length < 2) return
+    if (!carousel || !shouldLoop) return
 
     const cycleWidth = carousel.scrollWidth / 3
     if (!cycleWidth) return
@@ -106,10 +117,9 @@ export function Testimonials() {
 
   if (!isLoading && testimonials.length === 0) return null
 
-  const loopedTestimonials =
-    testimonials.length > 1
-      ? [...testimonials, ...testimonials, ...testimonials]
-      : testimonials
+  const loopedTestimonials = shouldLoop
+    ? [...testimonials, ...testimonials, ...testimonials]
+    : testimonials
 
   return (
     <section className="bg-white py-14 md:py-16">
@@ -150,14 +160,16 @@ export function Testimonials() {
           onFocusCapture={() => setPaused(true)}
           onBlurCapture={() => setPaused(false)}
         >
-          <button
-            type="button"
-            aria-label="Previous adoption story"
-            onClick={() => scrollByCard(-1)}
-            className="absolute left-2 md:left-5 top-1/2 z-10 -translate-y-1/2 h-11 w-11 rounded-full border bg-white/95 shadow-md flex items-center justify-center hover:bg-white"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
+          {shouldLoop && (
+            <button
+              type="button"
+              aria-label="Previous adoption story"
+              onClick={() => scrollByCard(-1)}
+              className="absolute left-2 md:left-5 top-1/2 z-10 -translate-y-1/2 h-11 w-11 rounded-full border bg-white/95 shadow-md flex items-center justify-center hover:bg-white"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
 
           <div
             ref={carouselRef}
@@ -217,14 +229,16 @@ export function Testimonials() {
             })}
           </div>
 
-          <button
-            type="button"
-            aria-label="Next adoption story"
-            onClick={() => scrollByCard(1)}
-            className="absolute right-2 md:right-5 top-1/2 z-10 -translate-y-1/2 h-11 w-11 rounded-full border bg-white/95 shadow-md flex items-center justify-center hover:bg-white"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
+          {shouldLoop && (
+            <button
+              type="button"
+              aria-label="Next adoption story"
+              onClick={() => scrollByCard(1)}
+              className="absolute right-2 md:right-5 top-1/2 z-10 -translate-y-1/2 h-11 w-11 rounded-full border bg-white/95 shadow-md flex items-center justify-center hover:bg-white"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          )}
         </div>
       )}
     </section>
