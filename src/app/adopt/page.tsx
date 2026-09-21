@@ -104,7 +104,7 @@ export default function AdoptPage() {
         </div>
       </section>
 
-      <section className="bg-white border-b px-4 py-7 md:px-6 md:py-8">
+      <section className="bg-white border-b px-4 pt-7 pb-5 md:px-6 md:pt-8 md:pb-6">
         <div className="container-custom">
           <div className="space-y-4">
             <div className="relative max-w-2xl">
@@ -139,7 +139,7 @@ export default function AdoptPage() {
         </div>
       </section>
 
-      <section className="section-padding bg-slate-50 min-h-[420px]">
+      <section className="bg-slate-50 min-h-[420px] px-4 pt-6 pb-12 md:px-6 md:pt-8 md:pb-16 lg:pb-20">
         <div className="container-custom">
           {isLoading && <p className="text-center text-muted-foreground py-12">Loading Safe Haven animals...</p>}
 
