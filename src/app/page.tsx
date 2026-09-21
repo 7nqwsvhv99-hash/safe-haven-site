@@ -171,38 +171,46 @@ export default function HomePage() {
       {/* About Safe Haven */}
       <section className="section-padding bg-primary/5">
         <div className="container-custom">
-          <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-8 md:gap-14 items-center max-w-6xl mx-auto">
-            <div className="flex justify-center">
-              <img
-                src="/images/safe-haven-logo-header.png"
-                alt="Safe Haven Humane Society"
-                width={320}
-                height={320}
-                className="h-60 w-60 md:h-72 md:w-72 object-contain mix-blend-multiply"
-              />
-            </div>
-            <div className="space-y-5 text-center md:text-left">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary mb-2">
-                  About Safe Haven Humane Society
-                </p>
-                <h2 className="text-3xl md:text-4xl font-bold">
-                  A safe place for animals. A stronger community for the people who care about them.
-                </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.02fr_0.98fr] gap-10 lg:gap-16 items-center max-w-6xl mx-auto">
+            <div className="relative pb-16 sm:pb-10 lg:pb-14">
+              <div className="overflow-hidden rounded-3xl bg-white shadow-sm">
+                <img
+                  src="/images/about-safe-haven-community.png"
+                  alt="Safe Haven Humane Society volunteers and supporters gathered beside the Safe Haven van"
+                  className="aspect-[4/3] w-full object-cover"
+                />
               </div>
-              <p className="text-lg text-muted-foreground">
+
+              <div className="absolute bottom-0 left-5 right-5 rounded-2xl border border-primary/15 bg-white p-5 shadow-lg sm:left-auto sm:right-6 sm:w-[310px] md:p-6">
+                <div className="text-4xl md:text-5xl font-bold tracking-tight text-primary">
+                  4,193
+                </div>
+                <h3 className="mt-1 text-base md:text-lg font-bold">
+                  Animals Adopted Through Safe Haven
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  More than four thousand cats and dogs have found homes through Safe Haven.
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center lg:text-left">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+                About Safe Haven Humane Society
+              </p>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold leading-tight tracking-tight">
+                A safe place for animals.
+                <span className="block mt-1">A stronger community for the people who care about them.</span>
+              </h2>
+              <p className="mt-6 text-lg leading-relaxed text-muted-foreground">
                 Safe Haven provides compassionate care for adoptable cats and dogs, helps them find suitable homes, promotes humane treatment, and supports spay/neuter programs that reduce pet overpopulation in our community.
               </p>
-              <div className="rounded-2xl border border-primary/20 bg-white/70 p-5 text-center md:text-left">
-                <div className="text-4xl md:text-5xl font-bold text-primary">4,193</div>
-                <h3 className="text-lg font-bold mt-1">Animals Adopted Through Safe Haven</h3>
-                <p className="text-sm text-muted-foreground mt-2">
-                  More than four thousand cats and dogs have found homes through Safe Haven Humane Society.
-                </p>
+
+              <div className="mt-8">
+                <Button asChild variant="outline" size="lg">
+                  <Link href="/about">Learn More About Safe Haven</Link>
+                </Button>
               </div>
-              <Button asChild variant="outline" size="lg">
-                <Link href="/about">Learn More About Safe Haven</Link>
-              </Button>
             </div>
           </div>
         </div>
