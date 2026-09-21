@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card"
 import { FeaturedPets } from "@/components/featured-pets"
 import { CommunityImpact } from "@/components/community-impact"
 import { Testimonials } from "@/components/testimonials"
+import { UpcomingEvents } from "@/components/upcoming-events"
 import { Heart, Search, FileCheck, Home as HomeIcon, Users, DollarSign, Instagram, Facebook } from "lucide-react"
 
 export default function HomePage() {
@@ -160,6 +161,8 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <UpcomingEvents />
 
       <CommunityImpact />
 
