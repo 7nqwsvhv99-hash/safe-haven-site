@@ -97,8 +97,8 @@ export default function AdoptPage() {
         <div className="container-custom section-padding">
           <div className="max-w-3xl mx-auto text-center space-y-4">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Meet Your New Best Friend</h1>
-            <p className="text-lg text-muted-foreground">
-              Meet cats and dogs looking for the right home, and find the companion who feels like the right fit for yours.
+            <p className="text-lg text-muted-foreground md:whitespace-nowrap">
+              Every adoption begins with a connection. Yours could be waiting here.
             </p>
           </div>
         </div>
@@ -224,36 +224,55 @@ export default function AdoptPage() {
       </section>
 
       <section className="section-padding bg-white">
-        <div className="container-custom max-w-4xl">
-          <div className="text-center space-y-6">
+        <div className="container-custom max-w-6xl">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
+              Your next step
+            </p>
             <h2 className="text-3xl md:text-4xl font-bold">Ready to Adopt?</h2>
-            <div className="max-w-3xl mx-auto space-y-4 text-muted-foreground">
-              <p>Our adoption process is straightforward and supportive. We’re here to help you find the right match.</p>
-              <p className="text-sm">
-                All animals are spayed or neutered before going home with an adopter. Animals are also vaccinated before adoption unless they are too young for a required vaccine; in those cases, adopters can return to Safe Haven&apos;s clinic for rabies and FVRCP/DAPP when due.
-              </p>
-              <p>
-                <strong className="text-foreground">We recommend applying before your visit for the smoothest adoption experience.</strong>{" "}
-                You’re welcome to meet our animals before applying, but an approved application is required before an adoption can be completed. Once you’ve found a pet you’d like to adopt, we’ll review your application and contact your references.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 text-left pt-6">
-              {[
-                ["1", "Apply", "Tell us about your home, lifestyle, and what you’re looking for."],
-                ["2", "Review", "We’ll review your application, contact your references, and follow up if we need more information."],
-                ["3", "Meet & Match", "Meet animals who may be a good fit for your household and needs."],
-                ["4", "Adopt", "Once you’re approved and have found the right match, complete the adoption and welcome your new companion home."],
-              ].map(([number, title, description]) => (
-                <div key={number} className="space-y-2">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">{number}</div>
-                  <h3 className="font-semibold">{title}</h3>
-                  <p className="text-sm text-muted-foreground">{description}</p>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Start with an application. We&apos;ll help you move from interest to the right match.
+            </p>
+          </div>
+
+          <div className="relative mt-12 grid grid-cols-1 gap-8 md:grid-cols-4">
+            <div className="absolute left-[12.5%] right-[12.5%] top-5 hidden h-px bg-primary/20 md:block" aria-hidden="true" />
+            {[
+              ["1", "Apply", "Tell us about your home, lifestyle, and what you’re looking for."],
+              ["2", "Review", "We’ll review your application, contact your references, and follow up if we need more information."],
+              ["3", "Meet & Match", "Meet animals who may be a good fit for your household and needs."],
+              ["4", "Adopt", "Once you’re approved and have found the right match, complete the adoption and welcome your new companion home."],
+            ].map(([number, title, description]) => (
+              <div key={number} className="relative text-center md:text-left">
+                <div className="relative z-10 mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary font-bold text-white md:mx-0">
+                  {number}
                 </div>
-              ))}
+                <h3 className="mt-4 font-bold text-lg">{title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            <div className="rounded-2xl bg-primary/5 p-6 md:p-7">
+              <h3 className="text-xl font-bold">Before you visit</h3>
+              <p className="mt-3 leading-relaxed text-muted-foreground">
+                <strong className="text-foreground">We recommend applying before your visit for the smoothest adoption experience.</strong>{" "}
+                You&apos;re welcome to meet our animals before applying, but an approved application is required before an adoption can be completed.
+              </p>
             </div>
-            <div className="pt-4">
-              <Button asChild size="lg"><Link href="/adoption-application">Start a General Adoption Application</Link></Button>
+            <div className="rounded-2xl border p-6 md:p-7">
+              <h3 className="text-xl font-bold">What&apos;s included</h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                Animals are spayed or neutered before going home and receive age-appropriate vaccinations. If an animal is too young for a required vaccine, adopters can return to Safe Haven&apos;s clinic for rabies and FVRCP/DAPP when due.
+              </p>
             </div>
+          </div>
+
+          <div className="mt-10 text-center">
+            <Button asChild size="lg">
+              <Link href="/adoption-application">Start a General Adoption Application</Link>
+            </Button>
           </div>
         </div>
       </section>
