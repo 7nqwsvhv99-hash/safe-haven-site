@@ -53,6 +53,10 @@ export default async function FosterPortalPage() {
     const unableToContinue = formData.get("unableToContinue") === "on";
     const needsAttention = formData.get("needsAttention") === "on";
     const priority = String(formData.get("priority") || "Normal");
+    const photos = formData
+      .getAll("photos")
+      .filter((item): item is File => item instanceof File && item.size > 0)
+      .slice(0, 4);
     const invalidPhoto = photos.some(
       (photo) => !photo.type.startsWith("image/") || photo.size > 5 * 1024 * 1024
     );
