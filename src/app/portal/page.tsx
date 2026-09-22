@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight } from "lucide-react";
+import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight, UserCog } from "lucide-react";
 import { getPortalContext } from "@/lib/portal";
 
 export default async function PortalPage() {
@@ -27,6 +27,13 @@ export default async function PortalPage() {
       href: "/portal/staff",
       icon: ShieldCheck,
       show: context.canStaff,
+    },
+    {
+      title: "Administrator",
+      description: "Manage portal access and assign one or more roles to each person's single sign-in.",
+      href: "/portal/admin/access",
+      icon: UserCog,
+      show: context.isAdministrator,
     },
   ].filter((section) => section.show);
 
@@ -57,7 +64,7 @@ export default async function PortalPage() {
           </div>
 
           {sections.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
               {sections.map((section) => {
                 const Icon = section.icon;
                 return (
