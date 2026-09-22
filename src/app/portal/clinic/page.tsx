@@ -170,13 +170,13 @@ export default async function ClinicPortalPage() {
                             </div>
                             {date.alert && <span className="text-xs font-semibold text-primary">{date.alert}</span>}
                           </div>
-                          <div className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-                            <div><span className="block text-xs text-muted-foreground">Veterinarian</span><strong>{date.veterinarianNames.length ? date.veterinarianNames.join(", ") : "Unfilled"}</strong></div>
-                            <div><span className="block text-xs text-muted-foreground">Vet Tech</span><strong>{date.vetTechNames.length ? date.vetTechNames.join(", ") : "Unfilled"}</strong></div>
+                          <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-6">
+                            <div className="sm:col-span-3"><span className="block text-xs text-muted-foreground">Veterinarian</span><strong>{date.veterinarianNames.length ? date.veterinarianNames.join(", ") : "Unfilled"}</strong></div>
+                            <div className="sm:col-span-3"><span className="block text-xs text-muted-foreground">Vet Tech</span><strong>{date.vetTechNames.length ? date.vetTechNames.join(", ") : "Unfilled"}</strong></div>
                             {(["Front Room System", "Back Room System", "Autoclave"] as const).map((role) => (
-                              <div key={role}><span className="block text-xs text-muted-foreground">{role}</span><strong>{date.volunteerAssignments[role]?.join(", ") || "Unfilled"}</strong></div>
+                              <div key={role} className="sm:col-span-2"><span className="block whitespace-nowrap text-xs text-muted-foreground">{role}</span><strong>{date.volunteerAssignments[role]?.join(", ") || "Unfilled"}</strong></div>
                             ))}
-                            <div className="sm:col-span-3"><span className="block text-xs text-muted-foreground">General Volunteers</span><strong>{[
+                            <div className="sm:col-span-6"><span className="block text-xs text-muted-foreground">General Volunteers</span><strong>{[
                               ...(date.volunteerAssignments["Front Room Support"] || []),
                               ...(date.volunteerAssignments["Surgery/Recovery Floater"] || []),
                               ...(date.volunteerAssignments["General Volunteer"] || []),
