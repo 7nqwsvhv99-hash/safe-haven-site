@@ -95,24 +95,31 @@ export default async function FosterPortalPage() {
             </p>
           </div>
 
-          {!data.foster ? (
-            <div className="rounded-3xl border bg-white p-8 shadow-sm">
-              <h2 className="text-2xl font-bold">
-                We could not match this sign-in to an approved foster application.
-              </h2>
-              <p className="mt-3 max-w-2xl text-muted-foreground">
-                Foster access is normally recognized when the email on your sign-in matches an approved Safe Haven foster application. An administrator can also grant Foster access while records are being updated.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-8">
+          <div className="space-y-8">
+            {!data.foster && (
+              <div className="rounded-3xl border border-primary/15 bg-primary/5 p-6">
+                <p className="font-semibold">
+                  You can access the Foster Portal, but this account is not linked to an approved foster application.
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  You can still view foster resources and support information. Personalized foster placement details will appear only when this sign-in email matches an approved foster application.
+                </p>
+              </div>
+            )}
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
                 <div className="mb-5 flex items-center gap-3">
                   <HeartHandshake className="h-6 w-6 text-primary" />
                   <h2 className="text-2xl font-bold">My Foster</h2>
                 </div>
 
-                {data.placements.length ? (
+                {!data.foster ? (
+                  <div className="rounded-2xl bg-slate-50 p-5">
+                    <p className="font-semibold">No foster placement is linked to this account.</p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Administrators can still review the portal experience and foster resources from this page.
+                    </p>
+                  </div>
+                ) : data.placements.length ? (
                   <div className="space-y-6">
                     {data.placements.map((placement) => (
                       <div key={placement.id} className="rounded-2xl bg-slate-50 p-5 md:p-6">
@@ -328,7 +335,6 @@ export default async function FosterPortalPage() {
                 </section>
               </div>
             </div>
-          )}
         </div>
       </section>
     </div>
