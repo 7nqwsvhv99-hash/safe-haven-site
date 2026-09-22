@@ -114,7 +114,6 @@ export async function getPortalContext() {
     "Email",
     "Display Name",
     "Roles",
-    "Foster Access",
     "Active",
   ]);
 
@@ -124,7 +123,6 @@ export async function getPortalContext() {
   });
 
   const assignedRoles = asStrings(access?.fields.Roles) as PortalRole[];
-  if (Boolean(access?.fields["Foster Access"])) assignedRoles.push("Foster");
 
   const [volunteers, clinicMembers, fosterApplications] = await Promise.all([
     airtableList(TABLES.volunteers, ["Email", "Status"]),
@@ -197,7 +195,6 @@ export async function getPortalAccessRecords() {
     "Email",
     "Display Name",
     "Roles",
-    "Foster Access",
     "Active",
     "Notes",
   ]);
@@ -207,11 +204,7 @@ export async function getPortalAccessRecords() {
       id: record.id,
       email: asText(record.fields.Email),
       displayName: asText(record.fields["Display Name"]),
-      roles: [
-        ...(asStrings(record.fields.Roles) as PortalRole[]),
-        ...(Boolean(record.fields["Foster Access"]) ? (["Foster"] as PortalRole[]) : []),
-      ],
-      fosterAccess: Boolean(record.fields["Foster Access"]),
+      roles: asStrings(record.fields.Roles) as PortalRole[],
       active: Boolean(record.fields.Active),
       notes: asText(record.fields.Notes),
     }))
