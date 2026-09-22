@@ -8,7 +8,7 @@ export default function FosterPage() {
   return (
     <div className="flex flex-col">
       <section className="hero-gradient">
-        <div className="container-custom section-padding">
+        <div className="container-custom py-8 md:py-10 lg:py-12">
           <div className="max-w-3xl mx-auto text-center space-y-6">
             <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Become a Foster Home</h1>
             <p className="text-lg text-muted-foreground">
