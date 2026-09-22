@@ -31,7 +31,7 @@ export default function DonatePage() {
             <div className="space-y-6">
               <div className="overflow-hidden rounded-3xl bg-slate-100 shadow-sm">
                 <img
-                  src="/images/nellie/nellie-resting.webp"
+                  src="/images/nellie-resting.webp"
                   alt="Nellie, a young beagle, resting comfortably in foster care"
                   className="w-full h-auto object-cover max-h-[620px]"
                 />
@@ -41,7 +41,7 @@ export default function DonatePage() {
                 <figure className="space-y-2">
                   <div className="overflow-hidden rounded-2xl bg-slate-100">
                     <img
-                      src="/images/nellie/nellie-xray-before.webp"
+                      src="/images/nellie-xray-before.webp"
                       alt="X-ray showing Nellie's broken femur before orthopedic repair"
                       className="w-full h-auto"
                     />
@@ -54,7 +54,7 @@ export default function DonatePage() {
                 <figure className="space-y-2">
                   <div className="overflow-hidden rounded-2xl bg-slate-100">
                     <img
-                      src="/images/nellie/nellie-xray-after.webp"
+                      src="/images/nellie-xray-after.webp"
                       alt="X-ray showing Nellie's femur stabilized with a surgical plate and screws"
                       className="w-full h-auto"
                     />
@@ -74,7 +74,7 @@ export default function DonatePage() {
                     className="w-full h-auto"
                     aria-label="Video of Nellie"
                   >
-                    <source src="/videos/nellie/nellie-recovery.mp4" type="video/mp4" />
+                    <source src="/videos/nellie-recovery.mp4" type="video/mp4" />
                     Your browser does not support embedded video.
                   </video>
                 </div>
