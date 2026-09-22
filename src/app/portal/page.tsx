@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight, UserCog, HouseHeart } from "lucide-react";
+import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight, UserCog, PawPrint } from "lucide-react";
 import { getPortalContext } from "@/lib/portal";
 
 export default async function PortalPage() {
@@ -18,7 +18,7 @@ export default async function PortalPage() {
       title: "Foster Portal",
       description: "Current foster placements, care instructions, updates, resources, and support.",
       href: "/portal/foster",
-      icon: HouseHeart,
+      icon: PawPrint,
       show: context.canFoster,
     },
     {
