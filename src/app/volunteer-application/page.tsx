@@ -136,20 +136,21 @@ export default function VolunteerApplicationPage() {
           )}
         </Section>
 
-        <Section title="Community Service & Referral">
-          <div className="grid md:grid-cols-2 gap-5">
-            <Field label="Are You Volunteering to Complete School or Other Required Community-Service Hours? *">
-              <select name="communityService" className={selectClass} required value={communityService} onChange={(event)=>setCommunityService(event.target.value)}>
-                <option value="" disabled>Select one</option><option>Yes</option><option>No</option>
-              </select>
-            </Field>
-            <Field label="How Did You Hear About Us? *"><select name="howHeard" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Adopted from Safe Haven before</option><option>Internet search</option><option>Adoption event</option><option>Friend</option><option>Shelter</option><option>Another rescue</option><option>Facebook</option><option>Instagram</option><option>TikTok</option><option>Petfinder</option><option>Adopt-a-Pet</option><option>Other</option></select></Field>
-          </div>
+        <Section title="Community Service">
+          <Field label="Are You Volunteering to Complete School or Other Required Community-Service Hours? *">
+            <select name="communityService" className={selectClass} required value={communityService} onChange={(event)=>setCommunityService(event.target.value)}>
+              <option value="" disabled>Select one</option><option>Yes</option><option>No</option>
+            </select>
+          </Field>
           {communityService === "Yes" && (
             <Field label="Community-Service Details" note="Tell us the school or organization, number of hours required, and deadline if applicable.">
               <Textarea name="communityServiceDetails" />
             </Field>
           )}
+        </Section>
+
+        <Section title="Referral">
+          <Field label="How Did You Hear About Us? *"><select name="howHeard" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Adopted from Safe Haven before</option><option>Internet search</option><option>Adoption event</option><option>Friend</option><option>Shelter</option><option>Another rescue</option><option>Facebook</option><option>Instagram</option><option>TikTok</option><option>Petfinder</option><option>Adopt-a-Pet</option><option>Other</option></select></Field>
           <Field label="Referral Details" note="If a person, shelter, rescue, or other source referred you, tell us who."><Input name="howHeardDetails" /></Field>
         </Section>
 
