@@ -48,15 +48,15 @@ export default function ResourcesPage() {
   return (
     <div className="flex flex-col">
       <section className="hero-gradient">
-        <div className="container-custom section-padding">
-          <div className="mx-auto text-center space-y-6">
+        <div className="container-custom py-10 md:py-12 lg:py-14">
+          <div className="max-w-5xl mx-auto text-center space-y-6">
             <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
-              Help for Pet Owners
+              Community Resources
             </p>
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
-              Pet Owner Resources
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
+              Help for Pet Owners
             </h1>
-            <p className="mx-auto max-w-none text-lg text-muted-foreground md:w-max md:whitespace-nowrap">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
               Find trusted starting points for veterinary costs, low-cost spay and neuter services, and responsible rehoming.
             </p>
           </div>
