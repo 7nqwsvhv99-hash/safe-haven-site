@@ -23,6 +23,7 @@ const TABLES = {
   animals: "tbliTXWvG7gdf023E",
   medicalRecords: "tblpL1w9JWylKpwQT",
   fosterResources: "tblyMumQGKqH2oGvJ",
+  fosterUpdates: "tbl3B6nEH5a495vmS",
 } as const;
 
 export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Administrator";
@@ -386,7 +387,7 @@ export async function getFosterPortalData(email: string) {
     };
   }
 
-  const [placements, animals, resources] = await Promise.all([
+  const [placements, animals, resources, fosterUpdates] = await Promise.all([
     airtableList(
       TABLES.fosterPlacements,
       [
@@ -414,6 +415,30 @@ export async function getFosterPortalData(email: string) {
       "Adoption Status",
     ]),
     resourcesPromise,
+    airtableList(
+      TABLES.fosterUpdates,
+      [
+        "Update ID",
+        "Foster Placement",
+        "Animal",
+        "Submitted By",
+        "Submitted At",
+        "Update Type",
+        "General Progress",
+        "Appetite / Eating",
+        "Behavior",
+        "Medication / Treatment Update",
+        "Supply Need",
+        "Health Concern",
+        "Behavior Concern",
+        "Unable to Continue Placement",
+        "Needs Staff Attention",
+        "Priority",
+        "Staff Response",
+        "Resolution Status",
+      ],
+      { sort: [{ field: "Submitted At", direction: "desc" }] }
+    ),
   ]);
 
   const animalById = new Map(animals.map((record) => [record.id, record]));
@@ -455,6 +480,28 @@ export async function getFosterPortalData(email: string) {
         careInstructions: asText(record.fields["Care Instructions / Notes"]),
         updateNotes: asText(record.fields["Foster Update Notes"]),
         animals: placementAnimals,
+        updates: fosterUpdates
+          .filter((update) => asStrings(update.fields["Foster Placement"]).includes(record.id))
+          .slice(0, 8)
+          .map((update) => ({
+            id: update.id,
+            updateId: asText(update.fields["Update ID"]),
+            submittedAt: safeDate(update.fields["Submitted At"]),
+            submittedBy: asText(update.fields["Submitted By"]),
+            updateType: asText(update.fields["Update Type"]),
+            generalProgress: asText(update.fields["General Progress"]),
+            appetite: asText(update.fields["Appetite / Eating"]),
+            behavior: asText(update.fields.Behavior),
+            medication: asText(update.fields["Medication / Treatment Update"]),
+            supplyNeed: asText(update.fields["Supply Need"]),
+            healthConcern: asText(update.fields["Health Concern"]),
+            behaviorConcern: asText(update.fields["Behavior Concern"]),
+            unableToContinue: Boolean(update.fields["Unable to Continue Placement"]),
+            needsStaffAttention: Boolean(update.fields["Needs Staff Attention"]),
+            priority: asText(update.fields.Priority),
+            staffResponse: asText(update.fields["Staff Response"]),
+            resolutionStatus: asText(update.fields["Resolution Status"]),
+          })),
       };
     });
 
@@ -595,7 +642,7 @@ export async function getClinicPortalData(email: string) {
 }
 
 export async function getStaffPortalData() {
-  const [needs, inventory, events, clinicDates, volunteerApps, announcements] = await Promise.all([
+  const [needs, inventory, events, clinicDates, volunteerApps, announcements, fosterUpdates] = await Promise.all([
     getCurrentNeeds(false),
     airtableList(TABLES.inventory, [
       "Item Name",
@@ -622,6 +669,25 @@ export async function getStaffPortalData() {
       "Next Follow-Up Date",
     ]),
     getPortalAnnouncements(["Staff"]),
+    airtableList(
+      TABLES.fosterUpdates,
+      [
+        "Update ID",
+        "Submitted By",
+        "Submitted At",
+        "Update Type",
+        "General Progress",
+        "Supply Need",
+        "Health Concern",
+        "Behavior Concern",
+        "Unable to Continue Placement",
+        "Needs Staff Attention",
+        "Priority",
+        "Staff Response",
+        "Resolution Status",
+      ],
+      { sort: [{ field: "Submitted At", direction: "desc" }] }
+    ),
   ]);
 
   const now = Date.now();
@@ -663,6 +729,34 @@ export async function getStaffPortalData() {
     return !["Approved", "Declined", "Closed"].includes(status);
   });
 
+  const fosterAlerts = fosterUpdates
+    .filter((record) => {
+      const status = asText(record.fields["Resolution Status"]);
+      return (
+        !["Resolved", "Closed"].includes(status) &&
+        (
+          Boolean(record.fields["Needs Staff Attention"]) ||
+          Boolean(record.fields["Unable to Continue Placement"]) ||
+          ["High", "Urgent"].includes(asText(record.fields.Priority))
+        )
+      );
+    })
+    .map((record) => ({
+      id: record.id,
+      updateId: asText(record.fields["Update ID"]),
+      submittedBy: asText(record.fields["Submitted By"]),
+      submittedAt: safeDate(record.fields["Submitted At"]),
+      updateType: asText(record.fields["Update Type"]),
+      progress: asText(record.fields["General Progress"]),
+      supplyNeed: asText(record.fields["Supply Need"]),
+      healthConcern: asText(record.fields["Health Concern"]),
+      behaviorConcern: asText(record.fields["Behavior Concern"]),
+      unableToContinue: Boolean(record.fields["Unable to Continue Placement"]),
+      priority: asText(record.fields.Priority) || "Normal",
+      staffResponse: asText(record.fields["Staff Response"]),
+      resolutionStatus: asText(record.fields["Resolution Status"]) || "New",
+    }));
+
   return {
     announcements,
     needs,
@@ -677,11 +771,14 @@ export async function getStaffPortalData() {
     inventoryAttentionCount: inventoryAttention.length,
     upcomingEvents,
     clinicAlerts,
+    fosterAlerts,
+    fosterAlertCount: fosterAlerts.length,
     volunteerFollowUpCount: volunteerFollowUps.length,
     actionRequiredCount:
       needs.filter((need) => ["High", "Urgent"].includes(need.priority)).length +
       inventoryAttention.length +
       clinicAlerts.length +
+      fosterAlerts.length +
       volunteerFollowUps.length,
   };
 }
