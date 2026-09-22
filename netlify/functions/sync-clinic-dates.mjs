@@ -2,6 +2,7 @@ const CLINICDAY_BASE_ID = "app3AcoD2G64aMsEz";
 const CLINICDAY_TABLE_ID = "tblnOw4Qr5AvCRWvQ";
 const SHELTER_BASE_ID = "app2vpch2JJVrP9pu";
 const SHELTER_TABLE_ID = "tblJvWn5fh7Rtfp3O";
+const DEFAULT_VOLUNTEER_TARGET = 5;
 
 async function airtableList(baseId, tableId, fields) {
   const token = process.env.AIRTABLE_ACCESS_TOKEN;
@@ -130,6 +131,7 @@ export default async () => {
       await airtableCreate({
         ...fields,
         "Scheduling Stage": "Proposed",
+        "Volunteer Target": DEFAULT_VOLUNTEER_TARGET,
       });
       created += 1;
     }
