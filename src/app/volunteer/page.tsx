@@ -43,7 +43,7 @@ export default function VolunteerPage() {
             Volunteer Opportunities
           </h2>
           <p className="text-center text-muted-foreground mx-auto mb-12 md:whitespace-nowrap">
-            Explore hands-on animal care, events, transportation, creative work, and behind-the-scenes support.
+            Explore hands-on animal care, clinic support, events, transportation, creative work, and behind-the-scenes opportunities.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {volunteerRoles.map((role) => (
@@ -182,6 +182,24 @@ const volunteerRoles = [
     icon: <ClipboardList className="h-5 w-5 text-primary" />,
     description:
       "Help with applications, data entry, phone calls, and other behind-the-scenes tasks.",
+  },
+  {
+    title: "Clinic Instrument Sterilization",
+    icon: <PackageOpen className="h-5 w-5 text-primary" />,
+    description:
+      "Clean, wrap, and sterilize surgical instruments using the autoclave so fresh instrument packs are ready for each surgery.",
+  },
+  {
+    title: "Clinic Front Room",
+    icon: <Users className="h-5 w-5 text-primary" />,
+    description:
+      "Help keep clinic day organized by checking animals in, contacting owners when their animals are ready, and assisting with pickup and checkout.",
+  },
+  {
+    title: "Clinic Back Room Documentation",
+    icon: <ClipboardList className="h-5 w-5 text-primary" />,
+    description:
+      "Keep patient records accurate during clinic by recording surgery details, vaccines, treatments, and other services as animals move through surgery and recovery.",
   },
 ]
 
