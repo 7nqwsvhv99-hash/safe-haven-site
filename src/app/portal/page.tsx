@@ -71,7 +71,7 @@ export default async function PortalPage() {
           </div>
 
           {sections.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-5">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
               {sections.map((section) => {
                 const Icon = section.icon;
                 return (
