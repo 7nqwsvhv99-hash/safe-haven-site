@@ -55,7 +55,14 @@ export default async function PortalPage() {
               </p>
               <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Team Portal</h1>
               <p className="mt-4 max-w-2xl text-muted-foreground">
-                Welcome{context.displayName ? `, ${context.displayName}` : ""}. Your assigned roles are shown below.{context.isAdministrator ? " Administrator access also allows you to open every portal area." : ""}
+                <span className="block">
+                  Welcome{context.displayName ? `, ${context.displayName}` : ""}. Your assigned roles are shown below.
+                </span>
+                {context.isAdministrator && (
+                  <span className="block">
+                    Administrator access also allows you to open every portal area.
+                  </span>
+                )}
               </p>
               {context.roles.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
