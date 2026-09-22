@@ -57,10 +57,15 @@ export default async function ClinicPortalPage() {
 
   async function saveReconfirmation(formData: FormData) {
     "use server";
-    await requirePortalRole("Clinic Team");
+    const current = await requirePortalRole("Clinic Team");
+    const latest = await getClinicPortalData(current.email);
     const responseId = String(formData.get("responseId") || "");
     const value = String(formData.get("reconfirmation") || "");
-    if (!responseId || !["Yes, still attending", "No, can no longer attend"].includes(value)) return;
+    if (
+      !responseId ||
+      !["Yes, still attending", "No, can no longer attend"].includes(value) ||
+      !latest.dates.some((item) => item.responseId === responseId)
+    ) return;
 
     await airtableUpdate(TABLES.clinicResponses, responseId, {
       "One-Week Reconfirmation": value,
