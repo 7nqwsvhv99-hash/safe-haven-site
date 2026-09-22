@@ -562,9 +562,12 @@ export async function getClinicPortalData(email: string) {
     airtableList(TABLES.clinicResponses, [
       "Clinic Date",
       "Team Member",
+      "Team Member Name",
       "Initial Response",
       "One-Week Reconfirmation",
       "Final Attendance Plan",
+      "Confirmed Vet Score",
+      "Confirmed Vet Tech Score",
       "Notes",
     ]),
     getPortalAnnouncements(["Clinic Team"]),
@@ -595,6 +598,23 @@ export async function getClinicPortalData(email: string) {
   );
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const confirmedNamesByDate = new Map<string, { veterinarians: string[]; vetTechs: string[] }>();
+  responses.forEach((response) => {
+    const names = asStrings(response.fields["Team Member Name"]);
+    if (!names.length) return;
+
+    asStrings(response.fields["Clinic Date"]).forEach((dateId) => {
+      const confirmed = confirmedNamesByDate.get(dateId) || { veterinarians: [], vetTechs: [] };
+      if ((asNumber(response.fields["Confirmed Vet Score"]) || 0) > 0) {
+        confirmed.veterinarians.push(...names);
+      }
+      if ((asNumber(response.fields["Confirmed Vet Tech Score"]) || 0) > 0) {
+        confirmed.vetTechs.push(...names);
+      }
+      confirmedNamesByDate.set(dateId, confirmed);
+    });
+  });
 
   const memberResponses = responses
     .filter((record) => asStrings(record.fields["Team Member"]).includes(member.id))
@@ -628,8 +648,8 @@ export async function getClinicPortalData(email: string) {
         date: safeDate(record.fields["Clinic Date"]),
         type: asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]),
         stage: asText(record.fields["Scheduling Stage"]),
-        veterinarians: asNumber(record.fields["Confirmed Veterinarians"]),
-        vetTechs: asNumber(record.fields["Confirmed Vet Techs"]),
+        veterinarianNames: confirmedNamesByDate.get(record.id)?.veterinarians || [],
+        vetTechNames: confirmedNamesByDate.get(record.id)?.vetTechs || [],
         volunteers: asNumber(record.fields["Confirmed Clinic Volunteers"]),
         volunteerTarget: asNumber(record.fields["Volunteer Target"]),
         alert: asText(record.fields["Staffing Alert"]),
