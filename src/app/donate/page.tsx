@@ -18,7 +18,7 @@ export default function DonatePage() {
               Make a Donation. Make a Difference.
             </h1>
             <p className="text-lg text-muted-foreground">
-              Your support helps Safe Haven care for animals, make spay/neuter services more accessible, and provide food and other support across our community.
+              Your support helps Safe Haven care for animals and provide essential services across our community.
             </p>
           </div>
         </div>
