@@ -33,6 +33,9 @@ const interestOptions = [
   "Social Media & Content",
   "Administrative Support",
   "Fundraising & Event Support",
+  "Clinic Team – Instrument Sterilization",
+  "Clinic Team – Front Room",
+  "Clinic Team – Back Room Documentation",
 ]
 
 export default function VolunteerApplicationPage() {
