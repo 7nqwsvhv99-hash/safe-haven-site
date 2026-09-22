@@ -360,15 +360,13 @@ export default function DonatePage() {
       </section>
 
       {/* Nonprofit note */}
-      <section className="section-padding bg-primary/5">
+      <section className="bg-primary/5 py-8 md:py-10">
         <div className="container-custom max-w-5xl">
-          <div className="rounded-2xl bg-slate-50 p-6 md:p-8 text-center">
-            <div className="space-y-2 text-sm md:text-base text-muted-foreground">
-              <p>Safe Haven Humane Society is a 501(c)(3) nonprofit organization. Questions about giving or directing a larger gift?</p>
-              <p>
-                Call <a href="tel:815-858-2265" className="font-semibold text-primary hover:underline">(815) 858-2265</a> or email <a href="mailto:safehaven1471@gmail.com" className="font-semibold text-primary hover:underline">safehaven1471@gmail.com</a>.
-              </p>
-            </div>
+          <div className="text-center space-y-2 text-sm md:text-base text-muted-foreground">
+            <p>Safe Haven Humane Society is a 501(c)(3) nonprofit organization. Questions about giving or directing a larger gift?</p>
+            <p>
+              Call <a href="tel:815-858-2265" className="font-semibold text-primary hover:underline">(815) 858-2265</a> or email <a href="mailto:safehaven1471@gmail.com" className="font-semibold text-primary hover:underline">safehaven1471@gmail.com</a>.
+            </p>
           </div>
         </div>
       </section>
