@@ -10,7 +10,7 @@ import {
   PortalRole,
 } from "@/lib/portal";
 
-const coreRoles: Exclude<PortalRole, "Foster">[] = ["Volunteer", "Clinic Team", "Staff", "Administrator"];
+const portalRoles: PortalRole[] = ["Volunteer", "Foster", "Clinic Team", "Staff", "Administrator"];
 
 export default async function PortalAccessPage() {
   await requireAdministrator();
@@ -22,16 +22,14 @@ export default async function PortalAccessPage() {
 
     const email = String(formData.get("email") || "").trim().toLowerCase();
     const displayName = String(formData.get("displayName") || "").trim();
-    const roles = coreRoles.filter((role) => formData.get(role) === "on");
-    const fosterAccess = formData.get("Foster") === "on";
+    const roles = portalRoles.filter((role) => formData.get(role) === "on");
 
-    if (!email || (roles.length === 0 && !fosterAccess)) return;
+    if (!email || roles.length === 0) return;
 
     await airtableCreate(TABLES.portalAccess, {
       Email: email,
       "Display Name": displayName,
       Roles: roles,
-      "Foster Access": fosterAccess,
       Active: true,
     });
 
@@ -43,14 +41,12 @@ export default async function PortalAccessPage() {
     await requireAdministrator();
 
     const recordId = String(formData.get("recordId") || "");
-    const roles = coreRoles.filter((role) => formData.get(role) === "on");
-    const fosterAccess = formData.get("Foster") === "on";
+    const roles = portalRoles.filter((role) => formData.get(role) === "on");
     const active = formData.get("active") === "on";
-    if (!recordId || (roles.length === 0 && !fosterAccess)) return;
+    if (!recordId || roles.length === 0) return;
 
     await airtableUpdate(TABLES.portalAccess, recordId, {
       Roles: roles,
-      "Foster Access": fosterAccess,
       Active: active,
     });
 
