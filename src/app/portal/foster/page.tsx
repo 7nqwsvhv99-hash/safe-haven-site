@@ -14,6 +14,7 @@ import {
   requirePortalRole,
   getFosterPortalData,
   airtableCreate,
+  airtableUploadAttachment,
   airtableUpdate,
   TABLES,
 } from "@/lib/portal";
@@ -73,7 +74,7 @@ export default async function FosterPortalPage() {
       Boolean(behaviorConcern) ||
       ["High", "Urgent"].includes(priority);
 
-    await airtableCreate(TABLES.fosterUpdates, {
+    const createdUpdate = await airtableCreate(TABLES.fosterUpdates, {
       "Update ID": `FU-${Date.now()}`,
       "Foster Placement": [placementId],
       Animal: placement.animals.map((animal) => animal.id),
@@ -92,6 +93,17 @@ export default async function FosterPortalPage() {
       Priority: priority,
       "Resolution Status": attentionRequired ? "New" : "Closed",
     });
+
+    const photos = formData
+      .getAll("photos")
+      .filter((item): item is File => item instanceof File && item.size > 0)
+      .slice(0, 4);
+
+    if (createdUpdate?.id && photos.length) {
+      for (const photo of photos) {
+        await airtableUploadAttachment(createdUpdate.id, "fldv9ACtVoYX6KBRy", photo);
+      }
+    }
 
     await airtableUpdate(TABLES.fosterPlacements, placementId, {
       "Check-In Status": attentionRequired ? "Needs Attention" : "Check-In Completed",
@@ -323,9 +335,19 @@ export default async function FosterPortalPage() {
                                 <option>Urgent</option>
                               </select>
                             </label>
-                            <div className="rounded-xl bg-slate-50 p-4 text-sm text-muted-foreground">
-                              Photo attachments are stored in Airtable and can be added by staff. Direct foster photo upload will be connected separately.
-                            </div>
+                            <label className="rounded-xl bg-slate-50 p-4 text-sm font-medium">
+                              Add photos (optional)
+                              <input
+                                type="file"
+                                name="photos"
+                                accept="image/*"
+                                multiple
+                                className="mt-2 block w-full text-sm font-normal text-muted-foreground"
+                              />
+                              <span className="mt-2 block text-xs font-normal text-muted-foreground">
+                                Up to 4 images per update. Each image must be 5 MB or smaller.
+                              </span>
+                            </label>
                           </div>
 
                           <div className="mt-4 space-y-3">
@@ -364,6 +386,19 @@ export default async function FosterPortalPage() {
                                   {update.healthConcern && <p className="mt-2"><span className="font-semibold">Health:</span> {update.healthConcern}</p>}
                                   {update.behaviorConcern && <p className="mt-2"><span className="font-semibold">Behavior concern:</span> {update.behaviorConcern}</p>}
                                   {update.supplyNeed && <p className="mt-2"><span className="font-semibold">Supply need:</span> {update.supplyNeed}</p>}
+                                  {update.photos?.length > 0 && (
+                                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                      {update.photos.map((photo) => (
+                                        <a key={photo.url} href={photo.url} target="_blank" rel="noopener noreferrer">
+                                          <img
+                                            src={photo.url}
+                                            alt={photo.filename}
+                                            className="h-24 w-full rounded-lg object-cover"
+                                          />
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
                                   {update.staffResponse && (
                                     <div className="mt-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
                                       <p className="font-semibold">Safe Haven response</p>
