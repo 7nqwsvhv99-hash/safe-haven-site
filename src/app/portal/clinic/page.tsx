@@ -5,13 +5,15 @@ import { requirePortalRole, getClinicPortalData, airtableUpdate, TABLES } from "
 
 function formatDate(value: string) {
   if (!value) return "";
+  const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
+  const date = new Date(dateOnly ? `${value}T12:00:00` : value);
   return new Intl.DateTimeFormat("en-US", {
     weekday: "short",
     month: "short",
     day: "numeric",
     year: "numeric",
     timeZone: "America/Chicago",
-  }).format(new Date(value));
+  }).format(date);
 }
 
 export default async function ClinicPortalPage() {
@@ -37,7 +39,6 @@ export default async function ClinicPortalPage() {
           if (["Front Room System", "Back Room System", "Autoclave"].includes(skill)) allowed.add(skill);
           if (skill === "General Support") {
             allowed.add("Front Room Support");
-            allowed.add("Surgery/Recovery Floater");
           }
         });
         if (!allowed.has(requestedAssignment)) return;
@@ -123,8 +124,7 @@ export default async function ClinicPortalPage() {
                                   {data.member.skills.includes("Front Room System") && <option>Front Room System</option>}
                                   {data.member.skills.includes("Back Room System") && <option>Back Room System</option>}
                                   {data.member.skills.includes("Autoclave") && <option>Autoclave</option>}
-                                  {data.member.skills.includes("General Support") && <option>Front Room Support</option>}
-                                  {data.member.skills.includes("General Support") && <option>Surgery/Recovery Floater</option>}
+                                  {data.member.skills.includes("General Support") && <option value="Front Room Support">General Volunteer</option>}
                                 </select>
                               )}
                               <div className="flex gap-2">
@@ -173,11 +173,14 @@ export default async function ClinicPortalPage() {
                           <div className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
                             <div><span className="block text-xs text-muted-foreground">Veterinarian</span><strong>{date.veterinarianNames.length ? date.veterinarianNames.join(", ") : "Unfilled"}</strong></div>
                             <div><span className="block text-xs text-muted-foreground">Vet Tech</span><strong>{date.vetTechNames.length ? date.vetTechNames.join(", ") : "Unfilled"}</strong></div>
-                            <div><span className="block text-xs text-muted-foreground">Volunteer team goal</span><strong>{date.volunteers ?? 0}{date.volunteerTarget ? ` / ${date.volunteerTarget}` : ""}</strong></div>
-                            {(["Front Room System", "Back Room System", "Autoclave", "Front Room Support"] as const).map((role) => (
-                              <div key={role}><span className="block text-xs text-muted-foreground">{role}{role === "Front Room Support" ? " (preferred)" : ""}</span><strong>{date.volunteerAssignments[role]?.join(", ") || "Unfilled"}</strong></div>
+                            {(["Front Room System", "Back Room System", "Autoclave"] as const).map((role) => (
+                              <div key={role}><span className="block text-xs text-muted-foreground">{role}</span><strong>{date.volunteerAssignments[role]?.join(", ") || "Unfilled"}</strong></div>
                             ))}
-                            <div><span className="block text-xs text-muted-foreground">Surgery/Recovery Floaters (preferred)</span><strong>{date.volunteerAssignments["Surgery/Recovery Floater"]?.length || 0} / 2</strong></div>
+                            <div className="sm:col-span-3"><span className="block text-xs text-muted-foreground">General Volunteers</span><strong>{[
+                              ...(date.volunteerAssignments["Front Room Support"] || []),
+                              ...(date.volunteerAssignments["Surgery/Recovery Floater"] || []),
+                              ...(date.volunteerAssignments["General Volunteer"] || []),
+                            ].join(", ") || "None confirmed"}</strong></div>
                           </div>
                         </div>
                       ))}
