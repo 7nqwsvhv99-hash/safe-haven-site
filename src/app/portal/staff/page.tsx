@@ -11,8 +11,9 @@ import {
   Stethoscope,
   BarChart3,
   Megaphone,
+  HeartHandshake,
 } from "lucide-react";
-import { requirePortalRole, getStaffPortalData, airtableCreate, TABLES } from "@/lib/portal";
+import { requirePortalRole, getStaffPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
 function formatDate(value: string) {
   if (!value) return "";
@@ -65,6 +66,34 @@ export default async function StaffPortalPage() {
     revalidatePath("/portal/staff");
   }
 
+
+  async function resolveFosterAlert(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Staff");
+
+    const updateId = String(formData.get("updateId") || "");
+    const response = String(formData.get("response") || "").trim();
+    const resolutionStatus = String(formData.get("resolutionStatus") || "In Review");
+
+    if (!updateId) return;
+
+    const resolved = ["Resolved", "Closed"].includes(resolutionStatus);
+
+    await airtableUpdate(TABLES.fosterUpdates, updateId, {
+      "Staff Response": response,
+      "Resolution Status": resolutionStatus,
+      ...(resolved
+        ? {
+            "Resolved By": current.displayName,
+            "Resolved At": new Date().toISOString(),
+          }
+        : {}),
+    });
+
+    revalidatePath("/portal/staff");
+    revalidatePath("/portal/foster");
+  }
+
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-50">
       <section className="container-custom py-10 md:py-12">
@@ -86,7 +115,7 @@ export default async function StaffPortalPage() {
               ["Action Required", data.actionRequiredCount, AlertTriangle],
               ["Inventory Attention", data.inventoryAttentionCount, Boxes],
               ["Clinic Alerts", data.clinicAlerts.length, Stethoscope],
-              ["Volunteer Follow-Up", data.volunteerFollowUpCount, Users],
+              ["Foster Alerts", data.fosterAlertCount, HeartHandshake],
             ].map(([label, value, Icon]) => {
               const MetricIcon = Icon as typeof AlertTriangle;
               return (
@@ -143,6 +172,66 @@ export default async function StaffPortalPage() {
                         ))
                       ) : (
                         <p className="text-sm text-muted-foreground">No clinic staffing alerts right now.</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="border-t pt-5">
+                    <h3 className="font-semibold">Foster alerts</h3>
+                    <div className="mt-3 space-y-3">
+                      {data.fosterAlerts.length ? (
+                        data.fosterAlerts.map((item) => (
+                          <form key={item.id} action={resolveFosterAlert} className="rounded-xl bg-slate-50 p-4">
+                            <input type="hidden" name="updateId" value={item.id} />
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div>
+                                <p className="font-medium">{item.updateType || "Foster Update"}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {item.submittedBy || "Foster"}{item.submittedAt ? ` · ${formatDate(item.submittedAt)}` : ""}
+                                </p>
+                              </div>
+                              <span className="text-xs font-semibold text-primary">{item.priority}</span>
+                            </div>
+
+                            <div className="mt-3 space-y-2 text-sm">
+                              {item.healthConcern && <p><span className="font-semibold">Health:</span> {item.healthConcern}</p>}
+                              {item.behaviorConcern && <p><span className="font-semibold">Behavior:</span> {item.behaviorConcern}</p>}
+                              {item.supplyNeed && <p><span className="font-semibold">Supply:</span> {item.supplyNeed}</p>}
+                              {item.progress && <p><span className="font-semibold">Progress:</span> {item.progress}</p>}
+                              {item.unableToContinue && (
+                                <p className="font-semibold text-primary">Foster reports they may be unable to continue the placement.</p>
+                              )}
+                            </div>
+
+                            <textarea
+                              name="response"
+                              defaultValue={item.staffResponse}
+                              rows={2}
+                              placeholder="Response to foster"
+                              className="mt-4 w-full rounded-xl border bg-white px-3 py-2 text-sm"
+                            />
+                            <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+                              <select
+                                name="resolutionStatus"
+                                defaultValue={item.resolutionStatus || "New"}
+                                className="rounded-xl border bg-white px-3 py-2 text-sm"
+                              >
+                                <option>New</option>
+                                <option>In Review</option>
+                                <option>Waiting on Foster</option>
+                                <option>Resolved</option>
+                                <option>Closed</option>
+                              </select>
+                              <button
+                                type="submit"
+                                className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5"
+                              >
+                                Save Foster Follow-Up
+                              </button>
+                            </div>
+                          </form>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No foster concerns need staff attention right now.</p>
                       )}
                     </div>
                   </div>
