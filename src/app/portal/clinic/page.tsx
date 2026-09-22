@@ -140,8 +140,8 @@ export default async function ClinicPortalPage() {
                             {date.alert && <span className="text-xs font-semibold text-primary">{date.alert}</span>}
                           </div>
                           <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
-                            <div><span className="block text-xs text-muted-foreground">Veterinarians</span><strong>{date.veterinarians ?? 0}</strong></div>
-                            <div><span className="block text-xs text-muted-foreground">Vet Techs</span><strong>{date.vetTechs ?? 0}</strong></div>
+                            <div><span className="block text-xs text-muted-foreground">Veterinarian</span><strong>{date.veterinarianNames.length ? date.veterinarianNames.join(", ") : "Unfilled"}</strong></div>
+                            <div><span className="block text-xs text-muted-foreground">Vet Tech</span><strong>{date.vetTechNames.length ? date.vetTechNames.join(", ") : "Unfilled"}</strong></div>
                             <div><span className="block text-xs text-muted-foreground">Volunteers</span><strong>{date.volunteers ?? 0}{date.volunteerTarget ? ` / ${date.volunteerTarget}` : ""}</strong></div>
                           </div>
                         </div>
