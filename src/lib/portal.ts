@@ -465,4 +465,69 @@ export async function getStaffPortalData() {
   };
 }
 
-export { AIRTABLE_BASE_ID, TABLES, airtableList, normalizeEmail, asText, asStrings };
+async function airtableCreate(tableId: string, fields: Record<string, unknown>) {
+  const token = process.env.AIRTABLE_ACCESS_TOKEN;
+  if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
+
+  const response = await fetch(
+    `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${tableId}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ records: [{ fields }] }),
+      cache: "no-store",
+    }
+  );
+
+  const result = await response.json();
+  if (!response.ok) {
+    console.error("Portal Airtable create error", { tableId, result });
+    throw new Error("Could not save portal data");
+  }
+
+  return (result.records?.[0] || null) as AirtableRecord | null;
+}
+
+async function airtableUpdate(
+  tableId: string,
+  recordId: string,
+  fields: Record<string, unknown>
+) {
+  const token = process.env.AIRTABLE_ACCESS_TOKEN;
+  if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
+
+  const response = await fetch(
+    `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${tableId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ records: [{ id: recordId, fields }] }),
+      cache: "no-store",
+    }
+  );
+
+  const result = await response.json();
+  if (!response.ok) {
+    console.error("Portal Airtable update error", { tableId, recordId, result });
+    throw new Error("Could not update portal data");
+  }
+
+  return (result.records?.[0] || null) as AirtableRecord | null;
+}
+
+export {
+  AIRTABLE_BASE_ID,
+  TABLES,
+  airtableList,
+  airtableCreate,
+  airtableUpdate,
+  normalizeEmail,
+  asText,
+  asStrings,
+};
