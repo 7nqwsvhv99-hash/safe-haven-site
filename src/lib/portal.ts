@@ -169,6 +169,33 @@ export async function requirePortalRole(role: Exclude<PortalRole, "Administrator
   return context;
 }
 
+export async function requireAdministrator() {
+  const context = await getPortalContext();
+  if (!context.isAdministrator) redirect("/portal");
+  return context;
+}
+
+export async function getPortalAccessRecords() {
+  const records = await airtableList(TABLES.portalAccess, [
+    "Email",
+    "Display Name",
+    "Roles",
+    "Active",
+    "Notes",
+  ]);
+
+  return records
+    .map((record) => ({
+      id: record.id,
+      email: asText(record.fields.Email),
+      displayName: asText(record.fields["Display Name"]),
+      roles: asStrings(record.fields.Roles) as PortalRole[],
+      active: Boolean(record.fields.Active),
+      notes: asText(record.fields.Notes),
+    }))
+    .sort((a, b) => (a.displayName || a.email).localeCompare(b.displayName || b.email));
+}
+
 export async function getPortalAnnouncements(roles: PortalRole[]) {
   const records = await airtableList(
     TABLES.announcements,
