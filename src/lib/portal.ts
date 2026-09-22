@@ -362,8 +362,28 @@ export async function getFosterPortalData(email: string) {
       asText(record.fields.Status) === "Approved"
   );
 
+  const resourcesPromise = airtableList(
+    TABLES.fosterResources,
+    ["Title", "Category", "Description", "Link Label", "Link URL", "Active", "Display Order"],
+    { sort: [{ field: "Display Order", direction: "asc" }] }
+  );
+
   if (!application) {
-    return { foster: null, placements: [], resources: [] };
+    const resources = await resourcesPromise;
+    return {
+      foster: null,
+      placements: [],
+      resources: resources
+        .filter((record) => Boolean(record.fields.Active))
+        .map((record) => ({
+          id: record.id,
+          title: asText(record.fields.Title),
+          category: asText(record.fields.Category),
+          description: asText(record.fields.Description),
+          linkLabel: asText(record.fields["Link Label"]),
+          linkUrl: asText(record.fields["Link URL"]),
+        })),
+    };
   }
 
   const [placements, animals, resources] = await Promise.all([
@@ -393,11 +413,7 @@ export async function getFosterPortalData(email: string) {
       "Primary Photo",
       "Adoption Status",
     ]),
-    airtableList(
-      TABLES.fosterResources,
-      ["Title", "Category", "Description", "Link Label", "Link URL", "Active", "Display Order"],
-      { sort: [{ field: "Display Order", direction: "asc" }] }
-    ),
+    resourcesPromise,
   ]);
 
   const animalById = new Map(animals.map((record) => [record.id, record]));
