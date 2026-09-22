@@ -1,57 +1,97 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight } from "lucide-react";
+import { getPortalContext } from "@/lib/portal";
 
 export default async function PortalPage() {
-  const { userId } = await auth();
+  const context = await getPortalContext();
 
-  if (!userId) {
-    redirect("/sign-in");
-  }
+  const sections = [
+    {
+      title: "Volunteer Portal",
+      description: "My schedule, hours, announcements, current needs, and volunteer tools.",
+      href: "/portal/volunteer",
+      icon: HeartHandshake,
+      show: context.canVolunteer,
+    },
+    {
+      title: "Clinic Team Portal",
+      description: "Clinic dates, availability, attendance reconfirmation, staffing, inventory, and clinic resources.",
+      href: "/portal/clinic",
+      icon: Stethoscope,
+      show: context.canClinic,
+    },
+    {
+      title: "Staff Portal",
+      description: "Action Required, shelter inventory, events, current needs, volunteer administration, clinic oversight, and resources.",
+      href: "/portal/staff",
+      icon: ShieldCheck,
+      show: context.canStaff,
+    },
+  ].filter((section) => section.show);
 
   return (
-    <div className="bg-slate-50 min-h-[calc(100vh-5rem)]">
-      <section className="container-custom section-padding">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-start justify-between gap-6 mb-10">
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-50">
+      <section className="container-custom py-10 md:py-14">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-10 flex items-start justify-between gap-6">
             <div>
-              <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary mb-3">
+              <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">
                 Safe Haven Team
               </p>
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Team Portal</h1>
-              <p className="mt-4 text-muted-foreground max-w-2xl">
-                Your secure starting point for volunteer, clinic team, and staff tools.
+              <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Team Portal</h1>
+              <p className="mt-4 max-w-2xl text-muted-foreground">
+                Welcome{context.displayName ? `, ${context.displayName}` : ""}. One sign-in gives you access to every Safe Haven area assigned to you.
               </p>
+              {context.roles.length > 0 && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {context.roles.map((role) => (
+                    <span key={role} className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                      {role}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             <UserButton />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="rounded-2xl border bg-white p-7 shadow-sm">
-              <h2 className="text-xl font-bold mb-2">Volunteer Portal</h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                Scheduling, hours, current needs, and volunteer resources.
-              </p>
-              <span className="text-sm font-medium text-muted-foreground">Coming next</span>
+          {sections.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+              {sections.map((section) => {
+                const Icon = section.icon;
+                return (
+                  <Link
+                    key={section.title}
+                    href={section.href}
+                    className="group rounded-3xl border bg-white p-7 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  >
+                    <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+                      <Icon className="h-6 w-6 text-primary" />
+                    </div>
+                    <h2 className="text-xl font-bold">{section.title}</h2>
+                    <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{section.description}</p>
+                    <div className="mt-6 flex items-center gap-2 text-sm font-semibold text-primary">
+                      Open portal <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
+          ) : (
+            <div className="rounded-3xl border bg-white p-8 shadow-sm">
+              <h2 className="text-2xl font-bold">Your account is signed in, but portal access has not been assigned yet.</h2>
+              <p className="mt-3 max-w-2xl text-muted-foreground">
+                Safe Haven can assign Staff or Administrator access in the Portal Access table. Volunteer and Clinic Team access is also recognized automatically when your sign-in email matches an active roster record.
+              </p>
+            </div>
+          )}
 
-            <div className="rounded-2xl border bg-white p-7 shadow-sm">
-              <h2 className="text-xl font-bold mb-2">Clinic Team Portal</h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                Clinic scheduling, attendance confirmations, staffing alerts, and clinic inventory.
-              </p>
-              <span className="text-sm font-medium text-muted-foreground">Coming next</span>
+          {context.isAdministrator && (
+            <div className="mt-8 rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm">
+              <strong>Administrator access:</strong> you can open every portal area from this account.
             </div>
-
-            <div className="rounded-2xl border bg-white p-7 shadow-sm">
-              <h2 className="text-xl font-bold mb-2">Staff Portal</h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                Events, shelter inventory, internal tools, and operational resources.
-              </p>
-              <span className="text-sm font-medium text-muted-foreground">Coming next</span>
-            </div>
-          </div>
+          )}
 
           <div className="mt-10">
             <Link href="/" className="text-sm font-medium text-primary hover:underline">
