@@ -556,7 +556,7 @@ export async function getClinicPortalData(email: string) {
   const [dates, responses, announcements, inventory] = await Promise.all([
     airtableList(
       TABLES.clinicDates,
-      ["Clinic Date", "Clinic Type", "Scheduling Stage", "Volunteer Target", "Confirmed Veterinarians", "Confirmed Vet Techs", "Confirmed Clinic Volunteers", "Staffing Alert"],
+      ["Clinic Date", "Clinic Type", "ClinicDay Session Type", "Scheduling Stage", "Volunteer Target", "Confirmed Veterinarians", "Confirmed Vet Techs", "Confirmed Clinic Volunteers", "Staffing Alert"],
       { sort: [{ field: "Clinic Date", direction: "asc" }] }
     ),
     airtableList(TABLES.clinicResponses, [
@@ -587,7 +587,7 @@ export async function getClinicPortalData(email: string) {
       {
         id: record.id,
         date: safeDate(record.fields["Clinic Date"]),
-        type: asText(record.fields["Clinic Type"]),
+        type: asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]),
         stage: asText(record.fields["Scheduling Stage"]),
         alert: asText(record.fields["Staffing Alert"]),
       },
@@ -626,7 +626,7 @@ export async function getClinicPortalData(email: string) {
       .map((record) => ({
         id: record.id,
         date: safeDate(record.fields["Clinic Date"]),
-        type: asText(record.fields["Clinic Type"]),
+        type: asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]),
         stage: asText(record.fields["Scheduling Stage"]),
         veterinarians: asNumber(record.fields["Confirmed Veterinarians"]),
         vetTechs: asNumber(record.fields["Confirmed Vet Techs"]),
@@ -651,7 +651,7 @@ export async function getClinicPortalData(email: string) {
 }
 
 export async function getStaffPortalData() {
-  const [needs, inventory, events, clinicDates, volunteerApps, announcements, fosterUpdates] = await Promise.all([
+  const [needs, inventory, events, volunteerApps, announcements, fosterUpdates] = await Promise.all([
     getCurrentNeeds(false),
     airtableList(TABLES.inventory, [
       "Item Name",
@@ -665,11 +665,6 @@ export async function getStaffPortalData() {
       TABLES.events,
       ["Event Name", "Event Status", "Start Date & Time", "Location Name", "Publish on Website"],
       { sort: [{ field: "Start Date & Time", direction: "asc" }] }
-    ),
-    airtableList(
-      TABLES.clinicDates,
-      ["Clinic Date", "Clinic Type", "Scheduling Stage", "Staffing Alert"],
-      { sort: [{ field: "Clinic Date", direction: "asc" }] }
     ),
     airtableList(TABLES.volunteerApplications, [
       "Applicant Name",
@@ -721,18 +716,6 @@ export async function getStaffPortalData() {
       published: Boolean(record.fields["Publish on Website"]),
     }));
 
-  const clinicAlerts = clinicDates
-    .filter((record) => {
-      const date = safeDate(record.fields["Clinic Date"]);
-      return date && new Date(date).getTime() >= now && asText(record.fields["Staffing Alert"]);
-    })
-    .map((record) => ({
-      id: record.id,
-      date: safeDate(record.fields["Clinic Date"]),
-      type: asText(record.fields["Clinic Type"]),
-      alert: asText(record.fields["Staffing Alert"]),
-    }));
-
   const volunteerFollowUps = volunteerApps.filter((record) => {
     const status = asText(record.fields.Status);
     return !["Approved", "Declined", "Closed"].includes(status);
@@ -779,14 +762,12 @@ export async function getStaffPortalData() {
     })),
     inventoryAttentionCount: inventoryAttention.length,
     upcomingEvents,
-    clinicAlerts,
     fosterAlerts,
     fosterAlertCount: fosterAlerts.length,
     volunteerFollowUpCount: volunteerFollowUps.length,
     actionRequiredCount:
       needs.filter((need) => ["High", "Urgent"].includes(need.priority)).length +
       inventoryAttention.length +
-      clinicAlerts.length +
       fosterAlerts.length +
       volunteerFollowUps.length,
   };
