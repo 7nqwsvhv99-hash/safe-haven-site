@@ -310,7 +310,7 @@ export async function getClinicPortalData(email: string) {
   );
 
   if (!member) {
-    return { member: null, dates: [], announcements: [], inventory: [] };
+    return { member: null, dates: [], teamDates: [], announcements: [], inventory: [] };
   }
 
   const [dates, responses, announcements, inventory] = await Promise.all([
@@ -378,6 +378,22 @@ export async function getClinicPortalData(email: string) {
       role: asText(member.fields.Role),
     },
     dates: memberResponses,
+    teamDates: dates
+      .filter((record) => {
+        const date = safeDate(record.fields["Clinic Date"]);
+        return date && new Date(date) >= today;
+      })
+      .map((record) => ({
+        id: record.id,
+        date: safeDate(record.fields["Clinic Date"]),
+        type: asText(record.fields["Clinic Type"]),
+        stage: asText(record.fields["Scheduling Stage"]),
+        veterinarians: asNumber(record.fields["Confirmed Veterinarians"]),
+        vetTechs: asNumber(record.fields["Confirmed Vet Techs"]),
+        volunteers: asNumber(record.fields["Confirmed Clinic Volunteers"]),
+        volunteerTarget: asNumber(record.fields["Volunteer Target"]),
+        alert: asText(record.fields["Staffing Alert"]),
+      })),
     announcements,
     inventory: inventory
       .filter((record) => asText(record.fields.Area) === "Clinic" && Boolean(record.fields.Active))
