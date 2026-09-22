@@ -20,15 +20,36 @@ export default async function ClinicPortalPage() {
 
   async function saveAvailability(formData: FormData) {
     "use server";
-    await requirePortalRole("Clinic Team");
+    const current = await requirePortalRole("Clinic Team");
+    const latest = await getClinicPortalData(current.email);
     const responseId = String(formData.get("responseId") || "");
     const value = String(formData.get("availability") || "");
-    if (!responseId || !["Yes", "No"].includes(value)) return;
+    const requestedAssignment = String(formData.get("assignment") || "");
+    if (!responseId || !["Yes", "No"].includes(value) || !latest.dates.some((item) => item.responseId === responseId)) return;
+
+    let assignment = "";
+    if (value === "Yes") {
+      if (latest.member?.role === "Veterinarian") assignment = "Veterinarian";
+      else if (["Vet Tech", "Veterinary Technician"].includes(latest.member?.role || "")) assignment = "Veterinary Technician";
+      else {
+        const allowed = new Set<string>();
+        latest.member?.skills.forEach((skill) => {
+          if (["Front Room System", "Back Room System", "Autoclave"].includes(skill)) allowed.add(skill);
+          if (skill === "General Support") {
+            allowed.add("Front Room Support");
+            allowed.add("Surgery/Recovery Floater");
+          }
+        });
+        if (!allowed.has(requestedAssignment)) return;
+        assignment = requestedAssignment;
+      }
+    }
 
     await airtableUpdate(TABLES.clinicResponses, responseId, {
       "Initial Response": value,
       "Initial Response Date": new Date().toISOString(),
       "Final Attendance Plan": value === "Yes" ? "Attending" : "Not Attending",
+      "Clinic Assignment": assignment || null,
     });
     revalidatePath("/portal/clinic");
   }
@@ -96,6 +117,16 @@ export default async function ClinicPortalPage() {
                             <form action={saveAvailability} className="rounded-xl border bg-white p-4">
                               <input type="hidden" name="responseId" value={item.responseId} />
                               <p className="mb-2 text-sm font-semibold">My availability</p>
+                              {data.member.role === "Clinic Volunteer" && (
+                                <select name="assignment" defaultValue={item.assignment} className="mb-3 w-full rounded-lg border bg-white px-3 py-2 text-sm" required>
+                                  <option value="" disabled>Select your clinic role</option>
+                                  {data.member.skills.includes("Front Room System") && <option>Front Room System</option>}
+                                  {data.member.skills.includes("Back Room System") && <option>Back Room System</option>}
+                                  {data.member.skills.includes("Autoclave") && <option>Autoclave</option>}
+                                  {data.member.skills.includes("General Support") && <option>Front Room Support</option>}
+                                  {data.member.skills.includes("General Support") && <option>Surgery/Recovery Floater</option>}
+                                </select>
+                              )}
                               <div className="flex gap-2">
                                 <button name="availability" value="Yes" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Yes</button>
                                 <button name="availability" value="No" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">No</button>
@@ -139,10 +170,14 @@ export default async function ClinicPortalPage() {
                             </div>
                             {date.alert && <span className="text-xs font-semibold text-primary">{date.alert}</span>}
                           </div>
-                          <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
+                          <div className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
                             <div><span className="block text-xs text-muted-foreground">Veterinarian</span><strong>{date.veterinarianNames.length ? date.veterinarianNames.join(", ") : "Unfilled"}</strong></div>
                             <div><span className="block text-xs text-muted-foreground">Vet Tech</span><strong>{date.vetTechNames.length ? date.vetTechNames.join(", ") : "Unfilled"}</strong></div>
                             <div><span className="block text-xs text-muted-foreground">Volunteers</span><strong>{date.volunteers ?? 0}{date.volunteerTarget ? ` / ${date.volunteerTarget}` : ""}</strong></div>
+                            {(["Front Room System", "Back Room System", "Autoclave", "Front Room Support"] as const).map((role) => (
+                              <div key={role}><span className="block text-xs text-muted-foreground">{role}</span><strong>{date.volunteerAssignments[role]?.join(", ") || "Unfilled"}</strong></div>
+                            ))}
+                            <div><span className="block text-xs text-muted-foreground">Surgery/Recovery Floaters</span><strong>{date.volunteerAssignments["Surgery/Recovery Floater"]?.length || 0} / 2</strong></div>
                           </div>
                         </div>
                       ))}
