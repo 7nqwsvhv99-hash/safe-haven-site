@@ -2,7 +2,6 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import {
-  Calendar,
   Camera,
   Cat,
   ClipboardList,
@@ -15,22 +14,16 @@ import {
   Users,
 } from "lucide-react"
 
-const volunteerCalendarUrl =
-  "https://www.calendarwiz.com/calendars/calendar.php?crd=safehavenil&nolog=0&cid[]=all"
-
 export default function VolunteerPage() {
   return (
     <div className="flex flex-col">
       <section className="hero-gradient">
-        <div className="container-custom py-10 md:py-12 lg:py-14">
-          <div className="max-w-6xl mx-auto text-center space-y-6">
-            <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
-              Volunteer With Safe Haven
-            </p>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-              Your Time Can Change a Life
+        <div className="container-custom section-padding">
+          <div className="max-w-3xl mx-auto text-center space-y-6">
+            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+              Volunteer With Us
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-6xl mx-auto lg:whitespace-nowrap">
+            <p className="text-lg text-muted-foreground md:whitespace-nowrap">
               Make a real difference in the lives of animals. Find a volunteer role that fits your skills and schedule.
             </p>
             <Button asChild size="lg">
@@ -46,7 +39,7 @@ export default function VolunteerPage() {
             Volunteer Opportunities
           </h2>
           <p className="text-center text-muted-foreground mx-auto mb-12 md:whitespace-nowrap">
-            Explore hands-on animal care, clinic support, events, transportation, creative work, and behind-the-scenes opportunities.
+            Explore hands-on animal care, events, transportation, creative work, and behind-the-scenes support.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {volunteerRoles.map((role) => (
@@ -84,31 +77,8 @@ export default function VolunteerPage() {
       </section>
 
       <section className="section-padding bg-white">
-        <div className="container-custom max-w-6xl">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="p-8 md:p-10 text-center h-full">
-              <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
-                Current volunteers
-              </p>
-              <h2 className="text-3xl font-bold tracking-tight lg:text-[2rem] lg:whitespace-nowrap">
-                Already Volunteering With Safe Haven?
-              </h2>
-              <p className="mt-4 text-muted-foreground">
-                View upcoming volunteer coverage or log the hours you have completed.
-              </p>
-              <div className="mt-8 flex flex-col gap-3">
-                <Button asChild variant="outline" size="lg">
-                  <a href={volunteerCalendarUrl} target="_blank" rel="noreferrer">
-                    View Volunteer Calendar
-                  </a>
-                </Button>
-                <Button asChild size="lg">
-                  <Link href="/volunteer-hours">Log Volunteer Hours</Link>
-                </Button>
-              </div>
-            </Card>
-
-            <Card className="p-8 md:p-10 text-center h-full bg-primary/5 border-primary/20">
+        <div className="container-custom max-w-3xl">
+            <Card className="p-8 md:p-10 text-center bg-primary/5 border-primary/20">
               <p className="mb-3 text-sm font-bold uppercase tracking-widest text-primary">
                 Future volunteers
               </p>
@@ -124,7 +94,6 @@ export default function VolunteerPage() {
                 </Button>
               </div>
             </Card>
-          </div>
         </div>
       </section>
     </div>
@@ -185,24 +154,6 @@ const volunteerRoles = [
     icon: <ClipboardList className="h-5 w-5 text-primary" />,
     description:
       "Help with applications, data entry, phone calls, and other behind-the-scenes tasks.",
-  },
-  {
-    title: "Clinic Instrument Sterilization",
-    icon: <PackageOpen className="h-5 w-5 text-primary" />,
-    description:
-      "Clean, wrap, and sterilize surgical instruments using the autoclave so fresh instrument packs are ready for each surgery.",
-  },
-  {
-    title: "Clinic Front Room",
-    icon: <Users className="h-5 w-5 text-primary" />,
-    description:
-      "Help keep clinic day organized by checking animals in, contacting owners when their animals are ready, and assisting with pickup and checkout.",
-  },
-  {
-    title: "Clinic Back Room Documentation",
-    icon: <ClipboardList className="h-5 w-5 text-primary" />,
-    description:
-      "Keep patient records accurate during clinic by recording surgery details, vaccines, treatments, and other services as animals move through surgery and recovery.",
   },
 ]
 
