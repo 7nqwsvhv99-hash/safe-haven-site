@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth, UserButton } from "@clerk/nextjs/server";
+import { UserButton } from "@clerk/nextjs";\nimport { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 export default async function PortalPage() {
