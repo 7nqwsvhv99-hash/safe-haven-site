@@ -10,7 +10,7 @@ import {
   PortalRole,
 } from "@/lib/portal";
 
-const allRoles: PortalRole[] = ["Volunteer", "Clinic Team", "Staff", "Administrator"];
+const coreRoles: Exclude<PortalRole, "Foster">[] = ["Volunteer", "Clinic Team", "Staff", "Administrator"];
 
 export default async function PortalAccessPage() {
   await requireAdministrator();
@@ -22,14 +22,16 @@ export default async function PortalAccessPage() {
 
     const email = String(formData.get("email") || "").trim().toLowerCase();
     const displayName = String(formData.get("displayName") || "").trim();
-    const roles = allRoles.filter((role) => formData.get(role) === "on");
+    const roles = coreRoles.filter((role) => formData.get(role) === "on");
+    const fosterAccess = formData.get("Foster") === "on";
 
-    if (!email || roles.length === 0) return;
+    if (!email || (roles.length === 0 && !fosterAccess)) return;
 
     await airtableCreate(TABLES.portalAccess, {
       Email: email,
       "Display Name": displayName,
       Roles: roles,
+      "Foster Access": fosterAccess,
       Active: true,
     });
 
@@ -41,12 +43,14 @@ export default async function PortalAccessPage() {
     await requireAdministrator();
 
     const recordId = String(formData.get("recordId") || "");
-    const roles = allRoles.filter((role) => formData.get(role) === "on");
+    const roles = coreRoles.filter((role) => formData.get(role) === "on");
+    const fosterAccess = formData.get("Foster") === "on";
     const active = formData.get("active") === "on";
-    if (!recordId || roles.length === 0) return;
+    if (!recordId || (roles.length === 0 && !fosterAccess)) return;
 
     await airtableUpdate(TABLES.portalAccess, recordId, {
       Roles: roles,
+      "Foster Access": fosterAccess,
       Active: active,
     });
 
@@ -87,7 +91,7 @@ export default async function PortalAccessPage() {
                 <fieldset>
                   <legend className="text-sm font-medium">Roles</legend>
                   <div className="mt-2 grid grid-cols-2 gap-2">
-                    {allRoles.map((role) => (
+                    {(["Volunteer", "Foster", "Clinic Team", "Staff", "Administrator"] as PortalRole[]).map((role) => (
                       <label key={role} className="flex items-center gap-2 rounded-xl border p-3 text-sm">
                         <input type="checkbox" name={role} /> {role}
                       </label>
@@ -116,7 +120,7 @@ export default async function PortalAccessPage() {
                       </label>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
-                      {allRoles.map((role) => (
+                      {(["Volunteer", "Foster", "Clinic Team", "Staff", "Administrator"] as PortalRole[]).map((role) => (
                         <label key={role} className="flex items-center gap-2 text-sm">
                           <input type="checkbox" name={role} defaultChecked={record.roles.includes(role)} /> {role}
                         </label>
