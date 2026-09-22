@@ -55,7 +55,7 @@ export default async function PortalPage() {
               </p>
               <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Team Portal</h1>
               <p className="mt-4 max-w-2xl text-muted-foreground">
-                Welcome{context.displayName ? `, ${context.displayName}` : ""}. One sign-in gives you access to every Safe Haven area assigned to you.
+                Welcome{context.displayName ? `, ${context.displayName}` : ""}. Your assigned roles are shown below.{context.isAdministrator ? " Administrator access also allows you to open every portal area." : ""}
               </p>
               {context.roles.length > 0 && (
                 <div className="mt-4 flex flex-wrap gap-2">
