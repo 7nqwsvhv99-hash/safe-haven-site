@@ -434,6 +434,7 @@ export async function getFosterPortalData(email: string) {
         "Unable to Continue Placement",
         "Needs Staff Attention",
         "Priority",
+        "Photos",
         "Staff Response",
         "Resolution Status",
       ],
@@ -499,6 +500,14 @@ export async function getFosterPortalData(email: string) {
             unableToContinue: Boolean(update.fields["Unable to Continue Placement"]),
             needsStaffAttention: Boolean(update.fields["Needs Staff Attention"]),
             priority: asText(update.fields.Priority),
+            photos: Array.isArray(update.fields.Photos)
+              ? (update.fields.Photos as { url?: unknown; filename?: unknown }[])
+                  .map((photo) => ({
+                    url: typeof photo.url === "string" ? photo.url : "",
+                    filename: typeof photo.filename === "string" ? photo.filename : "Foster update photo",
+                  }))
+                  .filter((photo) => photo.url)
+              : [],
             staffResponse: asText(update.fields["Staff Response"]),
             resolutionStatus: asText(update.fields["Resolution Status"]),
           })),
@@ -809,6 +818,43 @@ async function airtableCreate(tableId: string, fields: Record<string, unknown>) 
   return (result.records?.[0] || null) as AirtableRecord | null;
 }
 
+async function airtableUploadAttachment(
+  recordId: string,
+  fieldId: string,
+  file: File
+) {
+  const token = process.env.AIRTABLE_ACCESS_TOKEN;
+  if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
+  if (!file.type.startsWith("image/")) throw new Error("Only image uploads are allowed");
+  if (file.size > 5 * 1024 * 1024) throw new Error("Each photo must be 5 MB or smaller");
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const response = await fetch(
+    `https://content.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/${fieldId}/uploadAttachment`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contentType: file.type || "application/octet-stream",
+        file: bytes.toString("base64"),
+        filename: file.name || "foster-update-photo",
+      }),
+      cache: "no-store",
+    }
+  );
+
+  const result = await response.json();
+  if (!response.ok) {
+    console.error("Portal Airtable attachment upload error", { recordId, fieldId, result });
+    throw new Error("Could not upload foster photo");
+  }
+
+  return result;
+}
+
 async function airtableUpdate(
   tableId: string,
   recordId: string,
@@ -844,6 +890,7 @@ export {
   TABLES,
   airtableList,
   airtableCreate,
+  airtableUploadAttachment,
   airtableUpdate,
   normalizeEmail,
   asText,
