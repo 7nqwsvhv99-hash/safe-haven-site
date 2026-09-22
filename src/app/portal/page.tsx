@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight, UserCog } from "lucide-react";
+import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight, UserCog, HouseHeart } from "lucide-react";
 import { getPortalContext } from "@/lib/portal";
 
 export default async function PortalPage() {
@@ -13,6 +13,13 @@ export default async function PortalPage() {
       href: "/portal/volunteer",
       icon: HeartHandshake,
       show: context.canVolunteer,
+    },
+    {
+      title: "Foster Portal",
+      description: "Current foster placements, care instructions, updates, resources, and support.",
+      href: "/portal/foster",
+      icon: HouseHeart,
+      show: context.canFoster,
     },
     {
       title: "Clinic Team Portal",
@@ -64,7 +71,7 @@ export default async function PortalPage() {
           </div>
 
           {sections.length > 0 ? (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-5">
               {sections.map((section) => {
                 const Icon = section.icon;
                 return (
@@ -89,7 +96,7 @@ export default async function PortalPage() {
             <div className="rounded-3xl border bg-white p-8 shadow-sm">
               <h2 className="text-2xl font-bold">Your account is signed in, but portal access has not been assigned yet.</h2>
               <p className="mt-3 max-w-2xl text-muted-foreground">
-                Safe Haven can assign Staff or Administrator access in the Portal Access table. Volunteer and Clinic Team access is also recognized automatically when your sign-in email matches an active roster record.
+                Safe Haven can assign portal access by email. Volunteer, Foster, and Clinic Team access can also be recognized automatically when your sign-in email matches an active Safe Haven record.
               </p>
             </div>
           )}
