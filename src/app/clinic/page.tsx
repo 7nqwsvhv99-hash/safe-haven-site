@@ -42,16 +42,19 @@ export default function ClinicPage() {
   return (
     <div className="flex flex-col">
       <section className="hero-gradient">
-        <div className="container-custom py-8 md:py-10 lg:py-12">
-          <div className="mx-auto max-w-4xl text-center">
-            <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
+        <div className="container-custom py-10 md:py-12 lg:py-14">
+          <div className="max-w-5xl mx-auto text-center space-y-6">
+            <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
+              Spay &amp; Neuter Services
+            </p>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
               Spay &amp; Neuter Clinic
             </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-lg leading-relaxed text-muted-foreground md:text-xl">
+            <p className="text-lg md:text-xl leading-relaxed text-muted-foreground max-w-3xl mx-auto">
               Safe Haven Humane Society provides low-cost spay/neuter services
               for cats, with select add-on services available when appropriate.
             </p>
-            <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
+            <div className="flex flex-col justify-center gap-4 sm:flex-row pt-2">
               <Button asChild size="lg">
                 <a href={intakeFormUrl} target="_blank" rel="noopener noreferrer">
                   Complete the Cat Intake Form
