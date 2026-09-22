@@ -101,8 +101,7 @@ export default function AboutPage() {
                   Our Mission
                 </p>
                 <h2 className="text-3xl lg:text-[32px] xl:text-4xl font-bold mb-6 leading-tight">
-                  <span className="lg:block lg:whitespace-nowrap">A haven for animals.</span>
-                  <span className="lg:block lg:whitespace-nowrap">A community committed to their future.</span>
+                  Care. Protection. Second Chances.
                 </h2>
                 <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
                   Safe Haven&apos;s mission is to provide a haven and any necessary treatment for adoptable
