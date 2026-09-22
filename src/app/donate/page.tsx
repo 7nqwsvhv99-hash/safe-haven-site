@@ -10,14 +10,14 @@ export default function DonatePage() {
       {/* Hero Section */}
       <section className="hero-gradient">
         <div className="container-custom py-10 md:py-12 lg:py-14">
-          <div className="max-w-5xl mx-auto text-center space-y-6">
+          <div className="max-w-6xl mx-auto text-center space-y-6">
             <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
               Support Safe Haven
             </p>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
               Give Animals a Second Chance
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-lg md:text-xl text-muted-foreground max-w-6xl mx-auto lg:whitespace-nowrap">
               Your support helps Safe Haven care for animals and provide essential services across our community.
             </p>
           </div>
