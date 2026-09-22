@@ -64,15 +64,17 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="hero-gradient">
         <div className="container-custom py-10 md:py-12 lg:py-14">
-          <div className="max-w-5xl mx-auto text-center space-y-6">
+          <div className="max-w-6xl mx-auto text-center space-y-6">
             <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
               Serving Jo Daviess County Since 1994
             </p>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">
-              A Haven for Animals. A Community Committed to Their Future.
+              <span className="block lg:whitespace-nowrap">A Haven for Animals.</span>
+              <span className="block lg:whitespace-nowrap">A Community Committed to Their Future.</span>
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              For more than three decades, Safe Haven has brought people together around one shared purpose: giving cats and dogs the care, protection, and second chances they deserve.
+            <p className="text-lg md:text-xl text-muted-foreground max-w-6xl mx-auto leading-relaxed">
+              <span className="lg:block lg:whitespace-nowrap">For more than three decades, Safe Haven has brought people together around one shared purpose:</span>
+              <span className="lg:block lg:whitespace-nowrap">giving cats and dogs the care, protection, and second chances they deserve.</span>
             </p>
           </div>
         </div>
