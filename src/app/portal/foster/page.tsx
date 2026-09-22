@@ -13,6 +13,7 @@ import {
 import {
   requirePortalRole,
   getFosterPortalData,
+  airtableCreate,
   airtableUpdate,
   TABLES,
 } from "@/lib/portal";
@@ -37,37 +38,68 @@ export default async function FosterPortalPage() {
     const current = await requirePortalRole("Foster");
     const latest = await getFosterPortalData(current.email);
     const placementId = String(formData.get("placementId") || "");
-    const message = String(formData.get("message") || "").trim();
-    const needsAttention = formData.get("needsAttention") === "on";
-
     const placement = latest.placements.find((item) => item.id === placementId);
-    if (!placement || !message) return;
+    if (!placement) return;
 
-    const timestamp = new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: "America/Chicago",
-    }).format(new Date());
+    const updateType = String(formData.get("updateType") || "Routine Check-In");
+    const generalProgress = String(formData.get("generalProgress") || "").trim();
+    const appetite = String(formData.get("appetite") || "").trim();
+    const behavior = String(formData.get("behavior") || "").trim();
+    const medication = String(formData.get("medication") || "").trim();
+    const supplyNeed = String(formData.get("supplyNeed") || "").trim();
+    const healthConcern = String(formData.get("healthConcern") || "").trim();
+    const behaviorConcern = String(formData.get("behaviorConcern") || "").trim();
+    const unableToContinue = formData.get("unableToContinue") === "on";
+    const needsAttention = formData.get("needsAttention") === "on";
+    const priority = String(formData.get("priority") || "Normal");
 
-    const newEntry = `[${timestamp}] ${current.displayName}: ${message}`;
-    const updateNotes = placement.updateNotes
-      ? `${placement.updateNotes}\n\n${newEntry}`
-      : newEntry;
-
-    const fields: Record<string, unknown> = {
-      "Foster Update Notes": updateNotes,
-    };
-
-    if (needsAttention) {
-      fields["Placement Status"] = "Needs Attention";
-      fields["Check-In Status"] = "Needs Attention";
+    if (
+      !generalProgress &&
+      !behavior &&
+      !medication &&
+      !supplyNeed &&
+      !healthConcern &&
+      !behaviorConcern &&
+      !unableToContinue
+    ) {
+      return;
     }
 
-    await airtableUpdate(TABLES.fosterPlacements, placementId, fields);
+    const submittedAt = new Date().toISOString();
+    const attentionRequired =
+      needsAttention ||
+      unableToContinue ||
+      Boolean(healthConcern) ||
+      Boolean(behaviorConcern) ||
+      ["High", "Urgent"].includes(priority);
+
+    await airtableCreate(TABLES.fosterUpdates, {
+      "Update ID": `FU-${Date.now()}`,
+      "Foster Placement": [placementId],
+      Animal: placement.animals.map((animal) => animal.id),
+      "Submitted By": current.email,
+      "Submitted At": submittedAt,
+      "Update Type": updateType,
+      "General Progress": generalProgress,
+      "Appetite / Eating": appetite || "Not Applicable",
+      Behavior: behavior,
+      "Medication / Treatment Update": medication,
+      "Supply Need": supplyNeed,
+      "Health Concern": healthConcern,
+      "Behavior Concern": behaviorConcern,
+      "Unable to Continue Placement": unableToContinue,
+      "Needs Staff Attention": attentionRequired,
+      Priority: priority,
+      "Resolution Status": attentionRequired ? "New" : "Closed",
+    });
+
+    await airtableUpdate(TABLES.fosterPlacements, placementId, {
+      "Check-In Status": attentionRequired ? "Needs Attention" : "Check-In Completed",
+      ...(attentionRequired ? { "Placement Status": "Needs Attention" } : {}),
+    });
+
     revalidatePath("/portal/foster");
+    revalidatePath("/portal/staff");
   }
 
   return (
@@ -219,28 +251,130 @@ export default async function FosterPortalPage() {
                             <h3 className="font-semibold">Send Safe Haven an Update</h3>
                           </div>
                           <p className="mt-2 text-sm text-muted-foreground">
-                            Share progress, appetite, behavior, medication updates, supply needs, or anything else the Safe Haven team should know.
+                            Routine updates stay in the placement history. Concerns or urgent needs are automatically surfaced to staff.
                           </p>
-                          <textarea
-                            required
-                            name="message"
-                            rows={4}
-                            className="mt-4 w-full rounded-xl border bg-white px-3 py-2"
-                            placeholder="How is your foster doing?"
-                          />
-                          <label className="mt-3 flex items-start gap-2 text-sm">
-                            <input className="mt-1" type="checkbox" name="needsAttention" />
-                            <span>
-                              This needs staff attention. Use this for a health or behavior concern, urgent supply need, inability to continue the placement, or another unresolved issue.
-                            </span>
+
+                          <div className="mt-4 grid gap-4 md:grid-cols-2">
+                            <label className="text-sm font-medium">
+                              Update type
+                              <select name="updateType" className="mt-1 w-full rounded-xl border bg-white px-3 py-2">
+                                <option>Routine Check-In</option>
+                                <option>Progress Update</option>
+                                <option>Health / Medical</option>
+                                <option>Behavior</option>
+                                <option>Medication / Treatment</option>
+                                <option>Supplies</option>
+                                <option>Placement Support</option>
+                                <option>Other</option>
+                              </select>
+                            </label>
+                            <label className="text-sm font-medium">
+                              Appetite / eating
+                              <select name="appetite" className="mt-1 w-full rounded-xl border bg-white px-3 py-2">
+                                <option>Normal</option>
+                                <option>Reduced</option>
+                                <option>Not Eating</option>
+                                <option>Increased</option>
+                                <option>Variable</option>
+                                <option>Not Applicable</option>
+                              </select>
+                            </label>
+                          </div>
+
+                          <label className="mt-4 block text-sm font-medium">
+                            General progress
+                            <textarea
+                              name="generalProgress"
+                              rows={3}
+                              className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
+                              placeholder="How is your foster doing overall?"
+                            />
                           </label>
+
+                          <div className="mt-4 grid gap-4 md:grid-cols-2">
+                            <label className="text-sm font-medium">
+                              Behavior
+                              <textarea name="behavior" rows={3} className="mt-1 w-full rounded-xl border bg-white px-3 py-2" placeholder="Behavior, comfort, routines, changes..." />
+                            </label>
+                            <label className="text-sm font-medium">
+                              Medication / treatment update
+                              <textarea name="medication" rows={3} className="mt-1 w-full rounded-xl border bg-white px-3 py-2" placeholder="Medication given, recovery progress, treatment notes..." />
+                            </label>
+                            <label className="text-sm font-medium">
+                              Supply need
+                              <textarea name="supplyNeed" rows={3} className="mt-1 w-full rounded-xl border bg-white px-3 py-2" placeholder="Food, litter, medication, bedding, crate, or other supplies..." />
+                            </label>
+                            <label className="text-sm font-medium">
+                              Health concern
+                              <textarea name="healthConcern" rows={3} className="mt-1 w-full rounded-xl border bg-white px-3 py-2" placeholder="Describe any health concern that Safe Haven should review." />
+                            </label>
+                            <label className="text-sm font-medium md:col-span-2">
+                              Behavior concern
+                              <textarea name="behaviorConcern" rows={3} className="mt-1 w-full rounded-xl border bg-white px-3 py-2" placeholder="Describe any behavior concern that needs support." />
+                            </label>
+                          </div>
+
+                          <div className="mt-4 grid gap-4 md:grid-cols-2">
+                            <label className="text-sm font-medium">
+                              Priority
+                              <select name="priority" className="mt-1 w-full rounded-xl border bg-white px-3 py-2">
+                                <option>Normal</option>
+                                <option>High</option>
+                                <option>Urgent</option>
+                              </select>
+                            </label>
+                            <div className="rounded-xl bg-slate-50 p-4 text-sm text-muted-foreground">
+                              Photo attachments are stored in Airtable and can be added by staff. Direct foster photo upload will be connected separately.
+                            </div>
+                          </div>
+
+                          <div className="mt-4 space-y-3">
+                            <label className="flex items-start gap-2 text-sm">
+                              <input className="mt-1" type="checkbox" name="needsAttention" />
+                              <span>This needs staff attention.</span>
+                            </label>
+                            <label className="flex items-start gap-2 text-sm">
+                              <input className="mt-1" type="checkbox" name="unableToContinue" />
+                              <span>I may be unable to continue this foster placement.</span>
+                            </label>
+                          </div>
+
                           <button
                             type="submit"
-                            className="mt-4 rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90"
+                            className="mt-5 rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90"
                           >
                             Send Update
                           </button>
                         </form>
+
+                        {placement.updates.length > 0 && (
+                          <div className="mt-5 rounded-2xl border bg-white p-5">
+                            <h3 className="font-semibold">Recent Foster Updates</h3>
+                            <div className="mt-4 space-y-3">
+                              {placement.updates.map((update) => (
+                                <div key={update.id} className="rounded-xl bg-slate-50 p-4 text-sm">
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <p className="font-medium">{update.updateType || "Foster Update"}</p>
+                                    <div className="flex items-center gap-2 text-xs">
+                                      {update.priority && <span className="font-semibold text-primary">{update.priority}</span>}
+                                      {update.submittedAt && <span className="text-muted-foreground">{formatDate(update.submittedAt)}</span>}
+                                    </div>
+                                  </div>
+                                  {update.generalProgress && <p className="mt-2 text-muted-foreground">{update.generalProgress}</p>}
+                                  {update.healthConcern && <p className="mt-2"><span className="font-semibold">Health:</span> {update.healthConcern}</p>}
+                                  {update.behaviorConcern && <p className="mt-2"><span className="font-semibold">Behavior concern:</span> {update.behaviorConcern}</p>}
+                                  {update.supplyNeed && <p className="mt-2"><span className="font-semibold">Supply need:</span> {update.supplyNeed}</p>}
+                                  {update.staffResponse && (
+                                    <div className="mt-3 rounded-lg border border-primary/15 bg-primary/5 p-3">
+                                      <p className="font-semibold">Safe Haven response</p>
+                                      <p className="mt-1 text-muted-foreground">{update.staffResponse}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
