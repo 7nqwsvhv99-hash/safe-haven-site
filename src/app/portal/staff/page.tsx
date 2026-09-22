@@ -114,7 +114,6 @@ export default async function StaffPortalPage() {
             {[
               ["Action Required", data.actionRequiredCount, AlertTriangle],
               ["Inventory Attention", data.inventoryAttentionCount, Boxes],
-              ["Clinic Alerts", data.clinicAlerts.length, Stethoscope],
               ["Foster Alerts", data.fosterAlertCount, HeartHandshake],
             ].map(([label, value, Icon]) => {
               const MetricIcon = Icon as typeof AlertTriangle;
@@ -160,21 +159,6 @@ export default async function StaffPortalPage() {
                     </div>
                   </div>
 
-                  <div className="border-t pt-5">
-                    <h3 className="font-semibold">Clinic staffing alerts</h3>
-                    <div className="mt-3 space-y-2">
-                      {data.clinicAlerts.length ? (
-                        data.clinicAlerts.map((item) => (
-                          <div key={item.id} className="rounded-xl bg-slate-50 p-4">
-                            <p className="font-medium">{formatDate(item.date)} · {item.type || "Clinic"}</p>
-                            <p className="mt-1 text-sm text-primary">{item.alert}</p>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-sm text-muted-foreground">No clinic staffing alerts right now.</p>
-                      )}
-                    </div>
-                  </div>
                   <div className="border-t pt-5">
                     <h3 className="font-semibold">Foster alerts</h3>
                     <div className="mt-3 space-y-3">
