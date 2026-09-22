@@ -43,7 +43,6 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Resources</h3>
             <ul className="space-y-2 text-sm">
               <li><Link href="/clinic" className="text-muted-foreground hover:text-primary transition-colors">Spay &amp; Neuter Clinic</Link></li>
-              <li><Link href="/resources" className="text-muted-foreground hover:text-primary transition-colors">Pet Owner Resources</Link></li>
               <li>
                 <a
                   href="https://airtable.com/app3AcoD2G64aMsEz/pag18veN4frVCtuOz/form"
@@ -54,6 +53,7 @@ export function Footer() {
                   Clinic Intake Form
                 </a>
               </li>
+              <li><Link href="/resources" className="text-muted-foreground hover:text-primary transition-colors">Pet Owner Resources</Link></li>
               <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
               <li><Link href="/resources#newsletters" className="text-muted-foreground hover:text-primary transition-colors">Past Newsletters</Link></li>
               <li><Link href="/sign-in" className="text-muted-foreground hover:text-primary transition-colors">Team Portal Sign In</Link></li>
