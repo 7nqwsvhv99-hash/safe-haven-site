@@ -18,9 +18,14 @@ const TABLES = {
   inventory: "tblTFVIVoeyafVC4b",
   events: "tbl1wjnnJXBI5a3fy",
   volunteerApplications: "tblonEhsjg3vWumoj",
+  fosterApplications: "tblFWPjyZMi9DjpBj",
+  fosterPlacements: "tbln4l1GQcJrVmmLj",
+  animals: "tbliTXWvG7gdf023E",
+  medicalRecords: "tblpL1w9JWylKpwQT",
+  fosterResources: "tblyMumQGKqH2oGvJ",
 } as const;
 
-export type PortalRole = "Volunteer" | "Clinic Team" | "Staff" | "Administrator";
+export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Administrator";
 
 type AirtableRecord = {
   id: string;
@@ -118,9 +123,10 @@ export async function getPortalContext() {
 
   const assignedRoles = asStrings(access?.fields.Roles) as PortalRole[];
 
-  const [volunteers, clinicMembers] = await Promise.all([
+  const [volunteers, clinicMembers, fosterApplications] = await Promise.all([
     airtableList(TABLES.volunteers, ["Email", "Status"]),
     airtableList(TABLES.clinicMembers, ["Email", "Active"]),
+    airtableList(TABLES.fosterApplications, ["Email", "Status"]),
   ]);
 
   const matchedVolunteer = volunteers.some(
@@ -133,9 +139,15 @@ export async function getPortalContext() {
       emails.includes(normalizeEmail(asText(record.fields.Email))) &&
       Boolean(record.fields.Active)
   );
+  const matchedFoster = fosterApplications.some(
+    (record) =>
+      emails.includes(normalizeEmail(asText(record.fields.Email))) &&
+      asText(record.fields.Status) === "Approved"
+  );
 
   const roleSet = new Set<PortalRole>(assignedRoles);
   if (matchedVolunteer) roleSet.add("Volunteer");
+  if (matchedFoster) roleSet.add("Foster");
   if (matchedClinicMember) roleSet.add("Clinic Team");
   const roles = Array.from(roleSet);
   const isAdministrator = roles.includes("Administrator");
@@ -151,6 +163,7 @@ export async function getPortalContext() {
     accessRecordId: access?.id || null,
     hasAccess: roles.length > 0,
     canVolunteer: isAdministrator || roles.includes("Volunteer"),
+    canFoster: isAdministrator || roles.includes("Foster"),
     canClinic: isAdministrator || roles.includes("Clinic Team"),
     canStaff: isAdministrator || roles.includes("Staff"),
     isAdministrator,
@@ -163,6 +176,7 @@ export async function requirePortalRole(role: Exclude<PortalRole, "Administrator
   const allowed =
     context.isAdministrator ||
     (role === "Volunteer" && context.canVolunteer) ||
+    (role === "Foster" && context.canFoster) ||
     (role === "Clinic Team" && context.canClinic) ||
     (role === "Staff" && context.canStaff);
   if (!allowed) redirect("/portal");
@@ -320,6 +334,155 @@ export async function getVolunteerPortalData(email: string) {
       })),
     announcements,
     needs,
+  };
+}
+
+
+export async function getFosterPortalData(email: string) {
+  const applications = await airtableList(TABLES.fosterApplications, [
+    "First Name",
+    "Last Name",
+    "Email",
+    "Status",
+    "Preferred Contact",
+    "Phone",
+    "Foster Placements",
+  ]);
+
+  const application = applications.find(
+    (record) =>
+      normalizeEmail(asText(record.fields.Email)) === normalizeEmail(email) &&
+      asText(record.fields.Status) === "Approved"
+  );
+
+  if (!application) {
+    return { foster: null, placements: [], resources: [] };
+  }
+
+  const [placements, animals, medicalRecords, resources] = await Promise.all([
+    airtableList(
+      TABLES.fosterPlacements,
+      [
+        "Foster Placement ID",
+        "Animal",
+        "Foster Application",
+        "Placement Status",
+        "Placement Type",
+        "Start Date",
+        "Expected End Date",
+        "Next Check-In Date",
+        "Check-In Status",
+        "Care Instructions / Notes",
+        "Foster Update Notes",
+      ],
+      { sort: [{ field: "Start Date", direction: "desc" }] }
+    ),
+    airtableList(TABLES.animals, [
+      "Pet Name",
+      "Species",
+      "Age Display",
+      "Breed",
+      "Medical Summary",
+      "Primary Photo",
+      "Adoption Status",
+    ]),
+    airtableList(
+      TABLES.medicalRecords,
+      [
+        "Animal",
+        "Date / Time",
+        "Type",
+        "Summary / Reason",
+        "Treatment / Medication",
+        "Next Due Date",
+      ],
+      { sort: [{ field: "Date / Time", direction: "desc" }] }
+    ),
+    airtableList(
+      TABLES.fosterResources,
+      ["Title", "Category", "Description", "Link Label", "Link URL", "Active", "Display Order"],
+      { sort: [{ field: "Display Order", direction: "asc" }] }
+    ),
+  ]);
+
+  const animalById = new Map(animals.map((record) => [record.id, record]));
+  const medicalByAnimal = new Map<string, AirtableRecord[]>();
+
+  for (const record of medicalRecords) {
+    for (const animalId of asStrings(record.fields.Animal)) {
+      const existing = medicalByAnimal.get(animalId) || [];
+      existing.push(record);
+      medicalByAnimal.set(animalId, existing);
+    }
+  }
+
+  function attachmentUrl(value: unknown) {
+    if (!Array.isArray(value)) return "";
+    const first = value[0] as { url?: unknown } | undefined;
+    return typeof first?.url === "string" ? first.url : "";
+  }
+
+  const fosterPlacements = placements
+    .filter((record) => asStrings(record.fields["Foster Application"]).includes(application.id))
+    .filter((record) => !["Completed", "Cancelled"].includes(asText(record.fields["Placement Status"])))
+    .map((record) => {
+      const animalIds = asStrings(record.fields.Animal);
+      const placementAnimals = animalIds.map((id) => {
+        const animal = animalById.get(id);
+        return {
+          id,
+          name: asText(animal?.fields["Pet Name"]),
+          species: asText(animal?.fields.Species),
+          age: asText(animal?.fields["Age Display"]),
+          breed: asText(animal?.fields.Breed),
+          medicalSummary: asText(animal?.fields["Medical Summary"]),
+          adoptionStatus: asText(animal?.fields["Adoption Status"]),
+          photoUrl: attachmentUrl(animal?.fields["Primary Photo"]),
+          medical: (medicalByAnimal.get(id) || []).slice(0, 6).map((medical) => ({
+            id: medical.id,
+            date: safeDate(medical.fields["Date / Time"]),
+            type: asText(medical.fields.Type),
+            summary: asText(medical.fields["Summary / Reason"]),
+            treatment: asText(medical.fields["Treatment / Medication"]),
+            nextDue: safeDate(medical.fields["Next Due Date"]),
+          })),
+        };
+      });
+
+      return {
+        id: record.id,
+        placementId: asText(record.fields["Foster Placement ID"]),
+        status: asText(record.fields["Placement Status"]),
+        type: asText(record.fields["Placement Type"]),
+        startDate: safeDate(record.fields["Start Date"]),
+        expectedEndDate: safeDate(record.fields["Expected End Date"]),
+        nextCheckInDate: safeDate(record.fields["Next Check-In Date"]),
+        checkInStatus: asText(record.fields["Check-In Status"]),
+        careInstructions: asText(record.fields["Care Instructions / Notes"]),
+        updateNotes: asText(record.fields["Foster Update Notes"]),
+        animals: placementAnimals,
+      };
+    });
+
+  return {
+    foster: {
+      id: application.id,
+      name: [asText(application.fields["First Name"]), asText(application.fields["Last Name"])].filter(Boolean).join(" "),
+      email: asText(application.fields.Email),
+      phone: asText(application.fields.Phone),
+      preferredContact: asText(application.fields["Preferred Contact"]),
+    },
+    placements: fosterPlacements,
+    resources: resources
+      .filter((record) => Boolean(record.fields.Active))
+      .map((record) => ({
+        id: record.id,
+        title: asText(record.fields.Title),
+        category: asText(record.fields.Category),
+        description: asText(record.fields.Description),
+        linkLabel: asText(record.fields["Link Label"]),
+        linkUrl: asText(record.fields["Link URL"]),
+      })),
   };
 }
 
