@@ -94,10 +94,13 @@ export default function AdoptPage() {
   return (
     <div className="flex flex-col">
       <section className="hero-gradient">
-        <div className="container-custom px-4 pt-10 pb-8 md:px-6 md:pt-12 md:pb-9 lg:pt-14 lg:pb-10">
-          <div className="max-w-3xl mx-auto text-center space-y-4">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight">Meet Your New Best Friend</h1>
-            <p className="text-lg text-muted-foreground md:whitespace-nowrap">
+        <div className="container-custom py-10 md:py-12 lg:py-14">
+          <div className="max-w-5xl mx-auto text-center space-y-6">
+            <p className="text-sm md:text-base font-semibold uppercase tracking-[0.18em] text-primary">
+              Adoption
+            </p>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight">Meet Your New Best Friend</h1>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto">
               Every adoption begins with a connection. Yours could be waiting here.
             </p>
           </div>
