@@ -116,7 +116,28 @@ export async function getPortalContext() {
     return email && emails.includes(email) && Boolean(record.fields.Active);
   });
 
-  const roles = asStrings(access?.fields.Roles) as PortalRole[];
+  const assignedRoles = asStrings(access?.fields.Roles) as PortalRole[];
+
+  const [volunteers, clinicMembers] = await Promise.all([
+    airtableList(TABLES.volunteers, ["Email", "Status"]),
+    airtableList(TABLES.clinicMembers, ["Email", "Active"]),
+  ]);
+
+  const matchedVolunteer = volunteers.some(
+    (record) =>
+      emails.includes(normalizeEmail(asText(record.fields.Email))) &&
+      asText(record.fields.Status) === "Active"
+  );
+  const matchedClinicMember = clinicMembers.some(
+    (record) =>
+      emails.includes(normalizeEmail(asText(record.fields.Email))) &&
+      Boolean(record.fields.Active)
+  );
+
+  const roleSet = new Set<PortalRole>(assignedRoles);
+  if (matchedVolunteer) roleSet.add("Volunteer");
+  if (matchedClinicMember) roleSet.add("Clinic Team");
+  const roles = Array.from(roleSet);
   const isAdministrator = roles.includes("Administrator");
 
   return {
@@ -128,7 +149,7 @@ export async function getPortalContext() {
       primaryEmail,
     roles,
     accessRecordId: access?.id || null,
-    hasAccess: Boolean(access),
+    hasAccess: roles.length > 0,
     canVolunteer: isAdministrator || roles.includes("Volunteer"),
     canClinic: isAdministrator || roles.includes("Clinic Team"),
     canStaff: isAdministrator || roles.includes("Staff"),
