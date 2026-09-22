@@ -5,7 +5,6 @@ import {
   ClipboardCheck,
   CreditCard,
   FileText,
-  HeartPulse,
   ShieldCheck,
   Stethoscope,
   Syringe,
@@ -43,12 +42,8 @@ export default function ClinicPage() {
   return (
     <div className="flex flex-col">
       <section className="hero-gradient">
-        <div className="container-custom py-12 md:py-14 lg:py-16">
+        <div className="container-custom py-8 md:py-10 lg:py-12">
           <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-white/80 px-4 py-2 text-sm font-semibold text-primary shadow-sm">
-              <HeartPulse className="h-4 w-4" />
-              Low-cost care for local animals
-            </div>
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
               Spay &amp; Neuter Clinic
             </h1>
