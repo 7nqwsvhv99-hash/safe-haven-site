@@ -113,6 +113,7 @@ export async function getPortalContext() {
     "Email",
     "Display Name",
     "Roles",
+    "Foster Access",
     "Active",
   ]);
 
@@ -122,6 +123,7 @@ export async function getPortalContext() {
   });
 
   const assignedRoles = asStrings(access?.fields.Roles) as PortalRole[];
+  if (Boolean(access?.fields["Foster Access"])) assignedRoles.push("Foster");
 
   const [volunteers, clinicMembers, fosterApplications] = await Promise.all([
     airtableList(TABLES.volunteers, ["Email", "Status"]),
@@ -194,6 +196,7 @@ export async function getPortalAccessRecords() {
     "Email",
     "Display Name",
     "Roles",
+    "Foster Access",
     "Active",
     "Notes",
   ]);
@@ -203,7 +206,11 @@ export async function getPortalAccessRecords() {
       id: record.id,
       email: asText(record.fields.Email),
       displayName: asText(record.fields["Display Name"]),
-      roles: asStrings(record.fields.Roles) as PortalRole[],
+      roles: [
+        ...(asStrings(record.fields.Roles) as PortalRole[]),
+        ...(Boolean(record.fields["Foster Access"]) ? (["Foster"] as PortalRole[]) : []),
+      ],
+      fosterAccess: Boolean(record.fields["Foster Access"]),
       active: Boolean(record.fields.Active),
       notes: asText(record.fields.Notes),
     }))
@@ -359,7 +366,7 @@ export async function getFosterPortalData(email: string) {
     return { foster: null, placements: [], resources: [] };
   }
 
-  const [placements, animals, medicalRecords, resources] = await Promise.all([
+  const [placements, animals, resources] = await Promise.all([
     airtableList(
       TABLES.fosterPlacements,
       [
@@ -387,18 +394,6 @@ export async function getFosterPortalData(email: string) {
       "Adoption Status",
     ]),
     airtableList(
-      TABLES.medicalRecords,
-      [
-        "Animal",
-        "Date / Time",
-        "Type",
-        "Summary / Reason",
-        "Treatment / Medication",
-        "Next Due Date",
-      ],
-      { sort: [{ field: "Date / Time", direction: "desc" }] }
-    ),
-    airtableList(
       TABLES.fosterResources,
       ["Title", "Category", "Description", "Link Label", "Link URL", "Active", "Display Order"],
       { sort: [{ field: "Display Order", direction: "asc" }] }
@@ -406,15 +401,6 @@ export async function getFosterPortalData(email: string) {
   ]);
 
   const animalById = new Map(animals.map((record) => [record.id, record]));
-  const medicalByAnimal = new Map<string, AirtableRecord[]>();
-
-  for (const record of medicalRecords) {
-    for (const animalId of asStrings(record.fields.Animal)) {
-      const existing = medicalByAnimal.get(animalId) || [];
-      existing.push(record);
-      medicalByAnimal.set(animalId, existing);
-    }
-  }
 
   function attachmentUrl(value: unknown) {
     if (!Array.isArray(value)) return "";
@@ -438,14 +424,6 @@ export async function getFosterPortalData(email: string) {
           medicalSummary: asText(animal?.fields["Medical Summary"]),
           adoptionStatus: asText(animal?.fields["Adoption Status"]),
           photoUrl: attachmentUrl(animal?.fields["Primary Photo"]),
-          medical: (medicalByAnimal.get(id) || []).slice(0, 6).map((medical) => ({
-            id: medical.id,
-            date: safeDate(medical.fields["Date / Time"]),
-            type: asText(medical.fields.Type),
-            summary: asText(medical.fields["Summary / Reason"]),
-            treatment: asText(medical.fields["Treatment / Medication"]),
-            nextDue: safeDate(medical.fields["Next Due Date"]),
-          })),
         };
       });
 
