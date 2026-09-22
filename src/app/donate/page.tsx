@@ -33,7 +33,7 @@ export default function DonatePage() {
                 <img
                   src="/images/nellie/nellie-resting.webp"
                   alt="Nellie, a young beagle, resting comfortably in foster care"
-                  className="w-full h-auto object-cover"
+                  className="w-full h-auto object-cover max-h-[620px]"
                 />
               </div>
 
