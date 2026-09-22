@@ -1,0 +1,314 @@
+import Link from "next/link";
+import { revalidatePath } from "next/cache";
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Boxes,
+  CalendarDays,
+  ClipboardList,
+  Globe2,
+  Users,
+  Stethoscope,
+  BarChart3,
+  Megaphone,
+} from "lucide-react";
+import { requirePortalRole, getStaffPortalData, airtableCreate, TABLES } from "@/lib/portal";
+
+function formatDate(value: string) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "America/Chicago",
+  }).format(new Date(value));
+}
+
+const airtableLinks = {
+  events: "https://airtable.com/app2vpch2JJVrP9pu/pagVQvZ7x9lM6bMo9",
+  volunteerApplications: "https://airtable.com/app2vpch2JJVrP9pu/pagHPwcMad88IOtl0",
+  volunteerRoster: "https://airtable.com/app2vpch2JJVrP9pu/pagLwnoP1FYFQ50aI",
+  shelterInventory: "https://airtable.com/app2vpch2JJVrP9pu/pag478oTML8mrIKEc",
+  clinicStaffing: "https://airtable.com/app2vpch2JJVrP9pu/pagW4tERWH95ZGloE",
+  reports: "https://airtable.com/app2vpch2JJVrP9pu/pagYrBkWqKPQpNbEH",
+};
+
+export default async function StaffPortalPage() {
+  const context = await requirePortalRole("Staff");
+  const data = await getStaffPortalData();
+
+  async function addCurrentNeed(formData: FormData) {
+    "use server";
+    await requirePortalRole("Staff");
+
+    const need = String(formData.get("need") || "").trim();
+    const area = String(formData.get("area") || "General");
+    const priority = String(formData.get("priority") || "Normal");
+    const details = String(formData.get("details") || "").trim();
+    const goal = String(formData.get("goal") || "").trim();
+    const showToVolunteers = formData.get("showToVolunteers") === "on";
+    const publishOnWebsite = formData.get("publishOnWebsite") === "on";
+
+    if (!need) return;
+
+    await airtableCreate(TABLES.currentNeeds, {
+      Need: need,
+      Area: area,
+      Status: "Active",
+      Priority: priority,
+      Details: details,
+      "Quantity / Goal": goal,
+      "Show to Volunteers": showToVolunteers,
+      "Publish on Website": publishOnWebsite,
+    });
+
+    revalidatePath("/portal/staff");
+  }
+
+  return (
+    <div className="min-h-[calc(100vh-5rem)] bg-slate-50">
+      <section className="container-custom py-10 md:py-12">
+        <div className="mx-auto max-w-7xl">
+          <Link href="/portal" className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+            <ArrowLeft className="h-4 w-4" /> Team Portal
+          </Link>
+
+          <div className="mb-10">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Staff Portal</p>
+            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Operations at a Glance</h1>
+            <p className="mt-4 max-w-3xl text-muted-foreground">
+              Action Required, shelter inventory, events, current needs, volunteer administration, clinic staffing, and reporting.
+            </p>
+          </div>
+
+          <section className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {[
+              ["Action Required", data.actionRequiredCount, AlertTriangle],
+              ["Inventory Attention", data.inventoryAttentionCount, Boxes],
+              ["Clinic Alerts", data.clinicAlerts.length, Stethoscope],
+              ["Volunteer Follow-Up", data.volunteerFollowUpCount, Users],
+            ].map(([label, value, Icon]) => {
+              const MetricIcon = Icon as typeof AlertTriangle;
+              return (
+                <div key={String(label)} className="rounded-2xl border bg-white p-5 shadow-sm">
+                  <MetricIcon className="mb-3 h-5 w-5 text-primary" />
+                  <p className="text-3xl font-bold">{String(value)}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{String(label)}</p>
+                </div>
+              );
+            })}
+          </section>
+
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+            <div className="space-y-6">
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <AlertTriangle className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Action Required</h2>
+                </div>
+
+                <div className="space-y-5">
+                  <div>
+                    <h3 className="font-semibold">High-priority current needs</h3>
+                    <div className="mt-3 space-y-2">
+                      {data.needs.filter((item) => ["High", "Urgent"].includes(item.priority)).length ? (
+                        data.needs
+                          .filter((item) => ["High", "Urgent"].includes(item.priority))
+                          .map((item) => (
+                            <div key={item.id} className="rounded-xl bg-slate-50 p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="font-medium">{item.need}</p>
+                                  <p className="mt-1 text-sm text-muted-foreground">{item.details}</p>
+                                </div>
+                                <span className="text-xs font-semibold text-primary">{item.priority}</span>
+                              </div>
+                            </div>
+                          ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No high-priority needs are currently posted.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-5">
+                    <h3 className="font-semibold">Clinic staffing alerts</h3>
+                    <div className="mt-3 space-y-2">
+                      {data.clinicAlerts.length ? (
+                        data.clinicAlerts.map((item) => (
+                          <div key={item.id} className="rounded-xl bg-slate-50 p-4">
+                            <p className="font-medium">{formatDate(item.date)} · {item.type || "Clinic"}</p>
+                            <p className="mt-1 text-sm text-primary">{item.alert}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No clinic staffing alerts right now.</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <Boxes className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Shelter Inventory</h2>
+                </div>
+                <div className="space-y-3">
+                  {data.inventory
+                    .filter((item) => item.area === "Shelter")
+                    .slice(0, 12)
+                    .map((item) => (
+                      <div key={item.id} className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
+                        <div>
+                          <p className="font-medium">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">{item.category}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold">{item.current ?? "—"}</p>
+                          <p className="text-xs text-muted-foreground">{item.status || "No status"}</p>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+                <a href={airtableLinks.shelterInventory} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">
+                  Manage shelter inventory
+                </a>
+              </section>
+
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <CalendarDays className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Upcoming Events</h2>
+                </div>
+                {data.upcomingEvents.length ? (
+                  <div className="space-y-3">
+                    {data.upcomingEvents.map((event) => (
+                      <div key={event.id} className="rounded-xl bg-slate-50 p-4">
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <p className="font-medium">{event.name}</p>
+                            <p className="mt-1 text-sm text-muted-foreground">{formatDate(event.start)}{event.location ? ` · ${event.location}` : ""}</p>
+                          </div>
+                          <span className="text-xs font-semibold text-muted-foreground">{event.status}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No upcoming events are currently scheduled.</p>
+                )}
+                <a href={airtableLinks.events} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">
+                  Manage events
+                </a>
+              </section>
+            </div>
+
+            <div className="space-y-6">
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <ClipboardList className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Current Needs</h2>
+                </div>
+
+                {data.needs.length > 0 && (
+                  <div className="mb-6 space-y-3">
+                    {data.needs.slice(0, 8).map((item) => (
+                      <div key={item.id} className="rounded-xl bg-slate-50 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-medium">{item.need}</p>
+                            <p className="text-xs text-muted-foreground">{item.area}{item.goal ? ` · ${item.goal}` : ""}</p>
+                          </div>
+                          <span className="text-xs font-semibold text-primary">{item.priority}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <form action={addCurrentNeed} className="space-y-4 border-t pt-5">
+                  <h3 className="font-semibold">Add a need</h3>
+                  <input name="need" required placeholder="What is needed?" className="w-full rounded-xl border bg-white px-3 py-2" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <select name="area" className="rounded-xl border bg-white px-3 py-2">
+                      <option>Shelter</option>
+                      <option>Clinic</option>
+                      <option>Volunteer</option>
+                      <option>Fundraising</option>
+                      <option>General</option>
+                    </select>
+                    <select name="priority" className="rounded-xl border bg-white px-3 py-2">
+                      <option>Normal</option>
+                      <option>High</option>
+                      <option>Urgent</option>
+                    </select>
+                  </div>
+                  <input name="goal" placeholder="Quantity or goal (optional)" className="w-full rounded-xl border bg-white px-3 py-2" />
+                  <textarea name="details" rows={3} placeholder="Details" className="w-full rounded-xl border bg-white px-3 py-2" />
+                  <label className="flex items-center gap-2 text-sm"><input name="showToVolunteers" type="checkbox" /> Show to volunteers</label>
+                  <label className="flex items-center gap-2 text-sm"><input name="publishOnWebsite" type="checkbox" /> Mark for public website</label>
+                  <button className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90" type="submit">
+                    Add Current Need
+                  </button>
+                </form>
+              </section>
+
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <Megaphone className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Staff Announcements</h2>
+                </div>
+                {data.announcements.length ? (
+                  <div className="space-y-3">
+                    {data.announcements.map((item) => (
+                      <div key={item.id} className="rounded-xl bg-slate-50 p-4">
+                        <p className="font-medium">{item.title}</p>
+                        <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{item.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground">No current staff announcements.</p>
+                )}
+              </section>
+
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <Globe2 className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Website & Content Tools</h2>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Link href="/events" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">Review Events Page</Link>
+                  <Link href="/resources" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">Review Resources</Link>
+                  <Link href="/volunteer" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">Review Volunteer Page</Link>
+                  <Link href="/clinic" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">Review Clinic Page</Link>
+                </div>
+              </section>
+
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <h2 className="text-2xl font-bold">Administration & Reporting</h2>
+                <div className="mt-5 grid gap-3">
+                  <a href={airtableLinks.volunteerApplications} target="_blank" rel="noopener noreferrer" className="rounded-xl border p-4 hover:bg-slate-50">
+                    <div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><span className="font-semibold">Volunteer Administration</span></div>
+                  </a>
+                  <a href={airtableLinks.clinicStaffing} target="_blank" rel="noopener noreferrer" className="rounded-xl border p-4 hover:bg-slate-50">
+                    <div className="flex items-center gap-3"><Stethoscope className="h-5 w-5 text-primary" /><span className="font-semibold">Clinic Staffing Oversight</span></div>
+                  </a>
+                  <a href={airtableLinks.reports} target="_blank" rel="noopener noreferrer" className="rounded-xl border p-4 hover:bg-slate-50">
+                    <div className="flex items-center gap-3"><BarChart3 className="h-5 w-5 text-primary" /><span className="font-semibold">Reports & Dashboards</span></div>
+                  </a>
+                </div>
+                {context.isAdministrator && (
+                  <p className="mt-5 text-sm text-muted-foreground">
+                    Administrator access is active on this account, so Volunteer, Clinic Team, and Staff areas are all available.
+                  </p>
+                )}
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
