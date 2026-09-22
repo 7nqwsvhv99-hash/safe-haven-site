@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   allowedDevOrigins: ["*.preview.same-app.com"],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "22mb",
+    },
+  },
   images: {
     unoptimized: true,
     domains: [
