@@ -542,6 +542,7 @@ export async function getClinicPortalData(email: string) {
     "Role",
     "Email",
     "Active",
+    "Volunteer Skills",
   ]);
   const member = members.find(
     (record) =>
@@ -568,6 +569,8 @@ export async function getClinicPortalData(email: string) {
       "Final Attendance Plan",
       "Confirmed Vet Score",
       "Confirmed Vet Tech Score",
+      "Confirmed Volunteer Score",
+      "Clinic Assignment",
       "Notes",
     ]),
     getPortalAnnouncements(["Clinic Team"]),
@@ -599,18 +602,26 @@ export async function getClinicPortalData(email: string) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const confirmedNamesByDate = new Map<string, { veterinarians: string[]; vetTechs: string[] }>();
+  const confirmedNamesByDate = new Map<string, {
+    veterinarians: string[];
+    vetTechs: string[];
+    assignments: Record<string, string[]>;
+  }>();
   responses.forEach((response) => {
     const names = asStrings(response.fields["Team Member Name"]);
     if (!names.length) return;
 
     asStrings(response.fields["Clinic Date"]).forEach((dateId) => {
-      const confirmed = confirmedNamesByDate.get(dateId) || { veterinarians: [], vetTechs: [] };
+      const confirmed = confirmedNamesByDate.get(dateId) || { veterinarians: [], vetTechs: [], assignments: {} };
       if ((asNumber(response.fields["Confirmed Vet Score"]) || 0) > 0) {
         confirmed.veterinarians.push(...names);
       }
       if ((asNumber(response.fields["Confirmed Vet Tech Score"]) || 0) > 0) {
         confirmed.vetTechs.push(...names);
+      }
+      if ((asNumber(response.fields["Confirmed Volunteer Score"]) || 0) > 0) {
+        const assignment = asText(response.fields["Clinic Assignment"]);
+        if (assignment) confirmed.assignments[assignment] = [...(confirmed.assignments[assignment] || []), ...names];
       }
       confirmedNamesByDate.set(dateId, confirmed);
     });
@@ -625,6 +636,7 @@ export async function getClinicPortalData(email: string) {
         initialResponse: asText(record.fields["Initial Response"]),
         reconfirmation: asText(record.fields["One-Week Reconfirmation"]),
         finalPlan: asText(record.fields["Final Attendance Plan"]),
+        assignment: asText(record.fields["Clinic Assignment"]),
         notes: asText(record.fields.Notes),
       }))
     )
@@ -636,6 +648,7 @@ export async function getClinicPortalData(email: string) {
       id: member.id,
       name: asText(member.fields["Team Member Name"]),
       role: asText(member.fields.Role),
+      skills: asStrings(member.fields["Volunteer Skills"]),
     },
     dates: memberResponses,
     teamDates: dates
@@ -650,6 +663,7 @@ export async function getClinicPortalData(email: string) {
         stage: asText(record.fields["Scheduling Stage"]),
         veterinarianNames: confirmedNamesByDate.get(record.id)?.veterinarians || [],
         vetTechNames: confirmedNamesByDate.get(record.id)?.vetTechs || [],
+        volunteerAssignments: confirmedNamesByDate.get(record.id)?.assignments || {},
         volunteers: asNumber(record.fields["Confirmed Clinic Volunteers"]),
         volunteerTarget: asNumber(record.fields["Volunteer Target"]),
         alert: asText(record.fields["Staffing Alert"]),
