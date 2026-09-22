@@ -103,11 +103,6 @@ export default async function FosterPortalPage() {
       "Resolution Status": attentionRequired ? "New" : "Closed",
     });
 
-    const photos = formData
-      .getAll("photos")
-      .filter((item): item is File => item instanceof File && item.size > 0)
-      .slice(0, 4);
-
     if (createdUpdate?.id && photos.length) {
       for (const photo of photos) {
         await airtableUploadAttachment(createdUpdate.id, "fldv9ACtVoYX6KBRy", photo);
