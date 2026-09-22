@@ -33,6 +33,7 @@ const interestOptions = [
   "Social Media & Content",
   "Administrative Support",
   "Fundraising & Event Support",
+  "Clinic Team - General Volunteer",
   "Clinic Team – Instrument Sterilization",
   "Clinic Team – Front Room",
   "Clinic Team – Back Room Documentation",
