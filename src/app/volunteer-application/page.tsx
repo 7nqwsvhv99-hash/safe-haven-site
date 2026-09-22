@@ -40,6 +40,8 @@ const interestOptions = [
 
 export default function VolunteerApplicationPage() {
   const [interests, setInterests] = useState<string[]>([])
+  const [isAdult, setIsAdult] = useState("")
+  const [communityService, setCommunityService] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; message: string; id?: string } | null>(null)
 
@@ -62,8 +64,8 @@ export default function VolunteerApplicationPage() {
       ...values,
       daysAvailable: form.getAll("daysAvailable").map(String),
       timesAvailable: form.getAll("timesAvailable").map(String),
+      handlingComfort: form.getAll("handlingComfort").map(String),
       volunteerInterests: interests,
-      authorizationAgreed: form.get("authorizationAgreed") === "on",
     }
 
     try {
@@ -104,27 +106,49 @@ export default function VolunteerApplicationPage() {
           <div className="grid md:grid-cols-2 gap-5">
             <Field label="First Name *"><Input name="firstName" required /></Field>
             <Field label="Last Name *"><Input name="lastName" required /></Field>
-            <Field label="Age Range *"><select name="ageRange" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Under 18</option><option>18-21</option><option>22-24</option><option>25-34</option><option>35-44</option><option>45-54</option><option>55-64</option><option>65-69</option><option>70-74</option><option>75+</option></select></Field>
+            <Field label="Are You 18 Years of Age or Older? *">
+              <select name="age18Plus" className={selectClass} required value={isAdult} onChange={(event)=>setIsAdult(event.target.value)}>
+                <option value="" disabled>Select one</option><option>Yes</option><option>No</option>
+              </select>
+            </Field>
             <Field label="Email Address *"><Input name="email" type="email" required /></Field>
             <Field label="Street Address *"><Input name="streetAddress" required /></Field>
             <Field label="Suite / Apt / Unit"><Input name="unitApt" /></Field>
             <Field label="City *"><Input name="city" required /></Field>
             <Field label="State / Province *"><Input name="state" required defaultValue="IL" /></Field>
             <Field label="ZIP / Postal Code *"><Input name="zip" required /></Field>
-            <Field label="Home Phone"><Input name="homePhone" type="tel" /></Field>
-            <Field label="Work Phone"><Input name="workPhone" type="tel" /></Field>
             <Field label="Cell Phone *"><Input name="cellPhone" type="tel" required /></Field>
-            <Field label="Preferred Method of Contact *"><select name="preferredContact" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Email</option><option>Home Phone</option><option>Work Phone</option><option>Cell Phone</option><option>Text</option></select></Field>
+            <Field label="Preferred Method of Contact *"><select name="preferredContact" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Email</option><option>Cell Phone</option><option>Text</option></select></Field>
           </div>
+          {isAdult === "No" && (
+            <div className="rounded-2xl border bg-slate-50 p-5 space-y-4">
+              <div>
+                <p className="font-semibold">Parent or Guardian Contact</p>
+                <p className="mt-1 text-sm text-muted-foreground">Safe Haven will follow up about age requirements and any parent or guardian permissions needed before volunteering begins.</p>
+              </div>
+              <div className="grid md:grid-cols-2 gap-5">
+                <Field label="Parent / Guardian Name *"><Input name="guardianName" required={isAdult === "No"} /></Field>
+                <Field label="Parent / Guardian Phone *"><Input name="guardianPhone" type="tel" required={isAdult === "No"} /></Field>
+                <Field label="Parent / Guardian Email"><Input name="guardianEmail" type="email" /></Field>
+              </div>
+            </div>
+          )}
         </Section>
 
-        <Section title="Employment, School & Referral">
+        <Section title="Community Service & Referral">
           <div className="grid md:grid-cols-2 gap-5">
-            <Field label="Are You Employed? *"><select name="employmentStatus" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes, full time</option><option>Yes, part time</option><option>No</option><option>Retired</option></select></Field>
-            <Field label="Employer"><Input name="employer" /></Field>
-            <Field label="Are You in School? *"><select name="schoolStatus" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes, full time</option><option>Yes, part time</option><option>No</option></select></Field>
+            <Field label="Are You Volunteering to Complete School or Other Required Community-Service Hours? *">
+              <select name="communityService" className={selectClass} required value={communityService} onChange={(event)=>setCommunityService(event.target.value)}>
+                <option value="" disabled>Select one</option><option>Yes</option><option>No</option>
+              </select>
+            </Field>
             <Field label="How Did You Hear About Us? *"><select name="howHeard" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Adopted from Safe Haven before</option><option>Internet search</option><option>Adoption event</option><option>Friend</option><option>Shelter</option><option>Another rescue</option><option>Facebook</option><option>Instagram</option><option>TikTok</option><option>Petfinder</option><option>Adopt-a-Pet</option><option>Other</option></select></Field>
           </div>
+          {communityService === "Yes" && (
+            <Field label="Community-Service Details" note="Tell us the school or organization, number of hours required, and deadline if applicable.">
+              <Textarea name="communityServiceDetails" />
+            </Field>
+          )}
           <Field label="Referral Details" note="If a person, shelter, rescue, or other source referred you, tell us who."><Input name="howHeardDetails" /></Field>
         </Section>
 
@@ -140,14 +164,21 @@ export default function VolunteerApplicationPage() {
           <Field label="Have You Volunteered With an Animal Rescue Before? *"><select name="previousRescueVolunteer" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes</option><option>No</option></select></Field>
           <Field label="Previous Organization(s)"><Input name="previousOrganizations" /></Field>
           <Field label="Previous Volunteer Duties"><Textarea name="previousDuties" /></Field>
-          <div className="grid md:grid-cols-2 gap-5">
-            <Field label="Do You Currently Have a Dog? *"><select name="currentDog" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes</option><option>No</option></select></Field>
-            <Field label="Have You Had a Dog in the Past? *"><select name="pastDog" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes</option><option>No</option></select></Field>
-            <Field label="Dog Breed Experience"><Input name="dogBreedExperience" /></Field>
-            <Field label="Do You Currently Have a Cat? *"><select name="currentCat" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes</option><option>No</option></select></Field>
-            <Field label="Have You Had a Cat in the Past? *"><select name="pastCat" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes</option><option>No</option></select></Field>
+          <Field
+            label="Tell Us About Any Experience You Have Working With or Handling Animals"
+            note="No previous animal experience is required for many volunteer opportunities."
+          >
+            <Textarea name="animalExperience" />
+          </Field>
+          <div className="space-y-3">
+            <Label>What Types of Animal Handling or Care Are You Comfortable With?</Label>
+            <p className="text-xs text-muted-foreground">Select all that apply. This helps us match you with an appropriate volunteer role.</p>
+            <div className="grid md:grid-cols-2 gap-3">
+              {["Dogs","Cats","Large dogs","Shy or fearful animals","Active or high-energy animals","Cleaning and animal-care environments","I prefer a role with no animal handling"].map((item)=>
+                <label key={item} className="flex items-center gap-2"><input className={checkboxClass} type="checkbox" name="handlingComfort" value={item} />{item}</label>
+              )}
+            </div>
           </div>
-          <Field label="Animal Handling, Training, Grooming, or Other Relevant Experience"><Textarea name="animalExperience" /></Field>
         </Section>
 
         <Section title="How Would You Like to Help?">
@@ -156,13 +187,6 @@ export default function VolunteerApplicationPage() {
             {interestOptions.map((interest)=><label key={interest} className="flex items-center gap-2"><input className={checkboxClass} type="checkbox" value={interest} checked={interests.includes(interest)} onChange={()=>toggleInterest(interest)} />{interest}</label>)}
           </div>
           <Field label="Anything Else You Would Like Us to Know?"><Textarea name="anythingElse" /></Field>
-        </Section>
-
-        <Section title="Volunteer Authorization">
-          <p className="text-sm text-muted-foreground leading-6">
-            As a volunteer of this rescue, I agree to abide by the policies and procedures. I understand that I will be volunteering at my own risk and that the rescue, its Board of Directors, other volunteers, employees and affiliates, cannot assume any responsibility for any liability for any accident, injury or health problem which may arise from any volunteer work I perform for the rescue. I agree that all the work I do is on a volunteer basis and I am not eligible to receive any monetary payment or reward.
-          </p>
-          <label className="flex items-start gap-3"><input className={checkboxClass + " mt-1"} type="checkbox" name="authorizationAgreed" required /><span>I agree to the volunteer authorization above. *</span></label>
         </Section>
 
         <Button type="submit" size="lg" className="w-full" disabled={submitting || interests.length === 0}>{submitting ? "Submitting Application..." : "Submit Volunteer Application"}</Button>

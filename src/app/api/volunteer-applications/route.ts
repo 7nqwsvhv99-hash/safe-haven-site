@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     const required: Array<[string, unknown]> = [
       ["First name", body.firstName],
       ["Last name", body.lastName],
-      ["Age range", body.ageRange],
+      ["Age requirement", body.age18Plus],
       ["Email", body.email],
       ["Street address", body.streetAddress],
       ["City", body.city],
@@ -39,20 +39,20 @@ export async function POST(request: Request) {
       ["ZIP", body.zip],
       ["Cell phone", body.cellPhone],
       ["Preferred contact", body.preferredContact],
-      ["Employment status", body.employmentStatus],
-      ["School status", body.schoolStatus],
+      ["Community service", body.communityService],
       ["How you heard about us", body.howHeard],
       ["Ready to volunteer", body.readyToVolunteer],
       ["Previous rescue volunteer", body.previousRescueVolunteer],
-      ["Current dog", body.currentDog],
-      ["Past dog", body.pastDog],
-      ["Current cat", body.currentCat],
-      ["Past cat", body.pastCat],
     ]
     const firstMissing = required.find(([, value]) => !asString(value))
     if (firstMissing) return NextResponse.json({ error: firstMissing[0] + " is required." }, { status: 400 })
+    if (asString(body.age18Plus) === "No" && !asString(body.guardianName)) {
+      return NextResponse.json({ error: "Parent or guardian name is required for applicants under 18." }, { status: 400 })
+    }
+    if (asString(body.age18Plus) === "No" && !asString(body.guardianPhone)) {
+      return NextResponse.json({ error: "Parent or guardian phone is required for applicants under 18." }, { status: 400 })
+    }
     if (interests.length === 0) return NextResponse.json({ error: "Please select at least one volunteer interest." }, { status: 400 })
-    if (body.authorizationAgreed !== true) return NextResponse.json({ error: "Volunteer authorization is required." }, { status: 400 })
 
     const now = new Date()
     const compactDate = now.toISOString().slice(0, 10).replaceAll("-", "")
@@ -66,20 +66,20 @@ export async function POST(request: Request) {
       "Email": asString(body.email),
       "Cell Phone": asString(body.cellPhone),
       "Contact & Address": lines([
-        ["Age Range", body.ageRange],
+        ["18 or Older", body.age18Plus],
         ["Preferred Contact", body.preferredContact],
         ["Street Address", body.streetAddress],
         ["Unit / Apt", body.unitApt],
         ["City", body.city],
         ["State / Province", body.state],
         ["ZIP / Postal Code", body.zip],
-        ["Home Phone", body.homePhone],
-        ["Work Phone", body.workPhone],
+        ["Parent / Guardian Name", body.guardianName],
+        ["Parent / Guardian Phone", body.guardianPhone],
+        ["Parent / Guardian Email", body.guardianEmail],
       ]),
       "Employment & School": lines([
-        ["Employment Status", body.employmentStatus],
-        ["Employer", body.employer],
-        ["School Status", body.schoolStatus],
+        ["Required Community Service", body.communityService],
+        ["Community Service Details", body.communityServiceDetails],
       ]),
       "Availability": lines([
         ["Ready to Volunteer", body.readyToVolunteer],
@@ -92,16 +92,11 @@ export async function POST(request: Request) {
         ["Previous Rescue Volunteer", body.previousRescueVolunteer],
         ["Previous Organizations", body.previousOrganizations],
         ["Previous Duties", body.previousDuties],
-        ["Currently Has a Dog", body.currentDog],
-        ["Had a Dog in the Past", body.pastDog],
-        ["Dog Breed Experience", body.dogBreedExperience],
-        ["Currently Has a Cat", body.currentCat],
-        ["Had a Cat in the Past", body.pastCat],
         ["Animal Experience", body.animalExperience],
+        ["Handling & Care Comfort", asStringArray(body.handlingComfort)],
         ["Volunteer Interests", interests],
         ["Anything Else", body.anythingElse],
       ]),
-      "Authorization Agreed": true,
     }
 
     const response = await fetch("https://api.airtable.com/v0/" + AIRTABLE_BASE_ID + "/" + AIRTABLE_VOLUNTEER_APPLICATIONS_TABLE_ID, {
