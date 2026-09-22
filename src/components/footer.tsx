@@ -5,7 +5,7 @@ import { NewsletterSignup } from "@/components/newsletter-signup"
 export function Footer() {
   return (
     <footer className="bg-slate-50 border-t">
-      <div className="container-custom section-padding">
+      <div className="container-custom py-10 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand */}
           <div className="space-y-4">
@@ -97,7 +97,7 @@ export function Footer() {
         </div>
 
         {/* Newsletter Signup */}
-        <div className="mt-12 p-6 bg-primary/5 rounded-2xl">
+        <div className="mt-8 p-6 bg-primary/5 rounded-2xl">
           <div className="max-w-2xl mx-auto text-center space-y-4">
             <h3 className="font-bold text-lg">Stay Connected</h3>
             <p className="text-sm text-muted-foreground">Get adoption alerts, success stories, and updates delivered to your inbox.</p>
@@ -106,7 +106,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-6 border-t text-center text-sm text-muted-foreground">
+        <div className="mt-8 pt-5 border-t text-center text-sm text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Safe Haven Humane Society. All rights reserved.</p>
         </div>
       </div>
