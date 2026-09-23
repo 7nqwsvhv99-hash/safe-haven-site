@@ -51,18 +51,18 @@ async function airtableCreate(fields) {
 async function airtableCreateClinicDay(fields) {
   const token = process.env.AIRTABLE_ACCESS_TOKEN;
   const response = await fetch(
-    \`https://api.airtable.com/v0/\${CLINICDAY_BASE_ID}/\${CLINICDAY_TABLE_ID}\`,
+    `https://api.airtable.com/v0/${CLINICDAY_BASE_ID}/${CLINICDAY_TABLE_ID}`,
     {
       method: "POST",
       headers: {
-        Authorization: \`Bearer \${token}\`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ records: [{ fields }] }),
     }
   );
   const data = await response.json();
-  if (!response.ok) throw new Error(\`ClinicDay create failed: \${JSON.stringify(data)}\`);
+  if (!response.ok) throw new Error(`ClinicDay create failed: ${JSON.stringify(data)}`);
   return data.records?.[0];
 }
 
@@ -173,7 +173,7 @@ export default async () => {
     const confirmedTechs = Number(fields["Confirmed Vet Techs"] || 0);
 
     if (!date || ["Completed", "Cancelled"].includes(stage)) continue;
-    if (new Date(\`\${date}T23:59:59\`) < today) continue;
+    if (new Date(`${date}T23:59:59`) < today) continue;
     if (confirmedVets < 1 || confirmedTechs < 1) continue;
     if (fields["ClinicDay Record ID"]) continue;
 
