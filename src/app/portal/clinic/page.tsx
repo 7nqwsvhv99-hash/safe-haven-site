@@ -3,6 +3,88 @@ import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone } from "lucide-react";
 import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
+const CLINICDAY_BASE_ID = "app3AcoD2G64aMsEz";
+const CLINICDAY_DAYS_TABLE_ID = "tblnOw4Qr5AvCRWvQ";
+
+async function ensureClinicDayExists({
+  staffingDateId,
+  clinicDate,
+  sessionType,
+}: {
+  staffingDateId: string;
+  clinicDate: string;
+  sessionType: string;
+}) {
+  const token = process.env.AIRTABLE_ACCESS_TOKEN;
+  if (!token || !staffingDateId || !clinicDate) return;
+
+  const clinicType = sessionType === "Half Day" ? "Half Day" : "Full Day";
+  const params = new URLSearchParams({
+    maxRecords: "1",
+    filterByFormula: `IS_SAME({Clinic_Date}, '${clinicDate}', 'day')`,
+  });
+
+  const lookup = await fetch(
+    `https://api.airtable.com/v0/${CLINICDAY_BASE_ID}/${CLINICDAY_DAYS_TABLE_ID}?${params.toString()}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }
+  );
+  const lookupBody = await lookup.json();
+  if (!lookup.ok) {
+    console.error("ClinicDay date lookup failed", lookupBody);
+    throw new Error("Could not check ClinicDay for this clinic date");
+  }
+
+  let clinicDayRecordId = lookupBody.records?.[0]?.id as string | undefined;
+
+  if (!clinicDayRecordId) {
+    const fullDay = clinicType === "Full Day";
+    const create = await fetch(
+      `https://api.airtable.com/v0/${CLINICDAY_BASE_ID}/${CLINICDAY_DAYS_TABLE_ID}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          records: [
+            {
+              fields: {
+                Clinic_Date: clinicDate,
+                "Clinic Type": clinicType,
+                "Clinic Day Status": "Scheduled",
+                "Legacy Surgical Capacity": fullDay ? 21 : 12,
+                "Non-Surgical Capacity": fullDay ? 9 : 5,
+                "Base Public Surgical Capacity": fullDay ? 4 : 5,
+                "Max Capacity": fullDay ? 30 : 21,
+              },
+            },
+          ],
+        }),
+        cache: "no-store",
+      }
+    );
+    const createBody = await create.json();
+    if (!create.ok) {
+      console.error("ClinicDay date creation failed", createBody);
+      throw new Error("Could not create the ClinicDay clinic date");
+    }
+    clinicDayRecordId = createBody.records?.[0]?.id;
+  }
+
+  if (clinicDayRecordId) {
+    await airtableUpdate(TABLES.clinicDates, staffingDateId, {
+      "ClinicDay Record ID": clinicDayRecordId,
+      "Synced from ClinicDay": true,
+      "Last ClinicDay Sync": new Date().toISOString(),
+      "ClinicDay Session Type": clinicType,
+    });
+  }
+}
+
 function formatDate(value: string) {
   if (!value) return "";
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -44,6 +126,7 @@ export default async function ClinicPortalPage() {
       "Preference ID": `VP-${Date.now()}`,
       Veterinarian: [latest.member.id],
       "Preferred Clinic Date": preferredDate,
+      "Preferred Clinic Type": preferredClinicType,
       "Preference Status": "Submitted",
       Notes: notes,
       "Submitted At": new Date().toISOString(),
@@ -78,12 +161,28 @@ export default async function ClinicPortalPage() {
       }
     }
 
+    const matchedResponse = latest.dates.find((item) => item.responseId === responseId);
+
     await airtableUpdate(TABLES.clinicResponses, responseId, {
       "Initial Response": value,
       "Initial Response Date": new Date().toISOString(),
       "Final Attendance Plan": value === "Yes" ? "Attending" : "Not Attending",
       "Clinic Assignment": assignment || null,
     });
+
+    if (
+      value === "Yes" &&
+      ["Vet Tech", "Veterinary Technician"].includes(latest.member?.role || "") &&
+      matchedResponse?.clinic?.id &&
+      matchedResponse.clinic.date
+    ) {
+      await ensureClinicDayExists({
+        staffingDateId: matchedResponse.clinic.id,
+        clinicDate: matchedResponse.clinic.date,
+        sessionType: matchedResponse.clinic.type || "Full Day",
+      });
+    }
+
     revalidatePath("/portal/clinic");
   }
 
@@ -144,7 +243,7 @@ export default async function ClinicPortalPage() {
                     Add the Wednesday or Saturday dates you are available to serve as the veterinarian. Submit dates as far ahead as your schedule allows. Once a date is submitted, the Vet Tech signup round begins.
                   </p>
 
-                  <form action={submitVeterinarianPreference} className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-[220px_1fr_auto] md:items-end">
+                  <form action={submitVeterinarianPreference} className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-[220px_180px_1fr_auto] md:items-end">
                     <label className="text-sm font-medium">
                       Preferred clinic date
                       <input
@@ -153,6 +252,18 @@ export default async function ClinicPortalPage() {
                         required
                         className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
                       />
+                    </label>
+                    <label className="text-sm font-medium">
+                      Clinic type
+                      <select
+                        name="preferredClinicType"
+                        required
+                        defaultValue="Full Day"
+                        className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
+                      >
+                        <option>Full Day</option>
+                        <option>Half Day</option>
+                      </select>
                     </label>
                     <label className="text-sm font-medium">
                       Notes <span className="font-normal text-muted-foreground">(optional)</span>
@@ -177,6 +288,7 @@ export default async function ClinicPortalPage() {
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className="font-semibold">{formatDate(preference.preferredDate)}</p>
+                                <p className="mt-1 text-sm text-muted-foreground">{preference.clinicType || "Full Day"}</p>
                                 {preference.notes && <p className="mt-1 text-sm text-muted-foreground">{preference.notes}</p>}
                               </div>
                               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
