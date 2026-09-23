@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { ArrowLeft, CalendarCheck, ClipboardCheck, Boxes, Megaphone } from "lucide-react";
-import { requirePortalRole, getClinicPortalData, airtableUpdate, TABLES } from "@/lib/portal";
+import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone } from "lucide-react";
+import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
 function formatDate(value: string) {
   if (!value) return "";
@@ -19,6 +19,38 @@ function formatDate(value: string) {
 export default async function ClinicPortalPage() {
   const context = await requirePortalRole("Clinic Team");
   const data = await getClinicPortalData(context.email);
+
+  async function submitVeterinarianPreference(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Clinic Team");
+    const latest = await getClinicPortalData(current.email);
+    if (!latest.member || latest.member.role !== "Veterinarian") return;
+
+    const preferredDate = String(formData.get("preferredDate") || "").trim();
+    const notes = String(formData.get("notes") || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) return;
+
+    const date = new Date(`${preferredDate}T12:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (Number.isNaN(date.getTime()) || date < today || ![3, 6].includes(date.getDay())) return;
+
+    const duplicate = latest.vetPreferences.some(
+      (item) => item.preferredDate === preferredDate && item.status !== "Withdrawn"
+    );
+    if (duplicate) return;
+
+    await airtableCreate(TABLES.vetClinicPreferences, {
+      "Preference ID": `VP-${Date.now()}`,
+      Veterinarian: [latest.member.id],
+      "Preferred Clinic Date": preferredDate,
+      "Preference Status": "Submitted",
+      Notes: notes,
+      "Submitted At": new Date().toISOString(),
+    });
+
+    revalidatePath("/portal/clinic");
+  }
 
   async function saveAvailability(formData: FormData) {
     "use server";
@@ -102,6 +134,63 @@ export default async function ClinicPortalPage() {
             </div>
           ) : (
             <div className="space-y-8">
+              {data.member.role === "Veterinarian" && (
+                <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                  <div className="mb-5 flex items-center gap-3">
+                    <CalendarPlus className="h-6 w-6 text-primary" />
+                    <h2 className="text-2xl font-bold">Choose Clinic Dates</h2>
+                  </div>
+                  <p className="max-w-3xl text-sm text-muted-foreground">
+                    Add the Wednesday or Saturday dates you are available to serve as the veterinarian. Submit dates as far ahead as your schedule allows. Once a date is submitted, the Vet Tech signup round begins.
+                  </p>
+
+                  <form action={submitVeterinarianPreference} className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-[220px_1fr_auto] md:items-end">
+                    <label className="text-sm font-medium">
+                      Preferred clinic date
+                      <input
+                        type="date"
+                        name="preferredDate"
+                        required
+                        className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
+                      />
+                    </label>
+                    <label className="text-sm font-medium">
+                      Notes <span className="font-normal text-muted-foreground">(optional)</span>
+                      <input
+                        type="text"
+                        name="notes"
+                        placeholder="Anything the clinic team should know"
+                        className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
+                      />
+                    </label>
+                    <button type="submit" className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">
+                      Add Date
+                    </button>
+                  </form>
+
+                  {data.vetPreferences.length > 0 && (
+                    <div className="mt-5">
+                      <h3 className="text-sm font-semibold">My submitted dates</h3>
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        {data.vetPreferences.map((preference) => (
+                          <div key={preference.id} className="rounded-2xl border bg-white p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="font-semibold">{formatDate(preference.preferredDate)}</p>
+                                {preference.notes && <p className="mt-1 text-sm text-muted-foreground">{preference.notes}</p>}
+                              </div>
+                              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                {preference.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </section>
+              )}
+
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
                 <div className="mb-5 flex items-center gap-3">
                   <CalendarCheck className="h-6 w-6 text-primary" />
