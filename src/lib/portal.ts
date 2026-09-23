@@ -4,6 +4,8 @@ import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 const AIRTABLE_BASE_ID = "app2vpch2JJVrP9pu";
+const CLINICDAY_BASE_ID = "app3AcoD2G64aMsEz";
+const CLINICDAY_TABLE_ID = "tblnOw4Qr5AvCRWvQ";
 
 const TABLES = {
   portalAccess: "tblIZIPNjVjxteVrB",
@@ -913,6 +915,100 @@ export async function getMedicalPortalData() {
         !["Reviewed", "Resolved"].includes(record.veterinaryReviewStatus)
     ),
   };
+}
+
+export async function ensureClinicDayForStaffingDate({
+  staffingRecordId,
+  clinicDate,
+  sessionType,
+}: {
+  staffingRecordId: string;
+  clinicDate: string;
+  sessionType: string;
+}) {
+  const token = process.env.AIRTABLE_ACCESS_TOKEN;
+  if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
+  if (!staffingRecordId || !clinicDate) return null;
+
+  const type = sessionType === "Half Day" ? "Half Day" : "Full Day";
+  const params = new URLSearchParams();
+  params.set("pageSize", "100");
+  ["Clinic_Date", "Clinic Type", "Clinic Day Status"].forEach((field) => params.append("fields[]", field));
+
+  const listResponse = await fetch(
+    \`https://api.airtable.com/v0/\${CLINICDAY_BASE_ID}/\${CLINICDAY_TABLE_ID}?\${params.toString()}\`,
+    {
+      headers: { Authorization: \`Bearer \${token}\` },
+      cache: "no-store",
+    }
+  );
+  const listResult = await listResponse.json();
+  if (!listResponse.ok) {
+    console.error("ClinicDay lookup error", listResult);
+    throw new Error("Could not check ClinicDay clinic dates");
+  }
+
+  let clinicDayRecord = (listResult.records || []).find(
+    (record: AirtableRecord) => asText(record.fields.Clinic_Date) === clinicDate
+  ) as AirtableRecord | undefined;
+
+  if (!clinicDayRecord) {
+    const capacities =
+      type === "Half Day"
+        ? {
+            "Legacy Surgical Capacity": 12,
+            "Non-Surgical Capacity": 5,
+            "Base Public Surgical Capacity": 5,
+            "Max Capacity": 21,
+          }
+        : {
+            "Legacy Surgical Capacity": 21,
+            "Non-Surgical Capacity": 9,
+            "Base Public Surgical Capacity": 4,
+            "Max Capacity": 30,
+          };
+
+    const createResponse = await fetch(
+      \`https://api.airtable.com/v0/\${CLINICDAY_BASE_ID}/\${CLINICDAY_TABLE_ID}\`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: \`Bearer \${token}\`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          records: [
+            {
+              fields: {
+                Clinic_Date: clinicDate,
+                "Clinic Type": type,
+                "Clinic Day Status": "Scheduled",
+                "Scheduling Hold?": false,
+                ...capacities,
+              },
+            },
+          ],
+        }),
+        cache: "no-store",
+      }
+    );
+    const createResult = await createResponse.json();
+    if (!createResponse.ok) {
+      console.error("ClinicDay create error", createResult);
+      throw new Error("Could not create ClinicDay clinic date");
+    }
+    clinicDayRecord = createResult.records?.[0] as AirtableRecord | undefined;
+  }
+
+  if (!clinicDayRecord) return null;
+
+  await airtableUpdate(TABLES.clinicDates, staffingRecordId, {
+    "ClinicDay Record ID": clinicDayRecord.id,
+    "ClinicDay Session Type": type,
+    "Last ClinicDay Sync": new Date().toISOString(),
+  });
+
+  return clinicDayRecord.id;
 }
 
 async function airtableCreate(tableId: string, fields: Record<string, unknown>) {
