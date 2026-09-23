@@ -83,7 +83,7 @@ if (laterStage && vets < 1) {
   nextStage = "Awaiting Vet Tech";
 } else if (vets >= 1 && techs >= 1) {
   await ensureResponsesForRole("Clinic Volunteer");
-  nextStage = !clinic.getCellValue("Patient Follow-Up Required") && requiredCoverageComplete && volunteers >= target
+  nextStage = !clinic.getCellValue("Booked Appointment Follow-Up Required") && requiredCoverageComplete && volunteers >= target
     ? "Staffed"
     : volunteers > 0
       ? "Staffing In Progress"

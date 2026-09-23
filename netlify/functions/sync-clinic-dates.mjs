@@ -24,12 +24,21 @@ async function request(base, table, method='GET', payload, query='') {
     return body;
   }
 }
-async function list(base,table){const records=[];let offset;do{const body=await request(base,table,'GET',undefined,'?pageSize=100'+(offset?'&offset='+encodeURIComponent(offset):''));records.push(...(body.records||[]));offset=body.offset;}while(offset);return records;}
-async function patch(base,table,id,fields){await request(base,table,'PATCH',{records:[{id,fields}]});}
+const recordCache = new Map();
+async function list(base,table){const records=[];let offset;do{const body=await request(base,table,'GET',undefined,'?pageSize=100'+(offset?'&offset='+encodeURIComponent(offset):''));records.push(...(body.records||[]));for(const row of body.records||[])recordCache.set(base+table+row.id,row.fields);offset=body.offset;}while(offset);return records;}
+async function patch(base,table,id,fields){
+ const current=recordCache.get(base+table+id)||{};
+ const changed=Object.fromEntries(Object.entries(fields).filter(([key,value])=>key!=='Last ClinicDay Sync' && JSON.stringify(current[key]??null)!==JSON.stringify(value??null)));
+ if(!Object.keys(changed).length)return;
+ if(fields['Last ClinicDay Sync'])changed['Last ClinicDay Sync']=fields['Last ClinicDay Sync'];
+ await request(base,table,'PATCH',{records:[{id,fields:changed}]});
+ recordCache.set(base+table+id,{...current,...changed});
+}
 async function upsert(base,table,key,fields){return (await request(base,table,'PATCH',{performUpsert:{fieldsToMergeOn:[key]},records:[{fields}]})).records[0];}
 export default async () => {
  if(process.env.CLINIC_SCHEDULING_V2_ENABLED !== 'true') return new Response(JSON.stringify({ok:true,paused:'Awaiting Airtable automation activation'}));
  if(!process.env.AIRTABLE_ACCESS_TOKEN) throw new Error('AIRTABLE_ACCESS_TOKEN is missing');
+ recordCache.clear();
  const today=todayChicago();
  const source=await list(CD,DAYS);
  const staffing=await list(SH,DATES);
@@ -51,7 +60,7 @@ export default async () => {
      await patch(SH,RESPONSES,response.id,{'Initial Response':'No Response','Initial Response Date':null,'One-Week Reconfirmation':'Awaiting Response','Reconfirmation Date':null,'Final Attendance Plan':'Unconfirmed','Clinic Assignment':null,'Availability Clinic Date':newDate});
    }
    for(const email of recipients) await enqueue(key,email,'Safe Haven clinic schedule change',message);
-   for(const email of COORDINATORS) await enqueue(key,email,'Clinic schedule change: coordinator review required',message+`\n\n${patients} scheduled patient cases. Booking has been placed on hold. Review the linked ClinicDay date and contact each affected owner/partner; document the outcome before moving or cancelling patient appointments. Clear Patient Follow-Up Required only after that work, and release Scheduling Hold in ClinicDay only when staffing is safe.`);
+   for(const email of COORDINATORS) await enqueue(key,email,'Clinic schedule change: coordinator review required',message+`\n\n${patients} scheduled patient cases. Booking has been placed on hold. Review the linked ClinicDay date and contact each affected owner/partner; document the outcome before moving or cancelling patient appointments. Clear Booked Appointment Follow-Up Required only after that work, and release Scheduling Hold in ClinicDay only when staffing is safe.`);
  };
  // First reconcile known canonical links. Unique date matches migrate legacy SYNC IDs.
  for(const day of source) {
@@ -83,7 +92,7 @@ export default async () => {
    const cancellationChanged=previous ? previous.cancelled!==cancelled : localCancelled!==sourceCancelled;
    if(localChanged&&sourceChanged&&(localDate!==sourceDate||localType!==sf['Clinic Type'])) {
      await patch(CD,DAYS,day.id,{'Scheduling Hold?':true});
-     await patch(SH,DATES,row.id,{'Patient Follow-Up Required':true,'Sync Review Notes':'Conflicting edits in both bases. Resolve the clinic date/type in both records before clearing this flag.'});
+     await patch(SH,DATES,row.id,{'Booked Appointment Follow-Up Required':true,'Sync Review Notes':'Conflicting edits in both bases. Resolve the clinic date/type in both records before clearing this flag.'});
      for(const email of COORDINATORS) await enqueue(row.id+'|sync-conflict|'+localDate+'|'+sourceDate,email,'Clinic date sync conflict','Both clinic dates changed. Booking is on hold. Review both bases before resolving.');
      continue;
    }
@@ -100,7 +109,7 @@ export default async () => {
    if(targetType==='Full Day'&&Number(sf['Max Capacity'])!==26)sourcePatch['Max Capacity']=26;
    if(localCancelled&&!sourceCancelled)sourcePatch['Clinic Cancelled']=true;
    // Never silently move a clinic containing booked patients. Coordinator follows up first.
-   if((targetDate!==sourceDate||targetType!==sf['Clinic Type']) && (!patients || (!change&&!f['Patient Follow-Up Required']))) {
+   if((targetDate!==sourceDate||targetType!==sf['Clinic Type']) && (!patients || (!change&&!f['Booked Appointment Follow-Up Required']))) {
      sourcePatch.Clinic_Date=targetDate;sourcePatch['Clinic Type']=targetType;
    }
    if(Object.keys(sourcePatch).length)await patch(CD,DAYS,day.id,sourcePatch);
@@ -110,7 +119,7 @@ export default async () => {
    if(cancelled){update['Scheduling Stage']='Cancelled';sourcePatch['Scheduling Hold?']=true;}
    else if(status==='Complete')update['Scheduling Stage']='Completed';
    else if(change)update['Scheduling Stage']='Proposed';
-   if(change){update['Patient Follow-Up Required']=patients>0;update['Sync Review Notes']=patients>0?'Schedule changed. Contact and reconcile all booked patients before clearing follow-up and releasing the ClinicDay scheduling hold.':'Schedule changed. Obtain fresh staffing responses and review the ClinicDay scheduling hold.';}
+   if(change){update['Booked Appointment Follow-Up Required']=patients>0;update['Sync Review Notes']=patients>0?'Schedule changed. Contact and reconcile all booked patients before clearing follow-up and releasing the ClinicDay scheduling hold.':'Schedule changed. Obtain fresh staffing responses and review the ClinicDay scheduling hold.';}
    await patch(SH,DATES,row.id,update);Object.assign(f,update);
  }
  for(const row of staffing) {
@@ -118,7 +127,7 @@ export default async () => {
    if(!date || date<today) continue;
    if(f['ClinicDay Record ID']) {
      if(!source.some(r=>r.id===f['ClinicDay Record ID'])) {
-       await patch(SH,DATES,row.id,{'Patient Follow-Up Required':true,'Sync Review Notes':'Linked ClinicDay record is missing. Restore or explicitly reconcile its canonical link. Do not create another date.'});
+       await patch(SH,DATES,row.id,{'Booked Appointment Follow-Up Required':true,'Sync Review Notes':'Linked ClinicDay record is missing. Restore or explicitly reconcile its canonical link. Do not create another date.'});
        for(const email of COORDINATORS) await enqueue(row.id+'|missing-source',email,'ClinicDay link needs review',`Clinic ${date} has a missing ClinicDay record. Review patient bookings and restore the link.`);
      }
      continue;
@@ -146,4 +155,4 @@ export default async () => {
  }
  return new Response(JSON.stringify({ok:true}),{headers:{'Content-Type':'application/json'}});
 };
-export const config={schedule:'15 * * * *'};
+export const config={schedule:'15 */6 * * *'};

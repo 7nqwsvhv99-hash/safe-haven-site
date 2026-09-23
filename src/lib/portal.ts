@@ -1,4 +1,5 @@
 import "server-only";
+import {canManageOnboarding} from "./onboarding-policy";
 
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
@@ -27,7 +28,7 @@ const TABLES = {
   fosterUpdates: "tbl3B6nEH5a495vmS",
 } as const;
 
-export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Administrator";
+export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Volunteer Coordinator" | "Shelter Manager" | "Administrator";
 
 type AirtableRecord = {
   id: string;
@@ -170,6 +171,7 @@ export async function getPortalContext() {
     canClinic: isAdministrator || roles.includes("Clinic Team"),
     canStaff: isAdministrator || roles.includes("Staff"),
     canMedical: isAdministrator || roles.includes("Staff") || roles.includes("Medical"),
+    canOnboard: canManageOnboarding(roles),
     isAdministrator,
   };
 }
@@ -702,6 +704,7 @@ export async function getClinicPortalData(email: string) {
 }
 
 export async function getStaffPortalData() {
+  const staffContext = await getPortalContext();
   const [needs, inventory, events, volunteerApps, announcements, fosterUpdates, medical] = await Promise.all([
     getCurrentNeeds(false),
     airtableList(TABLES.inventory, [
@@ -717,12 +720,12 @@ export async function getStaffPortalData() {
       ["Event Name", "Event Status", "Start Date & Time", "Location Name", "Publish on Website"],
       { sort: [{ field: "Start Date & Time", direction: "asc" }] }
     ),
-    airtableList(TABLES.volunteerApplications, [
+    staffContext.canOnboard ? airtableList(TABLES.volunteerApplications, [
       "Applicant Name",
       "Status",
       "Submitted At",
       "Next Follow-Up Date",
-    ]),
+    ]) : Promise.resolve([]),
     getPortalAnnouncements(["Staff"]),
     airtableList(
       TABLES.fosterUpdates,
@@ -919,7 +922,7 @@ export async function getMedicalPortalData() {
   };
 }
 
-async function airtableCreate(tableId: string, fields: Record<string, unknown>) {
+async function airtableCreate(tableId: string, fields: Record<string, unknown>, typecast = false) {
   const token = process.env.AIRTABLE_ACCESS_TOKEN;
   if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
 
@@ -931,7 +934,7 @@ async function airtableCreate(tableId: string, fields: Record<string, unknown>) 
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ records: [{ fields }] }),
+      body: JSON.stringify({ records: [{ fields }], typecast }),
       cache: "no-store",
     }
   );
@@ -948,11 +951,12 @@ async function airtableCreate(tableId: string, fields: Record<string, unknown>) 
 async function airtableUploadAttachment(
   recordId: string,
   fieldId: string,
-  file: File
+  file: File,
+  allowPdf = false
 ) {
   const token = process.env.AIRTABLE_ACCESS_TOKEN;
   if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
-  if (!file.type.startsWith("image/")) throw new Error("Only image uploads are allowed");
+  if (!(file.type.startsWith("image/") || (allowPdf && file.type === "application/pdf"))) throw new Error("Only image uploads are allowed");
   if (file.size > 5 * 1024 * 1024) throw new Error("Each photo must be 5 MB or smaller");
 
   const bytes = Buffer.from(await file.arrayBuffer());
@@ -985,7 +989,8 @@ async function airtableUploadAttachment(
 async function airtableUpdate(
   tableId: string,
   recordId: string,
-  fields: Record<string, unknown>
+  fields: Record<string, unknown>,
+  typecast = false
 ) {
   const token = process.env.AIRTABLE_ACCESS_TOKEN;
   if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
@@ -998,7 +1003,7 @@ async function airtableUpdate(
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ records: [{ id: recordId, fields }] }),
+      body: JSON.stringify({ records: [{ id: recordId, fields }], typecast }),
       cache: "no-store",
     }
   );

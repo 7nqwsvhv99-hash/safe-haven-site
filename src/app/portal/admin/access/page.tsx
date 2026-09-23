@@ -10,7 +10,7 @@ import {
   PortalRole,
 } from "@/lib/portal";
 
-const portalRoles: PortalRole[] = ["Volunteer", "Foster", "Clinic Team", "Staff", "Medical", "Administrator"];
+const portalRoles: PortalRole[] = ["Volunteer", "Foster", "Clinic Team", "Staff", "Medical", "Volunteer Coordinator", "Shelter Manager", "Administrator"];
 
 export default async function PortalAccessPage() {
   await requireAdministrator();
@@ -31,7 +31,7 @@ export default async function PortalAccessPage() {
       "Display Name": displayName,
       Roles: roles,
       Active: true,
-    });
+    }, true);
 
     revalidatePath("/portal/admin/access");
   }
@@ -48,7 +48,7 @@ export default async function PortalAccessPage() {
     await airtableUpdate(TABLES.portalAccess, recordId, {
       Roles: roles,
       Active: active,
-    });
+    }, true);
 
     revalidatePath("/portal/admin/access");
   }

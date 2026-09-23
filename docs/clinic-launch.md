@@ -26,7 +26,7 @@ Airtable automation APIs cannot publish changes. An authorized user must click U
 | [ClinicDay Dates → Clinic Staffing](https://airtable.com/app2vpch2JJVrP9pu/wfljSUcIgwNDgle90) | Update to retire its writer, then turn Off |
 | [ClinicDay Date Changes → Clinic Staffing](https://airtable.com/app2vpch2JJVrP9pu/wflDR41AQt0H7L6kx) | Update to retire its writer, then turn Off |
 
-After verifying these live versions, set the Netlify production environment variable `CLINIC_SCHEDULING_V2_ENABLED=true`, including the Functions scope, and redeploy. Until then the new sync deliberately returns a paused result. This prevents the old Airtable sync writers and the new Netlify writer from racing. Confirm the first hourly `sync-clinic-dates` execution succeeds and canonical links remain unique. It runs at minute 15 of each hour, so cross-base edits are not instantaneous. Put ClinicDay on hold immediately when changing or cancelling a clinic; do not wait for the hourly sync to stop bookings.
+After verifying these live versions, set the Netlify production environment variable `CLINIC_SCHEDULING_V2_ENABLED=true`, including the Functions scope, and redeploy. Until then the new sync deliberately returns a paused result. This prevents the old Airtable sync writers and the new Netlify writer from racing. Confirm the first six-hour `sync-clinic-dates` execution succeeds and canonical links remain unique. It runs at minute 15 every six hours, so cross-base edits are not instantaneous. Put ClinicDay on hold immediately when changing or cancelling a clinic; do not wait for the six-hour sync to stop bookings.
 
 ## Daily operating rules
 
@@ -42,7 +42,7 @@ After verifying these live versions, set the Netlify production environment vari
 1. Immediately set **Scheduling Hold?** on the linked ClinicDay record. For cancellation, set **Clinic Cancelled** in ClinicDay or **Scheduling Stage = Cancelled** in Shelter Management. The worker propagates cancellation and retains patient records.
 2. For rescheduling, change the date/session in one base. The worker clears prior staffing commitments and requests fresh availability. If changing the Shelter Management date would move an existing ClinicDay day with booked cases, it leaves that patient-booking date unchanged until review is complete.
 3. Rachel and Jen receive a coordinator notification. Review all linked booked cases, contact affected owners/partners, record each outcome in the existing patient workflow, and reconcile individual appointments. The code does not silently move or cancel patients.
-4. Clear **Patient Follow-Up Required** only after reconciliation. The sync can then align the ClinicDay date. Release **Scheduling Hold?** only after confirming the patient plan and staffing. Cancelling does not automatically reopen: reconcile both the Clinic Cancelled flag and staffing stage deliberately.
+4. Clear **Booked Appointment Follow-Up Required** only after reconciliation. The sync can then align the ClinicDay date. Release **Scheduling Hold?** only after confirming the patient plan and staffing. Cancelling does not automatically reopen: reconcile both the Clinic Cancelled flag and staffing stage deliberately.
 5. Conflicting date/type edits in both bases place booking on hold and produce **Sync Review Notes**. Resolve both records to the intended date/type, clear follow-up after review, and confirm the next sync.
 
 ## Pilot and go-live gates
@@ -56,3 +56,5 @@ Automated checks: nine mocked workflow tests cover canonical matching, duplicate
 ## Automation budget
 
 Shelter Management has 34 configured automations after adding one queue sender. Airtable permits 50 per base including disabled automations, leaving 16 slots. Retiring the two legacy writers does not free slots unless they are deleted later. Extend shared scripts instead of creating an automation per role or reminder. A second base is unnecessary for these changes. Monthly run limits are shared at the workspace level and depend on the actual plan; check current workspace usage before launch. Another base in the same workspace does not increase that allowance.
+
+The newer [Volunteer Onboarding guide](volunteer-onboarding.md) covers the integrated Staff Portal workspace, restricted roles, waiver register update, and reduced background schedule.

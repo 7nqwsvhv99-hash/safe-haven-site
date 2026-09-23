@@ -8,7 +8,7 @@ function record(id,fields,allowed){return {id,fields,getCellValue(name){assert.o
 function fixture(){
  const memberFields=['Role','Active','Receive Scheduling Emails','Email'];
  const responseFields=['Clinic Date','Team Member','Team Member Role','Team Member Name','Computed Attendance Plan','Clinic Assignment','Availability Clinic Date','Initial Response','Initial Response Date','Reconfirmation Date','One-Week Reconfirmation','Invitation Created At'];
- const dateFields=['Clinic Date','Scheduling Stage','Last Reviewed Schedule','Patient Follow-Up Required','Volunteer Target'];
+ const dateFields=['Clinic Date','Scheduling Stage','Last Reviewed Schedule','Booked Appointment Follow-Up Required','Volunteer Target'];
  const data={
  'Clinic Staffing Dates':[record('clinic',{ 'Clinic Date':date,'Scheduling Stage':'Awaiting Vet Tech','Volunteer Target':6},dateFields)],
  'Clinic Team Members':[record('vet',{Role:'Veterinarian',Active:true,'Receive Scheduling Emails':true,Email:'vet@example.invalid'},memberFields),record('tech',{Role:'Vet Tech',Active:true,'Receive Scheduling Emails':true,Email:'tech@example.invalid'},memberFields)],

@@ -33,7 +33,7 @@ export default async function PortalPage() {
       description: "Action Required, medical care, shelter inventory, events, current needs, volunteer administration, clinic oversight, and resources.",
       href: "/portal/staff",
       icon: ShieldCheck,
-      show: context.isAdministrator || context.canStaff,
+      show: context.isAdministrator || context.canStaff || context.canOnboard,
     },
     {
       title: "Medical Portal",

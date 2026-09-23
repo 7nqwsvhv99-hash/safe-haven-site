@@ -63,11 +63,11 @@ for(const clinic of dateRecords) {
       await queue(key+'|reconfirm|'+String(initialAt||'')+'|'+today,email,'Please reconfirm clinic attendance: '+date,`The clinic is ${days===0?'today':`in ${days} day(s)`}. Please reconfirm your attendance, including if you signed up within the last week.\n\n${portal}`);
     }
   }
-  const ready=vets.length>=1&&techs.length>=1&&volunteers.length>=6&&!missing.length&&!clinic.getCellValue('Patient Follow-Up Required');
+  const ready=vets.length>=1&&techs.length>=1&&volunteers.length>=6&&!missing.length&&!clinic.getCellValue('Booked Appointment Follow-Up Required');
   const next=ready?'Staffed':vets.length?(techs.length?(volunteers.length?'Staffing In Progress':'Awaiting Volunteers'):'Awaiting Vet Tech'):(stage==='Proposed'?'Proposed':'At Risk');
   if(next!==stage||clinic.getCellValue('Volunteer Target')!==6)await dates.updateRecordAsync(clinic.id,{'Scheduling Stage':{name:next},'Volunteer Target':6});
   if(days<=7&&(!ready||unanswered||missingReconfirmations)) {
-    const message=`Clinic ${date}: ${vets.length} veterinarian(s), ${techs.length} vet tech(s), ${volunteers.length}/6 volunteers.\nMissing specialist coverage: ${missing.join(', ')||'None'}.\nUnanswered invitations: ${unanswered}. Missing reconfirmations: ${missingReconfirmations}.\nPatient follow-up required: ${clinic.getCellValue('Patient Follow-Up Required')?'Yes':'No'}.\nPlease resolve coverage and contact nonresponders.\n\n${portal}`;
+    const message=`Clinic ${date}: ${vets.length} veterinarian(s), ${techs.length} vet tech(s), ${volunteers.length}/6 volunteers.\nMissing specialist coverage: ${missing.join(', ')||'None'}.\nUnanswered invitations: ${unanswered}. Missing reconfirmations: ${missingReconfirmations}.\nPatient follow-up required: ${clinic.getCellValue('Booked Appointment Follow-Up Required')?'Yes':'No'}.\nPlease resolve coverage and contact nonresponders.\n\n${portal}`;
     for(const email of ['rachelyn001@yahoo.com','jenpopp@hotmail.com'])await queue(clinic.id+'|deadline|'+date+'|'+today,email,'Clinic staffing deadline: '+date,message);
   }
 }
