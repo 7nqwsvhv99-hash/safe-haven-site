@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Globe2,
   Users,
-  Stethoscope,
   BarChart3,
   Megaphone,
   HeartHandshake,
@@ -30,7 +29,6 @@ const airtableLinks = {
   volunteerApplications: "https://airtable.com/app2vpch2JJVrP9pu/pagHPwcMad88IOtl0",
   volunteerRoster: "https://airtable.com/app2vpch2JJVrP9pu/pagLwnoP1FYFQ50aI",
   shelterInventory: "https://airtable.com/app2vpch2JJVrP9pu/pag478oTML8mrIKEc",
-  clinicStaffing: "https://airtable.com/app2vpch2JJVrP9pu/pagW4tERWH95ZGloE",
   reports: "https://airtable.com/app2vpch2JJVrP9pu/pagYrBkWqKPQpNbEH",
 };
 
@@ -106,7 +104,7 @@ export default async function StaffPortalPage() {
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Staff Portal</p>
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Operations at a Glance</h1>
             <p className="mt-4 max-w-3xl text-muted-foreground">
-              Action Required, shelter inventory, events, current needs, volunteer administration, clinic staffing, and reporting.
+              Action Required, shelter inventory, events, current needs, volunteer administration, and reporting.
             </p>
           </div>
 
@@ -364,9 +362,6 @@ export default async function StaffPortalPage() {
                 <div className="mt-5 grid gap-3">
                   <a href={airtableLinks.volunteerApplications} target="_blank" rel="noopener noreferrer" className="rounded-xl border p-4 hover:bg-slate-50">
                     <div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><span className="font-semibold">Volunteer Administration</span></div>
-                  </a>
-                  <a href={airtableLinks.clinicStaffing} target="_blank" rel="noopener noreferrer" className="rounded-xl border p-4 hover:bg-slate-50">
-                    <div className="flex items-center gap-3"><Stethoscope className="h-5 w-5 text-primary" /><span className="font-semibold">Clinic Staffing Oversight</span></div>
                   </a>
                   <a href={airtableLinks.reports} target="_blank" rel="noopener noreferrer" className="rounded-xl border p-4 hover:bg-slate-50">
                     <div className="flex items-center gap-3"><BarChart3 className="h-5 w-5 text-primary" /><span className="font-semibold">Reports & Dashboards</span></div>
