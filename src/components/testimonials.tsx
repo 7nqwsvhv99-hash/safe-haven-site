@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react"
 import { legacyAdoptionStories, withLegacyAdoptionStories } from "@/lib/legacy-adoption-stories"
@@ -15,10 +15,41 @@ type Testimonial = {
   displayOrder: number | null
 }
 
+// Measure between matching cards, excluding the track's outer padding.
+function cycleWidth(carousel: HTMLDivElement, count: number) {
+  const cards = carousel.querySelectorAll<HTMLElement>("[data-testimonial-card]")
+  if (!cards[count]) return 0
+  return cards[count].getBoundingClientRect().left - cards[0].getBoundingClientRect().left
+}
+
+function normalizeLoop(carousel: HTMLDivElement, count: number) {
+  const width = cycleWidth(carousel, count)
+  if (!width) return
+  const left = carousel.scrollLeft
+  if (left < width - 1 || left >= width * 2 - 1) {
+    // Explicitly instant: this reset must never animate across the other copies.
+    carousel.scrollTo({ left: left < width - 1 ? left + width : left - width, behavior: "instant" })
+  }
+}
+
+function advanceCard(carousel: HTMLDivElement, direction: 1 | -1) {
+  const cards = carousel.querySelectorAll<HTMLElement>("[data-testimonial-card]")
+  if (cards.length < 2) return
+  const step = cards[1].getBoundingClientRect().left - cards[0].getBoundingClientRect().left
+  const target = (Math.round(carousel.scrollLeft / step) + direction) * step
+  carousel.scrollTo({
+    left: target,
+    behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth",
+  })
+}
+
 export function Testimonials() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [paused, setPaused] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const [interacting, setInteracting] = useState(false)
+  const paused = hovered || focused || interacting
   const [isDesktop, setIsDesktop] = useState(false)
   const carouselRef = useRef<HTMLDivElement>(null)
 
@@ -57,64 +88,57 @@ export function Testimonials() {
 
   const shouldLoop = testimonials.length > (isDesktop ? 3 : 1)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const carousel = carouselRef.current
-    if (!carousel || !shouldLoop) return
+    if (!carousel || !shouldLoop || isLoading) return
 
+    let settleTimer: ReturnType<typeof setTimeout>
+    let touching = false
+    const settle = () => {
+      if (!touching) normalizeLoop(carousel, testimonials.length)
+    }
+    const scheduleSettle = () => {
+      clearTimeout(settleTimer)
+      settleTimer = setTimeout(settle, 180)
+    }
+    const startTouch = () => { touching = true }
+    const endTouch = () => { touching = false; scheduleSettle() }
     const positionAtMiddleSet = () => {
-      const cycleWidth = carousel.scrollWidth / 3
-      carousel.scrollLeft = cycleWidth
+      clearTimeout(settleTimer)
+      carousel.scrollTo({ left: cycleWidth(carousel, testimonials.length), behavior: "instant" })
     }
 
-    const frame = requestAnimationFrame(positionAtMiddleSet)
+    positionAtMiddleSet()
+    // Rebase only once native scrolling and snap have settled, never mid-animation.
+    carousel.addEventListener("scroll", scheduleSettle, { passive: true })
+    carousel.addEventListener("pointerdown", startTouch, { passive: true })
+    window.addEventListener("pointerup", endTouch)
+    window.addEventListener("pointercancel", endTouch)
     window.addEventListener("resize", positionAtMiddleSet)
-
     return () => {
-      cancelAnimationFrame(frame)
+      clearTimeout(settleTimer)
+      carousel.removeEventListener("scroll", scheduleSettle)
+      carousel.removeEventListener("pointerdown", startTouch)
+      window.removeEventListener("pointerup", endTouch)
+      window.removeEventListener("pointercancel", endTouch)
       window.removeEventListener("resize", positionAtMiddleSet)
     }
-  }, [shouldLoop, testimonials.length])
+  }, [shouldLoop, testimonials.length, isLoading])
 
   useEffect(() => {
-    if (paused || !shouldLoop) return
-
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    if (reduceMotion) return
-
+    if (paused || !shouldLoop || isLoading) return
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
     const timer = window.setInterval(() => {
-      scrollByCard(1)
-    }, 5200)
-
+      if (document.hidden) return
+      const carousel = carouselRef.current
+      if (carousel) advanceCard(carousel, 1)
+    }, 8000)
     return () => window.clearInterval(timer)
-  }, [paused, shouldLoop, testimonials.length])
-
-  function handleCarouselScroll() {
-    const carousel = carouselRef.current
-    if (!carousel || !shouldLoop) return
-
-    const cycleWidth = carousel.scrollWidth / 3
-    if (!cycleWidth) return
-
-    if (carousel.scrollLeft < cycleWidth * 0.5) {
-      carousel.scrollLeft += cycleWidth
-    } else if (carousel.scrollLeft > cycleWidth * 1.5) {
-      carousel.scrollLeft -= cycleWidth
-    }
-  }
+  }, [paused, shouldLoop, testimonials.length, isLoading])
 
   function scrollByCard(direction: 1 | -1) {
     const carousel = carouselRef.current
-    if (!carousel) return
-
-    const card = carousel.querySelector<HTMLElement>("[data-testimonial-card]")
-    if (!card) return
-
-    const styles = window.getComputedStyle(carousel)
-    const gap = Number.parseFloat(styles.columnGap || styles.gap || "0")
-    carousel.scrollBy({
-      left: direction * (card.offsetWidth + gap),
-      behavior: "smooth",
-    })
+    if (carousel) advanceCard(carousel, direction)
   }
 
   if (!isLoading && testimonials.length === 0) return null
@@ -157,10 +181,12 @@ export function Testimonials() {
       ) : (
         <div
           className="relative"
-          onMouseEnter={() => setPaused(true)}
-          onMouseLeave={() => setPaused(false)}
-          onFocusCapture={() => setPaused(true)}
-          onBlurCapture={() => setPaused(false)}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          onFocusCapture={() => setFocused(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false)
+          }}
         >
           {shouldLoop && (
             <button
@@ -175,15 +201,12 @@ export function Testimonials() {
 
           <div
             ref={carouselRef}
-            onScroll={handleCarouselScroll}
-            onPointerDown={() => setPaused(true)}
-            onPointerUp={() => setPaused(false)}
-            onPointerCancel={() => setPaused(false)}
-            className="flex gap-5 md:gap-6 overflow-x-auto px-4 md:px-8 lg:px-10 pb-4 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            onPointerDown={() => setInteracting(true)}
+            className="flex gap-5 md:gap-6 overflow-x-auto px-4 md:px-8 lg:px-10 pb-4 snap-x snap-mandatory scroll-auto scroll-px-4 md:scroll-px-8 lg:scroll-px-10 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           >
             {loopedTestimonials.map((testimonial, index) => {
               const copyIndex =
-                testimonials.length > 1
+                shouldLoop
                   ? Math.floor(index / testimonials.length)
                   : 1
 
