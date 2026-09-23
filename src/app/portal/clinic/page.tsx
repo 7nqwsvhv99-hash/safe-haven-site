@@ -78,7 +78,6 @@ async function ensureClinicDayExists({
   if (clinicDayRecordId) {
     await airtableUpdate(TABLES.clinicDates, staffingDateId, {
       "ClinicDay Record ID": clinicDayRecordId,
-      "Synced from ClinicDay": true,
       "Last ClinicDay Sync": new Date().toISOString(),
       "ClinicDay Session Type": clinicType,
     });
@@ -109,6 +108,7 @@ export default async function ClinicPortalPage() {
     if (!latest.member || latest.member.role !== "Veterinarian") return;
 
     const preferredDate = String(formData.get("preferredDate") || "").trim();
+    const preferredClinicType = String(formData.get("preferredClinicType") || "Full Day");
     const notes = String(formData.get("notes") || "").trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) return;
 
