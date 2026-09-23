@@ -661,6 +661,7 @@ export async function getClinicPortalData(email: string) {
             id: record.id,
             preferenceId: asText(record.fields["Preference ID"]),
             preferredDate: safeDate(record.fields["Preferred Clinic Date"]),
+            clinicType: asText(record.fields["Preferred Clinic Type"]) || "Full Day",
             status: asText(record.fields["Preference Status"]) || "Submitted",
             notes: asText(record.fields.Notes),
             submittedAt: safeDate(record.fields["Submitted At"]),
