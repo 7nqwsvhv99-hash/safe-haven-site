@@ -15,6 +15,7 @@ const TABLES = {
   clinicMembers: "tblVG88gCVYbRC8Qo",
   clinicDates: "tblJvWn5fh7Rtfp3O",
   clinicResponses: "tblEVlmHvHzItbcVl",
+  vetClinicPreferences: "tblZ9DrQNMTKgvDbw",
   inventory: "tblTFVIVoeyafVC4b",
   events: "tbl1wjnnJXBI5a3fy",
   volunteerApplications: "tblonEhsjg3vWumoj",
@@ -547,7 +548,7 @@ export async function getClinicPortalData(email: string) {
     return { member: null, dates: [], teamDates: [], announcements: [], inventory: [] };
   }
 
-  const [dates, responses, announcements, inventory] = await Promise.all([
+  const [dates, responses, announcements, inventory, vetPreferences] = await Promise.all([
     airtableList(
       TABLES.clinicDates,
       ["Clinic Date", "Clinic Type", "ClinicDay Session Type", "Scheduling Stage", "Volunteer Target", "Confirmed Veterinarians", "Confirmed Vet Techs", "Confirmed Clinic Volunteers", "Staffing Alert"],
@@ -578,6 +579,11 @@ export async function getClinicPortalData(email: string) {
       "Inventory Status",
       "Active",
     ]),
+    airtableList(
+      TABLES.vetClinicPreferences,
+      ["Preference ID", "Veterinarian", "Preferred Clinic Date", "Preference Status", "Notes", "Submitted At", "Clinic Staffing Date"],
+      { sort: [{ field: "Preferred Clinic Date", direction: "asc" }] }
+    ),
   ]);
 
   const dateById = new Map(
@@ -644,6 +650,18 @@ export async function getClinicPortalData(email: string) {
       skills: asStrings(member.fields["Volunteer Skills"]),
     },
     dates: memberResponses,
+    vetPreferences: asText(member.fields.Role) === "Veterinarian"
+      ? vetPreferences
+          .filter((record) => asStrings(record.fields.Veterinarian).includes(member.id))
+          .map((record) => ({
+            id: record.id,
+            preferenceId: asText(record.fields["Preference ID"]),
+            preferredDate: safeDate(record.fields["Preferred Clinic Date"]),
+            status: asText(record.fields["Preference Status"]) || "Submitted",
+            notes: asText(record.fields.Notes),
+            submittedAt: safeDate(record.fields["Submitted At"]),
+          }))
+      : [],
     teamDates: dates
       .filter((record) => {
         const date = safeDate(record.fields["Clinic Date"]);
