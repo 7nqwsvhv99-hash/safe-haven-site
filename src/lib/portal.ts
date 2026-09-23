@@ -27,7 +27,7 @@ const TABLES = {
   fosterUpdates: "tbl3B6nEH5a495vmS",
 } as const;
 
-export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Administrator";
+export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Administrator";
 
 type AirtableRecord = {
   id: string;
@@ -168,6 +168,7 @@ export async function getPortalContext() {
     canFoster: isAdministrator || roles.includes("Foster"),
     canClinic: isAdministrator || roles.includes("Clinic Team"),
     canStaff: isAdministrator || roles.includes("Staff"),
+    canMedical: isAdministrator || roles.includes("Staff") || roles.includes("Medical"),
     isAdministrator,
   };
 }
@@ -180,7 +181,8 @@ export async function requirePortalRole(role: Exclude<PortalRole, "Administrator
     (role === "Volunteer" && context.canVolunteer) ||
     (role === "Foster" && context.canFoster) ||
     (role === "Clinic Team" && context.canClinic) ||
-    (role === "Staff" && context.canStaff);
+    (role === "Staff" && context.canStaff) ||
+    (role === "Medical" && context.canMedical);
   if (!allowed) redirect("/portal");
   return context;
 }
@@ -696,7 +698,7 @@ export async function getClinicPortalData(email: string) {
 }
 
 export async function getStaffPortalData() {
-  const [needs, inventory, events, volunteerApps, announcements, fosterUpdates] = await Promise.all([
+  const [needs, inventory, events, volunteerApps, announcements, fosterUpdates, medical] = await Promise.all([
     getCurrentNeeds(false),
     airtableList(TABLES.inventory, [
       "Item Name",
@@ -737,6 +739,7 @@ export async function getStaffPortalData() {
       ],
       { sort: [{ field: "Submitted At", direction: "desc" }] }
     ),
+    getMedicalPortalData(),
   ]);
 
   const now = Date.now();
@@ -809,12 +812,106 @@ export async function getStaffPortalData() {
     upcomingEvents,
     fosterAlerts,
     fosterAlertCount: fosterAlerts.length,
+    medical: {
+      pendingReview: medical.pendingReview.slice(0, 5),
+      pendingReviewCount: medical.pendingReview.length,
+      recentRecords: medical.records.slice(0, 5),
+      animals: medical.animals,
+    },
     volunteerFollowUpCount: volunteerFollowUps.length,
     actionRequiredCount:
       needs.filter((need) => ["High", "Urgent"].includes(need.priority)).length +
       inventoryAttention.length +
       fosterAlerts.length +
-      volunteerFollowUps.length,
+      volunteerFollowUps.length +
+      medical.pendingReview.length,
+  };
+}
+
+export async function getMedicalPortalData() {
+  const [animals, records] = await Promise.all([
+    airtableList(
+      TABLES.animals,
+      ["Animal ID", "Pet Name", "Species", "Adoption Status", "Medical Summary"],
+      { sort: [{ field: "Pet Name", direction: "asc" }] }
+    ),
+    airtableList(
+      TABLES.medicalRecords,
+      [
+        "Animal",
+        "Date / Time",
+        "Record Type",
+        "Source",
+        "Provider / Veterinarian",
+        "Reason / Complaint",
+        "Assessment / Diagnosis",
+        "Treatment / Procedure",
+        "Medication / Product",
+        "Dose / Route / Frequency",
+        "Vaccine / Preventative",
+        "Next Due Date",
+        "Weight (lb)",
+        "Follow-Up Required",
+        "Follow-Up Date",
+        "Notes",
+        "Follow-Up Status",
+        "Needs Veterinarian Review",
+        "Veterinary Review Status",
+        "Entered By Role",
+      ],
+      { sort: [{ field: "Date / Time", direction: "desc" }] }
+    ),
+  ]);
+
+  const animalById = new Map(
+    animals.map((record) => [
+      record.id,
+      {
+        id: record.id,
+        animalId: asText(record.fields["Animal ID"]),
+        name: asText(record.fields["Pet Name"]),
+        species: asText(record.fields.Species),
+        status: asText(record.fields["Adoption Status"]),
+        medicalSummary: asText(record.fields["Medical Summary"]),
+      },
+    ])
+  );
+
+  const mappedRecords = records.map((record) => {
+    const animal = animalById.get(asStrings(record.fields.Animal)[0]);
+    return {
+      id: record.id,
+      animal,
+      dateTime: safeDate(record.fields["Date / Time"]),
+      recordType: asText(record.fields["Record Type"]),
+      source: asText(record.fields.Source),
+      provider: asText(record.fields["Provider / Veterinarian"]),
+      reason: asText(record.fields["Reason / Complaint"]),
+      assessment: asText(record.fields["Assessment / Diagnosis"]),
+      treatment: asText(record.fields["Treatment / Procedure"]),
+      medication: asText(record.fields["Medication / Product"]),
+      dose: asText(record.fields["Dose / Route / Frequency"]),
+      vaccine: asText(record.fields["Vaccine / Preventative"]),
+      nextDueDate: safeDate(record.fields["Next Due Date"]),
+      weight: asNumber(record.fields["Weight (lb)"]),
+      followUpRequired: Boolean(record.fields["Follow-Up Required"]),
+      followUpDate: safeDate(record.fields["Follow-Up Date"]),
+      notes: asText(record.fields.Notes),
+      followUpStatus: asText(record.fields["Follow-Up Status"]),
+      needsVeterinarianReview: Boolean(record.fields["Needs Veterinarian Review"]),
+      veterinaryReviewStatus: asText(record.fields["Veterinary Review Status"]),
+      enteredByRole: asText(record.fields["Entered By Role"]),
+    };
+  });
+
+  return {
+    animals: Array.from(animalById.values()).filter((animal) => animal.name),
+    records: mappedRecords,
+    pendingReview: mappedRecords.filter(
+      (record) =>
+        record.needsVeterinarianReview &&
+        !["Reviewed", "Resolved"].includes(record.veterinaryReviewStatus)
+    ),
   };
 }
 

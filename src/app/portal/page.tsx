@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight, UserCog, PawPrint } from "lucide-react";
+import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight, UserCog, PawPrint, Activity } from "lucide-react";
 import { getPortalContext } from "@/lib/portal";
 
 export default async function PortalPage() {
@@ -30,10 +30,17 @@ export default async function PortalPage() {
     },
     {
       title: "Staff Portal",
-      description: "Action Required, shelter inventory, events, current needs, volunteer administration, clinic oversight, and resources.",
+      description: "Action Required, medical care, shelter inventory, events, current needs, volunteer administration, clinic oversight, and resources.",
       href: "/portal/staff",
       icon: ShieldCheck,
       show: context.isAdministrator || context.canStaff,
+    },
+    {
+      title: "Medical Portal",
+      description: "Animal medical history, concerns, treatments, follow-up, and items awaiting review.",
+      href: "/portal/medical",
+      icon: Activity,
+      show: context.canMedical,
     },
     {
       title: "Administrator",

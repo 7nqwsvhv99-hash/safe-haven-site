@@ -11,6 +11,7 @@ import {
   BarChart3,
   Megaphone,
   HeartHandshake,
+  Activity,
 } from "lucide-react";
 import { requirePortalRole, getStaffPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
@@ -92,6 +93,35 @@ export default async function StaffPortalPage() {
     revalidatePath("/portal/foster");
   }
 
+  async function addStaffMedicalEntry(formData: FormData) {
+    "use server";
+    await requirePortalRole("Staff");
+    const latest = await getStaffPortalData();
+    const animalId = String(formData.get("animalId") || "");
+    const recordType = String(formData.get("recordType") || "Other");
+    const concern = String(formData.get("concern") || "").trim();
+    const treatment = String(formData.get("treatment") || "").trim();
+    const needsReview = formData.get("needsReview") === "on";
+
+    if (!latest.medical.animals.some((animal) => animal.id === animalId)) return;
+    if (!concern && !treatment) return;
+
+    await airtableCreate(TABLES.medicalRecords, {
+      Animal: [animalId],
+      "Date / Time": new Date().toISOString(),
+      "Record Type": recordType,
+      Source: "Safe Haven",
+      ...(concern ? { "Reason / Complaint": concern } : {}),
+      ...(treatment ? { "Treatment / Procedure": treatment } : {}),
+      "Needs Veterinarian Review": needsReview,
+      ...(needsReview ? { "Veterinary Review Status": "Pending Review" } : {}),
+      "Entered By Role": "Shelter Staff",
+    });
+
+    revalidatePath("/portal/staff");
+    revalidatePath("/portal/medical");
+  }
+
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-50">
       <section className="container-custom py-10 md:py-12">
@@ -104,7 +134,7 @@ export default async function StaffPortalPage() {
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Staff Portal</p>
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Operations at a Glance</h1>
             <p className="mt-4 max-w-3xl text-muted-foreground">
-              Action Required, shelter inventory, events, current needs, volunteer administration, and reporting.
+              Action Required, medical care, shelter inventory, events, current needs, volunteer administration, and reporting.
             </p>
           </div>
 
@@ -113,6 +143,7 @@ export default async function StaffPortalPage() {
               ["Action Required", data.actionRequiredCount, AlertTriangle],
               ["Inventory Attention", data.inventoryAttentionCount, Boxes],
               ["Foster Alerts", data.fosterAlertCount, HeartHandshake],
+              ["Medical Review", data.medical.pendingReviewCount, Activity],
             ].map(([label, value, Icon]) => {
               const MetricIcon = Icon as typeof AlertTriangle;
               return (
@@ -127,6 +158,57 @@ export default async function StaffPortalPage() {
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-6">
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <Activity className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Medical Care</h2>
+                </div>
+                <div className="mb-6 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-xl bg-slate-50 p-4">
+                    <p className="text-2xl font-bold">{data.medical.pendingReviewCount}</p>
+                    <p className="text-sm text-muted-foreground">Awaiting medical review</p>
+                  </div>
+                  <Link href="/portal/medical" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">
+                    View complete medical history
+                    <span className="mt-1 block font-normal text-muted-foreground">Open the shared Medical Portal</span>
+                  </Link>
+                </div>
+
+                {data.medical.recentRecords.length > 0 && (
+                  <div className="mb-6 space-y-2">
+                    <h3 className="font-semibold">Recent entries</h3>
+                    {data.medical.recentRecords.map((record) => (
+                      <div key={record.id} className="rounded-xl bg-slate-50 p-4 text-sm">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <p className="font-semibold">{record.animal?.name || "Animal not linked"} · {record.recordType || "Medical entry"}</p>
+                          {record.needsVeterinarianReview && <span className="text-xs font-semibold text-primary">{record.veterinaryReviewStatus || "Pending Review"}</span>}
+                        </div>
+                        {(record.reason || record.treatment) && <p className="mt-2 text-muted-foreground">{record.reason || record.treatment}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <form action={addStaffMedicalEntry} className="space-y-4 border-t pt-5">
+                  <h3 className="font-semibold">Record a concern or treatment</h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <select name="animalId" required defaultValue="" className="rounded-xl border bg-white px-3 py-2">
+                      <option value="" disabled>Select an animal</option>
+                      {data.medical.animals.filter((animal) => animal.status !== "Adopted").map((animal) => (
+                        <option key={animal.id} value={animal.id}>{animal.name}{animal.animalId ? ` · ${animal.animalId}` : ""}</option>
+                      ))}
+                    </select>
+                    <select name="recordType" defaultValue="Other" className="rounded-xl border bg-white px-3 py-2">
+                      {["Medication", "Treatment", "Injury / Illness", "Weight Check", "Other"].map((type) => <option key={type}>{type}</option>)}
+                    </select>
+                  </div>
+                  <textarea name="concern" rows={2} placeholder="Concern or observation" className="w-full rounded-xl border px-3 py-2" />
+                  <textarea name="treatment" rows={2} placeholder="Treatment or care provided" className="w-full rounded-xl border px-3 py-2" />
+                  <label className="flex items-center gap-2 text-sm"><input name="needsReview" type="checkbox" /> Add to veterinarian review queue</label>
+                  <button type="submit" className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">Save Medical Entry</button>
+                </form>
+              </section>
+
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
                 <div className="mb-5 flex items-center gap-3">
                   <AlertTriangle className="h-6 w-6 text-primary" />

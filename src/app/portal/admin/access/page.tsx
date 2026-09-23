@@ -10,7 +10,7 @@ import {
   PortalRole,
 } from "@/lib/portal";
 
-const portalRoles: PortalRole[] = ["Volunteer", "Foster", "Clinic Team", "Staff", "Administrator"];
+const portalRoles: PortalRole[] = ["Volunteer", "Foster", "Clinic Team", "Staff", "Medical", "Administrator"];
 
 export default async function PortalAccessPage() {
   await requireAdministrator();
@@ -87,7 +87,7 @@ export default async function PortalAccessPage() {
                 <fieldset>
                   <legend className="text-sm font-medium">Roles</legend>
                   <div className="mt-2 grid grid-cols-2 gap-2">
-                    {(["Volunteer", "Foster", "Clinic Team", "Staff", "Administrator"] as PortalRole[]).map((role) => (
+                    {portalRoles.map((role) => (
                       <label key={role} className="flex items-center gap-2 rounded-xl border p-3 text-sm">
                         <input type="checkbox" name={role} /> {role}
                       </label>
@@ -116,7 +116,7 @@ export default async function PortalAccessPage() {
                       </label>
                     </div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
-                      {(["Volunteer", "Foster", "Clinic Team", "Staff", "Administrator"] as PortalRole[]).map((role) => (
+                      {portalRoles.map((role) => (
                         <label key={role} className="flex items-center gap-2 text-sm">
                           <input type="checkbox" name={role} defaultChecked={record.roles.includes(role)} /> {role}
                         </label>
