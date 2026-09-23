@@ -3,86 +3,6 @@ import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone } from "lucide-react";
 import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
-const CLINICDAY_BASE_ID = "app3AcoD2G64aMsEz";
-const CLINICDAY_DAYS_TABLE_ID = "tblnOw4Qr5AvCRWvQ";
-
-async function ensureClinicDayExists({
-  staffingDateId,
-  clinicDate,
-  sessionType,
-}: {
-  staffingDateId: string;
-  clinicDate: string;
-  sessionType: string;
-}) {
-  const token = process.env.AIRTABLE_ACCESS_TOKEN;
-  if (!token || !staffingDateId || !clinicDate) return;
-
-  const clinicType = sessionType === "Half Day" ? "Half Day" : "Full Day";
-  const params = new URLSearchParams({
-    maxRecords: "1",
-    filterByFormula: `IS_SAME({Clinic_Date}, '${clinicDate}', 'day')`,
-  });
-
-  const lookup = await fetch(
-    `https://api.airtable.com/v0/${CLINICDAY_BASE_ID}/${CLINICDAY_DAYS_TABLE_ID}?${params.toString()}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    }
-  );
-  const lookupBody = await lookup.json();
-  if (!lookup.ok) {
-    console.error("ClinicDay date lookup failed", lookupBody);
-    throw new Error("Could not check ClinicDay for this clinic date");
-  }
-
-  let clinicDayRecordId = lookupBody.records?.[0]?.id as string | undefined;
-
-  if (!clinicDayRecordId) {
-    const fullDay = clinicType === "Full Day";
-    const create = await fetch(
-      `https://api.airtable.com/v0/${CLINICDAY_BASE_ID}/${CLINICDAY_DAYS_TABLE_ID}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          records: [
-            {
-              fields: {
-                Clinic_Date: clinicDate,
-                "Clinic Type": clinicType,
-                "Clinic Day Status": "Scheduled",
-                "Legacy Surgical Capacity": fullDay ? 21 : 12,
-                "Non-Surgical Capacity": fullDay ? 9 : 5,
-                "Base Public Surgical Capacity": fullDay ? 4 : 5,
-                "Max Capacity": fullDay ? 30 : 21,
-              },
-            },
-          ],
-        }),
-        cache: "no-store",
-      }
-    );
-    const createBody = await create.json();
-    if (!create.ok) {
-      console.error("ClinicDay date creation failed", createBody);
-      throw new Error("Could not create the ClinicDay clinic date");
-    }
-    clinicDayRecordId = createBody.records?.[0]?.id;
-  }
-
-  if (clinicDayRecordId) {
-    await airtableUpdate(TABLES.clinicDates, staffingDateId, {
-      "ClinicDay Record ID": clinicDayRecordId,
-      "Last ClinicDay Sync": new Date().toISOString(),
-      "ClinicDay Session Type": clinicType,
-    });
-  }
-}
 
 function formatDate(value: string) {
   if (!value) return "";
@@ -110,7 +30,7 @@ export default async function ClinicPortalPage() {
     const preferredDate = String(formData.get("preferredDate") || "").trim();
     const preferredClinicType = String(formData.get("preferredClinicType") || "Full Day");
     const notes = String(formData.get("notes") || "").trim();
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate)) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate) || !["Full Day", "Half Day"].includes(preferredClinicType)) return;
 
     const date = new Date(`${preferredDate}T12:00:00`);
     const today = new Date();
@@ -164,24 +84,14 @@ export default async function ClinicPortalPage() {
     const matchedResponse = latest.dates.find((item) => item.responseId === responseId);
 
     await airtableUpdate(TABLES.clinicResponses, responseId, {
+      "Availability Clinic Date": matchedResponse!.clinic!.date.slice(0, 10),
+      "One-Week Reconfirmation": "Awaiting Response",
+      "Reconfirmation Date": null,
       "Initial Response": value,
       "Initial Response Date": new Date().toISOString(),
       "Final Attendance Plan": value === "Yes" ? "Attending" : "Not Attending",
       "Clinic Assignment": assignment || null,
     });
-
-    if (
-      value === "Yes" &&
-      ["Vet Tech", "Veterinary Technician"].includes(latest.member?.role || "") &&
-      matchedResponse?.clinic?.id &&
-      matchedResponse.clinic.date
-    ) {
-      await ensureClinicDayExists({
-        staffingDateId: matchedResponse.clinic.id,
-        clinicDate: matchedResponse.clinic.date,
-        sessionType: matchedResponse.clinic.type || "Full Day",
-      });
-    }
 
     revalidatePath("/portal/clinic");
   }
@@ -198,6 +108,8 @@ export default async function ClinicPortalPage() {
       !latest.dates.some((item) => item.responseId === responseId)
     ) return;
 
+    const matched = latest.dates.find((item) => item.responseId === responseId);
+    if (!matched?.clinic || matched.initialResponse !== "Yes" || (matched.responseClinicDate && matched.responseClinicDate !== matched.clinic.date.slice(0, 10))) return;
     await airtableUpdate(TABLES.clinicResponses, responseId, {
       "One-Week Reconfirmation": value,
       "Reconfirmation Date": new Date().toISOString(),
@@ -325,7 +237,7 @@ export default async function ClinicPortalPage() {
                               <input type="hidden" name="responseId" value={item.responseId} />
                               <p className="mb-2 text-sm font-semibold">My availability</p>
                               {data.member.role === "Clinic Volunteer" && (
-                                <select name="assignment" defaultValue={item.assignment} className="mb-3 w-full rounded-lg border bg-white px-3 py-2 text-sm" required>
+                                <select name="assignment" defaultValue={item.assignment} className="mb-3 w-full rounded-lg border bg-white px-3 py-2 text-sm">
                                   <option value="" disabled>Select your clinic role</option>
                                   {data.member.skills.includes("Front Room System") && <option>Front Room System</option>}
                                   {data.member.skills.includes("Back Room System") && <option>Back Room System</option>}
@@ -337,10 +249,11 @@ export default async function ClinicPortalPage() {
                                 <button name="availability" value="Yes" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Yes</button>
                                 <button name="availability" value="No" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">No</button>
                               </div>
-                              <p className="mt-2 text-xs text-muted-foreground">Current: {item.initialResponse || "No response"}</p>
+                              <p className="mt-2 text-xs text-muted-foreground">Current: {item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10) ? "Date changed. Please respond again." : item.initialResponse || "No response"}</p>
                             </form>
 
                             <form action={saveReconfirmation} className="rounded-xl border bg-white p-4">
+                              <fieldset disabled={item.initialResponse !== "Yes" || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))} className="disabled:opacity-50">
                               <input type="hidden" name="responseId" value={item.responseId} />
                               <p className="mb-2 text-sm font-semibold">Reconfirm attendance</p>
                               <div className="flex flex-wrap gap-2">
@@ -348,6 +261,7 @@ export default async function ClinicPortalPage() {
                                 <button name="reconfirmation" value="No, can no longer attend" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Can’t attend</button>
                               </div>
                               <p className="mt-2 text-xs text-muted-foreground">Current: {item.reconfirmation || "Awaiting response"}</p>
+                              </fieldset>
                             </form>
                           </div>
                         </div>

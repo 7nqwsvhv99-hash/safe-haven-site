@@ -33,6 +33,8 @@ const interestOptions = [
   "Social Media & Content",
   "Administrative Support",
   "Fundraising & Event Support",
+  "Clinic Team - Veterinarian",
+  "Clinic Team - Veterinary Technician",
   "Clinic Team - General Volunteer",
   "Clinic Team – Instrument Sterilization",
   "Clinic Team – Front Room",
@@ -41,6 +43,8 @@ const interestOptions = [
 
 export default function VolunteerApplicationPage() {
   const [interests, setInterests] = useState<string[]>([])
+  const [clinicRole, setClinicRole] = useState("")
+  const clinicInterest = interests.some((interest) => interest.startsWith("Clinic Team"))
   const [isAdult, setIsAdult] = useState("")
   const [communityService, setCommunityService] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -112,7 +116,7 @@ export default function VolunteerApplicationPage() {
                 <option value="" disabled>Select one</option><option>Yes</option><option>No</option>
               </select>
             </Field>
-            <Field label="Email Address *"><Input name="email" type="email" required /></Field>
+            <Field label="Email Address *" note="Use this same email when signing in to the Team Portal."><Input name="email" type="email" required /></Field>
             <Field label="Street Address *"><Input name="streetAddress" required /></Field>
             <Field label="Suite / Apt / Unit"><Input name="unitApt" /></Field>
             <Field label="City *"><Input name="city" required /></Field>
@@ -134,6 +138,14 @@ export default function VolunteerApplicationPage() {
               </div>
             </div>
           )}
+        </Section>
+
+        <Section title="Emergency Contact">
+          <div className="grid md:grid-cols-2 gap-5">
+            <Field label="Contact Name *"><Input name="emergencyName" required /></Field>
+            <Field label="Relationship *"><Input name="emergencyRelationship" required /></Field>
+            <Field label="Contact Phone *"><Input name="emergencyPhone" type="tel" required /></Field>
+          </div>
         </Section>
 
         <Section title="Community Service">
@@ -190,6 +202,23 @@ export default function VolunteerApplicationPage() {
           </div>
           <Field label="Anything Else You Would Like Us to Know?"><Textarea name="anythingElse" /></Field>
         </Section>
+
+        {clinicInterest && (
+          <Section title="Clinic Team">
+            <Field label="Clinic Role *" note="All clinic team members complete this application. Safe Haven confirms professional qualifications and approved assignments before scheduling.">
+              <select name="clinicRole" className={selectClass} value={clinicRole} onChange={(event) => setClinicRole(event.target.value)} required>
+                <option value="" disabled>Select your role</option><option>Veterinarian</option><option value="Vet Tech">Veterinary Technician</option><option>Clinic Volunteer</option>
+              </select>
+            </Field>
+            <Field label="Clinic Experience and Training" note="Describe any spay/neuter experience and training in Front Room System, Back Room System, instrument sterilization/autoclave, or general support. New volunteers are welcome."><Textarea name="clinicExperience" /></Field>
+            {["Veterinarian", "Vet Tech"].includes(clinicRole) && (
+              <Field label="Professional Credential Details *" note="Include credential/title, issuing state, license or certification number, and expiration date. If a detail is not applicable or needs follow-up, explain here."><Textarea name="credentialDetails" required /></Field>
+            )}
+            <Field label="Receive Clinic Scheduling Emails? *" note="Scheduling invitations, reminders, and clinic changes are sent by email. If you select No, a coordinator will arrange scheduling with you directly.">
+              <select name="schedulingEmailConsent" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes</option><option>No</option></select>
+            </Field>
+          </Section>
+        )}
 
         <Button type="submit" size="lg" className="w-full" disabled={submitting || interests.length === 0}>{submitting ? "Submitting Application..." : "Submit Volunteer Application"}</Button>
       </form>

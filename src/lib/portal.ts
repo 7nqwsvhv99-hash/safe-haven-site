@@ -4,8 +4,6 @@ import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
 const AIRTABLE_BASE_ID = "app2vpch2JJVrP9pu";
-const CLINICDAY_BASE_ID = "app3AcoD2G64aMsEz";
-const CLINICDAY_TABLE_ID = "tblnOw4Qr5AvCRWvQ";
 
 const TABLES = {
   portalAccess: "tblIZIPNjVjxteVrB",
@@ -62,7 +60,7 @@ function safeDate(value: unknown) {
 async function airtableList(
   tableId: string,
   fields: string[],
-  options?: { sort?: { field: string; direction?: "asc" | "desc" }[] }
+  options?: { sort?: { field: string; direction?: "asc" | "desc" }[]; filterByFormula?: string }
 ) {
   const token = process.env.AIRTABLE_ACCESS_TOKEN;
   if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
@@ -74,6 +72,7 @@ async function airtableList(
     const params = new URLSearchParams();
     params.set("pageSize", "100");
     fields.forEach((field) => params.append("fields[]", field));
+    if (options?.filterByFormula) params.set("filterByFormula", options.filterByFormula);
     options?.sort?.forEach((sort, index) => {
       params.append(`sort[${index}][field]`, sort.field);
       params.append(`sort[${index}][direction]`, sort.direction || "asc");
@@ -96,7 +95,7 @@ async function airtableList(
 
     records.push(...((result.records || []) as AirtableRecord[]));
     offset = result.offset;
-  } while (offset && records.length < 500);
+  } while (offset);
 
   return records;
 }
@@ -568,6 +567,8 @@ export async function getClinicPortalData(email: string) {
       "Confirmed Vet Score",
       "Confirmed Vet Tech Score",
       "Confirmed Volunteer Score",
+      "Availability Clinic Date",
+      "Computed Attendance Plan",
       "Clinic Assignment",
       "Notes",
     ]),
@@ -602,8 +603,7 @@ export async function getClinicPortalData(email: string) {
       },
     ])
   );
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 
   const confirmedNamesByDate = new Map<string, {
     veterinarians: string[];
@@ -638,12 +638,13 @@ export async function getClinicPortalData(email: string) {
         clinic: dateById.get(dateId),
         initialResponse: asText(record.fields["Initial Response"]),
         reconfirmation: asText(record.fields["One-Week Reconfirmation"]),
-        finalPlan: asText(record.fields["Final Attendance Plan"]),
+        finalPlan: asText(record.fields["Computed Attendance Plan"]),
+        responseClinicDate: asText(record.fields["Availability Clinic Date"]),
         assignment: asText(record.fields["Clinic Assignment"]),
         notes: asText(record.fields.Notes),
       }))
     )
-    .filter((item) => item.clinic?.date && new Date(item.clinic.date) >= today)
+    .filter((item) => item.clinic?.date && item.clinic.date.slice(0, 10) >= today && !["Cancelled", "Completed"].includes(item.clinic.stage))
     .sort((a, b) => new Date(a.clinic!.date).getTime() - new Date(b.clinic!.date).getTime());
 
   return {
@@ -670,7 +671,7 @@ export async function getClinicPortalData(email: string) {
     teamDates: dates
       .filter((record) => {
         const date = safeDate(record.fields["Clinic Date"]);
-        return date && new Date(date) >= today;
+        return date && date.slice(0, 10) >= today && !["Cancelled", "Completed"].includes(asText(record.fields["Scheduling Stage"]));
       })
       .map((record) => ({
         id: record.id,
@@ -916,100 +917,6 @@ export async function getMedicalPortalData() {
         !["Reviewed", "Resolved"].includes(record.veterinaryReviewStatus)
     ),
   };
-}
-
-export async function ensureClinicDayForStaffingDate({
-  staffingRecordId,
-  clinicDate,
-  sessionType,
-}: {
-  staffingRecordId: string;
-  clinicDate: string;
-  sessionType: string;
-}) {
-  const token = process.env.AIRTABLE_ACCESS_TOKEN;
-  if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
-  if (!staffingRecordId || !clinicDate) return null;
-
-  const type = sessionType === "Half Day" ? "Half Day" : "Full Day";
-  const params = new URLSearchParams();
-  params.set("pageSize", "100");
-  ["Clinic_Date", "Clinic Type", "Clinic Day Status"].forEach((field) => params.append("fields[]", field));
-
-  const listResponse = await fetch(
-    `https://api.airtable.com/v0/${CLINICDAY_BASE_ID}/${CLINICDAY_TABLE_ID}?${params.toString()}`,
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      cache: "no-store",
-    }
-  );
-  const listResult = await listResponse.json();
-  if (!listResponse.ok) {
-    console.error("ClinicDay lookup error", listResult);
-    throw new Error("Could not check ClinicDay clinic dates");
-  }
-
-  let clinicDayRecord = (listResult.records || []).find(
-    (record: AirtableRecord) => asText(record.fields.Clinic_Date) === clinicDate
-  ) as AirtableRecord | undefined;
-
-  if (!clinicDayRecord) {
-    const capacities =
-      type === "Half Day"
-        ? {
-            "Legacy Surgical Capacity": 12,
-            "Non-Surgical Capacity": 5,
-            "Base Public Surgical Capacity": 5,
-            "Max Capacity": 21,
-          }
-        : {
-            "Legacy Surgical Capacity": 21,
-            "Non-Surgical Capacity": 9,
-            "Base Public Surgical Capacity": 4,
-            "Max Capacity": 30,
-          };
-
-    const createResponse = await fetch(
-      `https://api.airtable.com/v0/${CLINICDAY_BASE_ID}/${CLINICDAY_TABLE_ID}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          records: [
-            {
-              fields: {
-                Clinic_Date: clinicDate,
-                "Clinic Type": type,
-                "Clinic Day Status": "Scheduled",
-                "Scheduling Hold?": false,
-                ...capacities,
-              },
-            },
-          ],
-        }),
-        cache: "no-store",
-      }
-    );
-    const createResult = await createResponse.json();
-    if (!createResponse.ok) {
-      console.error("ClinicDay create error", createResult);
-      throw new Error("Could not create ClinicDay clinic date");
-    }
-    clinicDayRecord = createResult.records?.[0] as AirtableRecord | undefined;
-  }
-
-  if (!clinicDayRecord) return null;
-
-  await airtableUpdate(TABLES.clinicDates, staffingRecordId, {
-    "ClinicDay Record ID": clinicDayRecord.id,
-    "ClinicDay Session Type": type,
-    "Last ClinicDay Sync": new Date().toISOString(),
-  });
-
-  return clinicDayRecord.id;
 }
 
 async function airtableCreate(tableId: string, fields: Record<string, unknown>) {

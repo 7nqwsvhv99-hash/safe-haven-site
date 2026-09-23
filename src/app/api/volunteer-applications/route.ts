@@ -54,6 +54,14 @@ export async function POST(request: Request) {
     }
     if (interests.length === 0) return NextResponse.json({ error: "Please select at least one volunteer interest." }, { status: 400 })
 
+    const clinicInterest = interests.some((interest) => interest.startsWith("Clinic Team"))
+    const clinicRole = asString(body.clinicRole)
+    if (clinicInterest && !["Veterinarian", "Vet Tech", "Clinic Volunteer"].includes(clinicRole)) return NextResponse.json({ error: "Please select your clinic role." }, { status: 400 })
+    if (clinicInterest && !["Yes", "No"].includes(asString(body.schedulingEmailConsent))) return NextResponse.json({ error: "Please choose whether to receive scheduling emails." }, { status: 400 })
+    if (clinicInterest && ["Veterinarian", "Vet Tech"].includes(clinicRole) && !asString(body.credentialDetails)) return NextResponse.json({ error: "Professional credential details are required." }, { status: 400 })
+    if (![body.emergencyName, body.emergencyPhone, body.emergencyRelationship].every(asString)) return NextResponse.json({ error: "Please complete your emergency contact details." }, { status: 400 })
+    if (!["Email", "Text", "Cell Phone"].includes(asString(body.preferredContact))) return NextResponse.json({ error: "Please select a valid contact method." }, { status: 400 })
+
     const now = new Date()
     const compactDate = now.toISOString().slice(0, 10).replaceAll("-", "")
     const applicationId = "VOL-" + compactDate + "-" + Math.random().toString(36).slice(2, 7).toUpperCase()
@@ -63,7 +71,15 @@ export async function POST(request: Request) {
       "Submitted At": now.toISOString(),
       "Status": "New",
       "Applicant Name": asString(body.firstName) + " " + asString(body.lastName),
-      "Email": asString(body.email),
+      "Email": asString(body.email).toLowerCase(),
+      "Preferred Contact": asString(body.preferredContact) === "Cell Phone" ? "Phone" : asString(body.preferredContact),
+      "Emergency Contact": lines([["Name", body.emergencyName], ["Relationship", body.emergencyRelationship], ["Phone", body.emergencyPhone]]),
+      ...(clinicInterest ? {
+        "Clinic Role Requested": clinicRole,
+        "Clinic Experience & Training": asString(body.clinicExperience),
+        "Professional Credential Details": asString(body.credentialDetails),
+        "Scheduling Email Consent": asString(body.schedulingEmailConsent) === "Yes",
+      } : {}),
       "Cell Phone": asString(body.cellPhone),
       "Contact & Address": lines([
         ["18 or Older", body.age18Plus],
