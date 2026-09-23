@@ -545,7 +545,7 @@ export async function getClinicPortalData(email: string) {
   );
 
   if (!member) {
-    return { member: null, dates: [], teamDates: [], announcements: [], inventory: [] };
+    return { member: null, dates: [], vetPreferences: [], teamDates: [], announcements: [], inventory: [] };
   }
 
   const [dates, responses, announcements, inventory, vetPreferences] = await Promise.all([
