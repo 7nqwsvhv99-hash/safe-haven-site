@@ -583,7 +583,7 @@ export async function getClinicPortalData(email: string) {
     ]),
     airtableList(
       TABLES.vetClinicPreferences,
-      ["Preference ID", "Veterinarian", "Preferred Clinic Date", "Preference Status", "Notes", "Submitted At", "Clinic Staffing Date"],
+      ["Preference ID", "Veterinarian", "Preferred Clinic Date", "Preferred Clinic Type", "Preference Status", "Notes", "Submitted At", "Clinic Staffing Date"],
       { sort: [{ field: "Preferred Clinic Date", direction: "asc" }] }
     ),
   ]);
