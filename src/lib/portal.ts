@@ -937,9 +937,9 @@ export async function ensureClinicDayForStaffingDate({
   ["Clinic_Date", "Clinic Type", "Clinic Day Status"].forEach((field) => params.append("fields[]", field));
 
   const listResponse = await fetch(
-    \`https://api.airtable.com/v0/\${CLINICDAY_BASE_ID}/\${CLINICDAY_TABLE_ID}?\${params.toString()}\`,
+    `https://api.airtable.com/v0/${CLINICDAY_BASE_ID}/${CLINICDAY_TABLE_ID}?${params.toString()}`,
     {
-      headers: { Authorization: \`Bearer \${token}\` },
+      headers: { Authorization: `Bearer ${token}` },
       cache: "no-store",
     }
   );
@@ -970,11 +970,11 @@ export async function ensureClinicDayForStaffingDate({
           };
 
     const createResponse = await fetch(
-      \`https://api.airtable.com/v0/\${CLINICDAY_BASE_ID}/\${CLINICDAY_TABLE_ID}\`,
+      `https://api.airtable.com/v0/${CLINICDAY_BASE_ID}/${CLINICDAY_TABLE_ID}`,
       {
         method: "POST",
         headers: {
-          Authorization: \`Bearer \${token}\`,
+          Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
