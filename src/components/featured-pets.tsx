@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { AnimalPhotoPreview } from "@/components/animal-photo-preview"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -16,6 +17,7 @@ type Animal = {
   traits: string[]
   bondedPair: boolean
   primaryPhoto: string
+  photos?: string[]
 }
 
 export function FeaturedPets() {
@@ -99,11 +101,7 @@ export function FeaturedPets() {
       {featuredPets.map((pet) => (
         <Card key={pet.id} className="overflow-hidden group flex flex-col">
           <Link href={`/adopt/${pet.id}`} className="block aspect-square overflow-hidden bg-slate-200">
-            <img
-              src={pet.primaryPhoto}
-              alt={pet.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            />
+            <AnimalPhotoPreview primaryPhoto={pet.primaryPhoto} photos={pet.photos} name={pet.name} />
           </Link>
           <CardContent className="p-5 space-y-3 flex-1 flex flex-col">
             <div>

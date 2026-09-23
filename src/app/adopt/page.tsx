@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { AnimalPhotoPreview } from "@/components/animal-photo-preview"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +27,7 @@ type Animal = {
   bondedPair: boolean
   bondedWith: Array<{ id: string; name: string }>
   primaryPhoto: string
+  photos?: string[]
 }
 
 function feeText(animal: Animal) {
@@ -170,10 +172,11 @@ export default function AdoptPage() {
                   <Card key={pet.id} className="overflow-hidden group flex flex-col">
                     <Link href={`/adopt/${pet.id}`} className="block aspect-square overflow-hidden bg-slate-100">
                       {pet.primaryPhoto ? (
-                        <img
-                          src={pet.primaryPhoto}
-                          alt={pet.status === "Pending" ? `${pet.name} adoption pending` : pet.name}
-                          className={`w-full h-full transition-transform duration-300 ${pet.status === "Pending" ? "object-contain" : "object-cover group-hover:scale-105"}`}
+                        <AnimalPhotoPreview
+                          primaryPhoto={pet.primaryPhoto}
+                          photos={pet.photos}
+                          name={pet.name}
+                          pending={pet.status === "Pending"}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground">Photo coming soon</div>
