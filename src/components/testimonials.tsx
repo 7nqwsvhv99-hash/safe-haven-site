@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Card } from "@/components/ui/card"
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react"
+import { legacyAdoptionStories, withLegacyAdoptionStories } from "@/lib/legacy-adoption-stories"
 
 type Testimonial = {
   id: string
@@ -38,10 +39,11 @@ export function Testimonials() {
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || "Could not load testimonials")
         if (!cancelled) {
-          setTestimonials(Array.isArray(data.testimonials) ? data.testimonials : [])
+          setTestimonials(withLegacyAdoptionStories<Testimonial>(Array.isArray(data.testimonials) ? data.testimonials : []))
         }
       } catch (error) {
         console.error("Could not load testimonials", error)
+        if (!cancelled) setTestimonials(legacyAdoptionStories)
       } finally {
         if (!cancelled) setIsLoading(false)
       }
