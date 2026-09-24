@@ -8,7 +8,6 @@ import {
 
 function field(f:FormData,n:string){return String(f.get(n)||"").trim()}
 function unique(values:string[]){return Array.from(new Set(values.filter(Boolean)))}
-function normalizePhone(value:string){return value.replace(/\D/g,"")}
 function displayName(first:string,last:string,org:string,email:string){return [first,last].filter(Boolean).join(" ")||org||email||"Unnamed contact"}
 function isDue(value:unknown){const s=asText(value);if(!s)return false;const d=new Date(s+"T23:59:59");return !Number.isNaN(d.getTime())&&d.getTime()<=Date.now()}
 
