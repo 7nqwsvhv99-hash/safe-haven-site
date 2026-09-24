@@ -149,7 +149,8 @@ export default async function IntakeManagementPage({
       "Pet Name": asText(request.fields["Animal Name"]) || "Unnamed",
       Species: species,
       Sex: asText(request.fields.Sex) || "Unknown",
-      "Age Display": asText(request.fields["Approximate Age"]),
+      ...(value(formData, "dateOfBirth") ? { "Date of Birth": value(formData, "dateOfBirth") } : {}),
+      ...(!value(formData, "dateOfBirth") && value(formData, "estimatedDateOfBirth") ? { "Estimated Date of Birth": value(formData, "estimatedDateOfBirth") } : {}),
       Breed: asText(request.fields["Breed / Mix"]),
       "Adoption Status": "Getting Ready for Adoption",
       "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
@@ -220,7 +221,8 @@ export default async function IntakeManagementPage({
         "Pet Name": petName,
         Species: species,
         Sex: value(formData, "sex") || "Unknown",
-        "Age Display": value(formData, "ageDisplay"),
+        ...(value(formData, "dateOfBirth") ? { "Date of Birth": value(formData, "dateOfBirth") } : {}),
+        ...(!value(formData, "dateOfBirth") && value(formData, "estimatedDateOfBirth") ? { "Estimated Date of Birth": value(formData, "estimatedDateOfBirth") } : {}),
         Breed: value(formData, "breed"),
         "Color / Markings": value(formData, "color"),
         "Adoption Status": "Getting Ready for Adoption",
@@ -341,6 +343,7 @@ export default async function IntakeManagementPage({
                           <input type="hidden" name="requestId" value={record.id}/>
                           <h4 className="font-bold">Accept Into Safe Haven Care</h4>
                           <input name="intakeDate" type="date" defaultValue={today()} className="w-full rounded-xl border bg-white px-3 py-2.5"/>
+                          <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label><label className="text-sm font-medium">Estimated date of birth<input name="estimatedDateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/><span className="mt-1 block text-xs text-muted-foreground">The surrender form's approximate age is reference only. Record one birth date here when accepting the animal.</span></label></div>
                           <select name="initialPlacement" defaultValue="In Shelter" className="w-full rounded-xl border bg-white px-3 py-2.5"><option>In Shelter</option><option>Foster Home</option></select>
                           <select name="condition" defaultValue="Unknown" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Good","Fair","Needs Medical Attention","Critical","Unknown"].map((s)=><option key={s}>{s}</option>)}</select>
                           <textarea name="intakeNotes" rows={3} placeholder="Care, safety, or placement notes" className="w-full rounded-xl border bg-white px-3 py-2.5"/>
@@ -366,7 +369,7 @@ export default async function IntakeManagementPage({
                   <p className="mb-3 text-sm font-semibold">New animal details, if needed</p>
                   <input name="petName" placeholder="Pet name" className="mb-3 w-full rounded-xl border bg-white px-3 py-2.5"/>
                   <div className="grid gap-3 sm:grid-cols-2"><select name="species" defaultValue="" className="rounded-xl border bg-white px-3 py-2.5"><option value="">Species</option><option>Cat</option><option>Dog</option></select><select name="sex" defaultValue="Unknown" className="rounded-xl border bg-white px-3 py-2.5"><option>Female</option><option>Male</option><option>Unknown</option></select></div>
-                  <input name="ageDisplay" placeholder="Age display" className="mt-3 w-full rounded-xl border bg-white px-3 py-2.5"/>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label><label className="text-sm font-medium">Estimated date of birth<input name="estimatedDateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/><span className="mt-1 block text-xs text-muted-foreground">Use when the exact date is unknown.</span></label></div>
                   <input name="breed" placeholder="Breed" className="mt-3 w-full rounded-xl border bg-white px-3 py-2.5"/>
                   <input name="color" placeholder="Color / markings" className="mt-3 w-full rounded-xl border bg-white px-3 py-2.5"/>
                 </div>
