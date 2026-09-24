@@ -191,7 +191,7 @@ export default async function CareAndHousingPage({
     ]);
 
     const animal = latestAnimals.find((record) => record.id === animalId);
-    if (!animal) return;
+    if (!animal || asText(animal.fields["Housing Type"]) !== "In Shelter") return;
 
     if (!locationId) {
       await airtableUpdate(TABLES.animals, animalId, {
@@ -398,7 +398,7 @@ export default async function CareAndHousingPage({
               <form action={moveAnimal} className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
                 <select name="animalId" required defaultValue="" className="rounded-xl border bg-white px-3 py-2.5">
                   <option value="" disabled>Select animal</option>
-                  {activeAnimals.map((animal) => <option key={animal.id} value={animal.id}>{asText(animal.fields["Pet Name"])} · {asText(animal.fields["Animal ID"])}</option>)}
+                  {inShelter.map((animal) => <option key={animal.id} value={animal.id}>{asText(animal.fields["Pet Name"])} · {asText(animal.fields["Animal ID"])}</option>)}
                 </select>
                 <select name="locationId" defaultValue="" className="rounded-xl border bg-white px-3 py-2.5">
                   <option value="">In shelter, location not assigned</option>
