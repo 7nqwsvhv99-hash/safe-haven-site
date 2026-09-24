@@ -9,6 +9,7 @@ import {
 function field(f:FormData,n:string){return String(f.get(n)||"").trim()}
 function unique(values:string[]){return Array.from(new Set(values.filter(Boolean)))}
 function displayName(first:string,last:string,org:string,email:string){return [first,last].filter(Boolean).join(" ")||org||email||"Unnamed contact"}
+function normalizePreferred(value:string){return ["Email","Phone","Text"].includes(value)?value:"No Preference"}
 function isDue(value:unknown){const s=asText(value);if(!s)return false;const d=new Date(s+"T23:59:59");return !Number.isNaN(d.getTime())&&d.getTime()<=Date.now()}
 
 type Aggregate={
@@ -27,7 +28,7 @@ export default async function PeoplePage({searchParams}:{searchParams:Promise<{q
       "Preferred Contact","Relationship Types","Newsletter Status","Do Not Solicit","Relationship Notes",
       "Volunteers","Adoption Applications","Foster Applications","Owner Surrender Requests","Donors","Newsletter Subscribers","Last Reconciled"
     ],{sort:[{field:"Display Name",direction:"asc"}]}),
-    airtableList(TABLES.contactLog,["Person","Date / Time","Contact Method","Subject / Summary","Next Follow-Up Date"],{sort:[{field:"Date / Time",direction:"desc"}]})
+    airtableList(TABLES.contactLog,["Person","Date / Time","Contact Method","Subject / Summary","Next Follow-Up Date","Follow-Up Status"],{sort:[{field:"Date / Time",direction:"desc"}]})
   ]);
 
   async function reconcile(formData:FormData){
@@ -66,7 +67,7 @@ export default async function PeoplePage({searchParams}:{searchParams:Promise<{q
     for(const r of adoptionApps){const a=get(asText(r.fields.Email));if(!a)continue;fill(a,{first:asText(r.fields["First Name"]),last:asText(r.fields["Last Name"]),phone:asText(r.fields.Phone),street:asText(r.fields["Street Address"]),city:asText(r.fields.City),state:asText(r.fields.State),zip:asText(r.fields.ZIP),preferred:asText(r.fields["Preferred Contact"])});a.relations.add("Adopter / Applicant");a.adoptionApps.push(r.id)}
     for(const r of fosterApps){const a=get(asText(r.fields.Email));if(!a)continue;fill(a,{first:asText(r.fields["First Name"]),last:asText(r.fields["Last Name"]),phone:asText(r.fields.Phone),street:asText(r.fields["Street Address"]),city:asText(r.fields.City),state:asText(r.fields.State),zip:asText(r.fields.ZIP),preferred:asText(r.fields["Preferred Contact"])});a.relations.add("Foster");a.fosterApps.push(r.id)}
     for(const r of surrenders){const a=get(asText(r.fields.Email));if(!a)continue;fill(a,{first:asText(r.fields["Owner First Name"]),last:asText(r.fields["Owner Last Name"]),phone:asText(r.fields.Phone),street:asText(r.fields["Street Address"]),city:asText(r.fields.City),state:asText(r.fields.State),zip:asText(r.fields.ZIP)});a.relations.add("Surrendering Owner");a.surrenders.push(r.id)}
-    for(const r of donors){const a=get(asText(r.fields.Email));if(!a)continue;fill(a,{first:asText(r.fields["First Name"]),last:asText(r.fields["Last Name"]),org:asText(r.fields["Organization Name"]),phone:asText(r.fields.Phone),street:asText(r.fields["Street Address"]),city:asText(r.fields.City),state:asText(r.fields.State),zip:asText(r.fields.ZIP),preferred:asText(r.fields["Preferred Contact"]),doNotSolicit:Boolean(r.fields["Do Not Solicit"]),notes:asText(r.fields["Relationship Notes"])});a.relations.add("Donor");a.donors.push(r.id)}
+    for(const r of donors){const a=get(asText(r.fields.Email));if(!a)continue;fill(a,{first:asText(r.fields["First Name"]),last:asText(r.fields["Last Name"]),org:asText(r.fields["Organization Name"]),phone:asText(r.fields.Phone),street:asText(r.fields["Street Address"]),city:asText(r.fields.City),state:asText(r.fields.State),zip:asText(r.fields.ZIP),preferred:normalizePreferred(asText(r.fields["Preferred Contact"])),doNotSolicit:Boolean(r.fields["Do Not Solicit"]),notes:asText(r.fields["Relationship Notes"])});a.relations.add("Donor");a.donors.push(r.id)}
     for(const r of subscribers){const a=get(asText(r.fields.Email));if(!a)continue;fill(a,{first:asText(r.fields["First Name"]),notes:asText(r.fields.Notes)});a.relations.add("Newsletter Subscriber");a.newsletterStatus=asText(r.fields.Status)||"Subscribed";a.subscribers.push(r.id)}
 
     const existingByEmail=new Map(existing.map(r=>[normalizeEmail(asText(r.fields.Email)),r]).filter(([email])=>Boolean(email)));
@@ -129,7 +130,7 @@ export default async function PeoplePage({searchParams}:{searchParams:Promise<{q
   });
   const multi=people.filter(r=>asStrings(r.fields["Relationship Types"]).length>1).length;
   const newsletterOnly=people.filter(r=>{const x=asStrings(r.fields["Relationship Types"]);return x.length===1&&x[0]==="Newsletter Subscriber"}).length;
-  const followups=contacts.filter(r=>isDue(r.fields["Next Follow-Up Date"])).length;
+  const followups=contacts.filter(r=>isDue(r.fields["Next Follow-Up Date"])&&asText(r.fields["Follow-Up Status"])!=="Completed").length;
 
   return <main className="min-h-screen bg-slate-50"><div className="container-custom py-10 md:py-12">
     <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft className="h-4 w-4"/> Staff Portal</Link>
