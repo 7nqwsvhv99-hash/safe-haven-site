@@ -421,7 +421,7 @@ export async function getFosterPortalData(email: string) {
     airtableList(TABLES.animals, [
       "Pet Name",
       "Species",
-      "Age Display",
+      "Current Age Display",
       "Breed",
       "Medical Summary",
       "Primary Photo",
@@ -474,7 +474,7 @@ export async function getFosterPortalData(email: string) {
           id,
           name: asText(animal?.fields["Pet Name"]),
           species: asText(animal?.fields.Species),
-          age: asText(animal?.fields["Age Display"]),
+          age: asText(animal?.fields["Current Age Display"]),
           breed: asText(animal?.fields.Breed),
           medicalSummary: asText(animal?.fields["Medical Summary"]),
           adoptionStatus: asText(animal?.fields["Adoption Status"]),
