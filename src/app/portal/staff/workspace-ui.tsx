@@ -1,0 +1,7 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+export const inputClass = "w-full rounded-xl border bg-white px-3 py-2";
+export function Field({label,children}:{label:string;children:ReactNode}) { return <label className="block space-y-1 text-sm font-medium"><span>{label}</span>{children}</label>; }
+export function Panel({title,children}:{title:string;children:ReactNode}) { return <section className="rounded-3xl border bg-white p-6 md:p-8 space-y-5 shadow-sm"><h2 className="text-xl font-bold">{title}</h2>{children}</section>; }
+export function Save({children="Save"}:{children?:ReactNode}) { return <button className="rounded-xl bg-primary px-5 py-2 font-semibold text-white">{children}</button>; }
+export function Workspace({title,description,notice,children}:{title:string;description:string;notice:{error?:string;saved?:string};children:ReactNode}) { return <main className="bg-slate-50"><div className="container-custom py-12 space-y-8"><Link href="/portal/staff" className="text-primary font-semibold">← Staff Portal</Link><header><h1 className="text-3xl font-bold">{title}</h1><p className="mt-3 max-w-3xl text-muted-foreground">{description}</p></header>{notice.error&&<p role="alert" className="rounded-xl bg-red-50 p-4 text-red-800">{notice.error}</p>}{notice.saved&&<p role="status" className="rounded-xl bg-green-50 p-4 text-green-800">Saved successfully.</p>}{children}</div></main>; }

@@ -1,6 +1,7 @@
 "use client"
 
 import { FormEvent, useState } from "react"
+import { clinicVolunteerRoles } from "@/lib/clinic-volunteer-roles"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -33,12 +34,8 @@ const interestOptions = [
   "Social Media & Content",
   "Administrative Support",
   "Fundraising & Event Support",
-  "Clinic Team - Veterinarian",
-  "Clinic Team - Veterinary Technician",
+  ...clinicVolunteerRoles.map(role => role.interest),
   "Clinic Team - General Volunteer",
-  "Clinic Team – Instrument Sterilization",
-  "Clinic Team – Front Room",
-  "Clinic Team – Back Room Documentation",
 ]
 
 export default function VolunteerApplicationPage() {
@@ -200,6 +197,7 @@ export default function VolunteerApplicationPage() {
           <div className="grid md:grid-cols-2 gap-3">
             {interestOptions.map((interest)=><label key={interest} className="flex items-center gap-2"><input className={checkboxClass} type="checkbox" value={interest} checked={interests.includes(interest)} onChange={()=>toggleInterest(interest)} />{interest}</label>)}
           </div>
+          <div className="grid gap-3 md:grid-cols-2">{clinicVolunteerRoles.map(role => <p key={role.title} className="text-sm text-muted-foreground"><strong className="text-foreground">{role.title}: </strong>{role.description}</p>)}</div>
           <Field label="Anything Else You Would Like Us to Know?"><Textarea name="anythingElse" /></Field>
         </Section>
 
@@ -214,9 +212,7 @@ export default function VolunteerApplicationPage() {
             {["Veterinarian", "Vet Tech"].includes(clinicRole) && (
               <Field label="Professional Credential Details *" note="Include credential/title, issuing state, license or certification number, and expiration date. If a detail is not applicable or needs follow-up, explain here."><Textarea name="credentialDetails" required /></Field>
             )}
-            <Field label="Receive Clinic Scheduling Emails? *" note="Scheduling invitations, reminders, and clinic changes are sent by email. If you select No, a coordinator will arrange scheduling with you directly.">
-              <select name="schedulingEmailConsent" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes</option><option>No</option></select>
-            </Field>
+            <p className="text-xs leading-relaxed text-muted-foreground">Email is our main way of contacting clinic volunteers to schedule clinic days, send reminders, and share schedule changes. If you need an exception, please contact the Safe Haven Spay/Neuter Clinic: Call <a className="font-semibold underline" href="tel:8158582265">815-858-2265</a> or Text <a className="font-semibold underline" href="sms:5633417158">563-341-7158</a>.</p>
           </Section>
         )}
 

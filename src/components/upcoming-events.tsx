@@ -35,7 +35,8 @@ function formatDate(start: string, allDay: boolean) {
   }).format(date)
 }
 
-export function UpcomingEvents() {
+export function UpcomingEvents({ fullPage = false }: { fullPage?: boolean }) {
+  const [state, setState] = useState("loading")
   const [events, setEvents] = useState<EventItem[]>([])
 
   useEffect(() => {
@@ -43,12 +44,12 @@ export function UpcomingEvents() {
 
     async function loadEvents() {
       try {
-        const response = await fetch("/api/events", { cache: "no-store" })
-        if (!response.ok) return
+        const response = await fetch(fullPage ? "/api/events?all=1" : "/api/events", { cache: "no-store" })
+        if (!response.ok) throw new Error("Events unavailable")
         const data = await response.json()
-        if (active && Array.isArray(data.events)) setEvents(data.events)
+        if (active && Array.isArray(data.events)) { setEvents(data.events); setState("ready") }
       } catch {
-        // If events cannot load, keep the section hidden rather than leaving an unfinished block.
+        if (active) setState("error")
       }
     }
 
@@ -56,9 +57,9 @@ export function UpcomingEvents() {
     return () => {
       active = false
     }
-  }, [])
+  }, [fullPage])
 
-  if (events.length === 0) return null
+  if (events.length === 0) return fullPage ? <p role="status" className="container-custom py-12 text-center text-muted-foreground">{state === "loading" ? "Loading events…" : state === "error" ? "We could not load events. Please refresh the page to try again." : "No upcoming events are posted. Please check back soon."}</p> : null
 
   return (
     <section className="section-padding bg-white">

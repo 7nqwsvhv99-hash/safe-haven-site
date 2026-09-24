@@ -169,7 +169,7 @@ export async function getPortalContext() {
     canVolunteer: isAdministrator || roles.includes("Volunteer"),
     canFoster: isAdministrator || roles.includes("Foster"),
     canClinic: isAdministrator || roles.includes("Clinic Team"),
-    canStaff: isAdministrator || roles.includes("Staff"),
+    canStaff: isAdministrator || roles.includes("Staff") || roles.includes("Shelter Manager"),
     canMedical: isAdministrator || roles.includes("Staff") || roles.includes("Medical"),
     canOnboard: canManageOnboarding(roles),
     isAdministrator,

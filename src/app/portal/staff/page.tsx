@@ -366,6 +366,7 @@ export default async function StaffPortalPage() {
                   <h2 className="text-2xl font-bold">Current Needs</h2>
                 </div>
 
+                <p className="mb-5 text-sm leading-relaxed text-muted-foreground">Post supplies, volunteer help, or other resources your team needs. Include the item or task, quantity or goal, when it is needed, and how someone can help. Choose the audience below: volunteer and website posts should contain only information safe to share publicly.</p>
                 {data.needs.length > 0 && (
                   <div className="mb-6 space-y-3">
                     {data.needs.slice(0, 8).map((item) => (
@@ -444,6 +445,8 @@ export default async function StaffPortalPage() {
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
                 <h2 className="text-2xl font-bold">Administration & Reporting</h2>
                 <div className="mt-5 grid gap-3">
+                  <Link href="/portal/staff/training" className="rounded-xl border p-4 hover:bg-slate-50"><strong>Staff Onboarding</strong><p className="mt-2 text-sm text-muted-foreground">Training materials, assigned onboarding tasks, and completion reviews.</p></Link>
+                  <Link href="/portal/staff/schedule" className="rounded-xl border p-4 hover:bg-slate-50"><strong>Staff Scheduling</strong><p className="mt-2 text-sm text-muted-foreground">Shift assignments, confirmations, and coverage.</p></Link>
                   {context.canOnboard && <Link href="/portal/staff/onboarding" className="rounded-xl border p-4 hover:bg-slate-50"><div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><span className="font-semibold">Volunteer Onboarding</span></div><p className="mt-2 text-sm text-muted-foreground">Applications, credentials, trained roles, waivers, roster links, and volunteer portal access.</p></Link>}
                   <a href={airtableLinks.reports} target="_blank" rel="noopener noreferrer" className="rounded-xl border p-4 hover:bg-slate-50">
                     <div className="flex items-center gap-3"><BarChart3 className="h-5 w-5 text-primary" /><span className="font-semibold">Reports & Dashboards</span></div>

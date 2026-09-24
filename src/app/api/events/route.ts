@@ -25,7 +25,8 @@ function attachments(value: unknown) {
     .filter(Boolean)
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const all = new URL(request.url).searchParams.get("all") === "1"
   try {
     const token = process.env.AIRTABLE_ACCESS_TOKEN
     if (!token) {
@@ -60,22 +61,17 @@ export async function GET() {
     ]
     for (const field of fields) params.append("fields[]", field)
 
-    const response = await fetch(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${EVENTS_TABLE_ID}?${params.toString()}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      }
-    )
-
-    const result = await response.json()
-    if (!response.ok) {
-      console.error("Airtable events error", result)
-      return NextResponse.json({ error: "We could not load events right now." }, { status: 502 })
-    }
-
+    const records: AirtableRecord[] = []
+    let offset: string | undefined
+    do {
+      if (offset) params.set("offset", offset)
+      const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${EVENTS_TABLE_ID}?${params}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
+      const result = await response.json()
+      if (!response.ok) throw new Error("Could not load events")
+      records.push(...(result.records || []))
+      offset = result.offset
+    } while (offset)
     const now = Date.now()
-    const records = (result.records || []) as AirtableRecord[]
 
     const events = records
       .map((record) => {
@@ -123,7 +119,7 @@ export async function GET() {
         if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder
         return new Date(a.start).getTime() - new Date(b.start).getTime()
       })
-      .slice(0, 3)
+      .slice(0, all ? undefined : 3)
       .map(({ effectiveEnd, ...event }) => event)
 
     return NextResponse.json({ events }, { headers: { "Cache-Control": "no-store" } })

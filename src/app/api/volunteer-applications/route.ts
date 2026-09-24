@@ -57,7 +57,6 @@ export async function POST(request: Request) {
     const clinicInterest = interests.some((interest) => interest.startsWith("Clinic Team"))
     const clinicRole = asString(body.clinicRole)
     if (clinicInterest && !["Veterinarian", "Vet Tech", "Clinic Volunteer"].includes(clinicRole)) return NextResponse.json({ error: "Please select your clinic role." }, { status: 400 })
-    if (clinicInterest && !["Yes", "No"].includes(asString(body.schedulingEmailConsent))) return NextResponse.json({ error: "Please choose whether to receive scheduling emails." }, { status: 400 })
     if (clinicInterest && ["Veterinarian", "Vet Tech"].includes(clinicRole) && !asString(body.credentialDetails)) return NextResponse.json({ error: "Professional credential details are required." }, { status: 400 })
     if (![body.emergencyName, body.emergencyPhone, body.emergencyRelationship].every(asString)) return NextResponse.json({ error: "Please complete your emergency contact details." }, { status: 400 })
     if (!["Email", "Text", "Cell Phone"].includes(asString(body.preferredContact))) return NextResponse.json({ error: "Please select a valid contact method." }, { status: 400 })
@@ -78,7 +77,7 @@ export async function POST(request: Request) {
         "Clinic Role Requested": clinicRole,
         "Clinic Experience & Training": asString(body.clinicExperience),
         "Professional Credential Details": asString(body.credentialDetails),
-        "Scheduling Email Consent": asString(body.schedulingEmailConsent) === "Yes",
+        "Scheduling Email Consent": clinicInterest,
       } : {}),
       "Cell Phone": asString(body.cellPhone),
       "Contact & Address": lines([

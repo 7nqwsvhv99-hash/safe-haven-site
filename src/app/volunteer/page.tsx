@@ -1,3 +1,4 @@
+import { clinicVolunteerRoles } from "@/lib/clinic-volunteer-roles"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -101,6 +102,7 @@ export default function VolunteerPage() {
 }
 
 const volunteerRoles = [
+  ...clinicVolunteerRoles.map(role => ({...role, icon: <Heart className="h-5 w-5 text-primary" />})),
   {
     title: "Dog Socializing & Exercise",
     icon: <Dog className="h-5 w-5 text-primary" />,
