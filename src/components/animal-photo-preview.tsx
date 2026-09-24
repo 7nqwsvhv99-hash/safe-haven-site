@@ -32,7 +32,7 @@ export function AnimalPhotoPreview({ primaryPhoto, photos, name, pending = false
     setActive(0)
     if (!hovered || reducedMotion || gallery.length < 2) return
     setRequested(true)
-    const timer = window.setInterval(() => {
+    const advance = () => {
       if (document.hidden) return
       setActive((current) => {
         // Only reveal successfully loaded images, skipping slow or broken photos.
@@ -42,8 +42,20 @@ export function AnimalPhotoPreview({ primaryPhoto, photos, name, pending = false
         }
         return current
       })
-    }, 2200)
-    return () => window.clearInterval(timer)
+    }
+
+    // Reveal the first alternate photo quickly so visitors notice that the gallery is interactive.
+    // After that, keep the slower cadence so the rotation does not feel rushed.
+    let interval: number | undefined
+    const firstChange = window.setTimeout(() => {
+      advance()
+      interval = window.setInterval(advance, 2200)
+    }, 1200)
+
+    return () => {
+      window.clearTimeout(firstChange)
+      if (interval) window.clearInterval(interval)
+    }
   }, [hovered, reducedMotion, gallery])
 
   return (
