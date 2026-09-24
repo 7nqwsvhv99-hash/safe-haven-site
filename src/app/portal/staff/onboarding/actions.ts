@@ -1,7 +1,7 @@
 'use server';
 import {onboardingAccess} from '@/lib/onboarding-policy';
 import {revalidatePath} from 'next/cache';
-import {requireOnboarding,getOnboardingData,readiness,skills,clinicRoles,needsGeneralOrientation} from '@/lib/onboarding';
+import {requireOnboarding,getOnboardingData,readiness,skills,clinicRoles,needsGeneralOrientation,resolveProfileMatches,hasLikelyEmailTypo} from '@/lib/onboarding';
 import {airtableUpdate,airtableCreate,airtableUploadAttachment,TABLES,asText,asStrings,normalizeEmail} from '@/lib/portal';
 const path='/portal/staff/onboarding';
 export type OnboardingActionState={ok:boolean;message:string};
@@ -27,9 +27,10 @@ export async function saveReview(_previous:OnboardingActionState,form:FormData):
   if(approved.some(s=>!skills.includes(s)))throw Error('Choose valid clinic skills.');
   const credentials=form.get('credentials')==='on';
   if(['Veterinarian','Vet Tech'].includes(role)&&!credentials)throw Error('Verify professional credentials before approving this clinic role.');
-  const volunteer=String(form.get('volunteerId')||'');const member=String(form.get('memberId')||'');
-  if(volunteer&&!data.volunteers.some(r=>r.id===volunteer))throw Error('Volunteer profile not found.');
-  if(member&&!data.members.some(r=>r.id===member))throw Error('Clinic member not found.');
+  const matches=resolveProfileMatches(app.fields,data.volunteers,data.members);
+  if(matches.volunteers.length>1||matches.members.length>1)throw Error('Multiple existing records match this applicant. Reconcile the duplicate records before continuing.');
+  const volunteer=matches.volunteers[0]?.id||'';
+  const member=matches.members[0]?.id||'';
   const status=String(form.get('status')||'In Review');
   if(!['New','In Review','Contacted','Approved','Closed'].includes(status))throw Error('Invalid status.');
   if(status==='Approved'&&asText(app.fields.Status)!=='Approved')throw Error('Use Complete onboarding to approve a new applicant.');
@@ -68,12 +69,12 @@ export async function completeOnboarding(_previous:OnboardingActionState,form:Fo
   const missing=readiness(app.fields);if(missing.length)throw Error('Still needed: '+missing.join(', ')+'.');
   if(form.get('confirm')!=='on')throw Error('Confirm the review before completing onboarding.');
   const f=app.fields,email=normalizeEmail(asText(f.Email)),name=asText(f['Applicant Name']),role=asText(f['Approved Clinic Role']);
-  const matches=(rows:typeof data.volunteers,links:string[])=>rows.filter(r=>links.includes(r.id)||normalizeEmail(asText(r.fields.Email))===email);
-  const volunteers=matches(data.volunteers,asStrings(f.Volunteers));
-  const members=matches(data.members,asStrings(f['Clinic Team Member']));
+  if(hasLikelyEmailTypo(email))throw Error('The applicant email appears to contain a Gmail domain typo. Correct the application email before completing onboarding.');
+  const matched=resolveProfileMatches(f,data.volunteers,data.members);
+  const volunteers=matched.volunteers;
+  const members=matched.members;
   const accesses=data.access.filter(r=>normalizeEmail(asText(r.fields.Email))===email);
   if(volunteers.length>1||members.length>1||accesses.length>1)throw Error('Multiple records match this person. Reconcile the duplicate records before completing onboarding.');
-  if(role&&!members.length&&data.members.some(r=>!asText(r.fields.Email)&&asText(r.fields['Team Member Name']).split(/\s+/)[0].toLowerCase()===name.split(/\s+/)[0].toLowerCase()))throw Error('An existing clinic member may have a missing email. Select their existing record in the review first.');
   const profileFields={'Volunteer Name':name,Email:email,'Cell Phone':asText(f['Cell Phone']),Availability:asText(f.Availability),'Application Interests / Experience':asText(f['Experience & Interests']),Status:'Active',Application:Array.from(new Set([...(volunteers[0]?asStrings(volunteers[0].fields.Application):[]),app.id]))};
   const volunteer=volunteers[0]?await airtableUpdate(TABLES.volunteers,volunteers[0].id,profileFields):await airtableCreate(TABLES.volunteers,profileFields);
   if(!volunteer)throw Error('Could not save volunteer profile.');
@@ -86,11 +87,13 @@ export async function completeOnboarding(_previous:OnboardingActionState,form:Fo
    if(!saved)throw Error('Could not save clinic profile.');member=saved;
    await airtableUpdate(TABLES.volunteerApplications,app.id,{'Clinic Team Member':[member.id]});
   }
-  const granted=onboardingAccess(accesses[0]?asStrings(accesses[0].fields.Roles):[],role);
-  // No client-provided roles are accepted here. Only administrators assign privileged roles.
-  if(accesses[0])await airtableUpdate(TABLES.portalAccess,accesses[0].id,{Roles:granted,Active:true});
-  else await airtableCreate(TABLES.portalAccess,{Email:email,'Display Name':name,Roles:granted,Active:true});
+  // Volunteer and Clinic Team access are recognized automatically from the active roster records above.
+  // If an exact-email Portal Access row already exists, keep it aligned; do not create a duplicate row here.
+  if(accesses[0]){
+   const granted=onboardingAccess(asStrings(accesses[0].fields.Roles),role);
+   await airtableUpdate(TABLES.portalAccess,accesses[0].id,{Roles:granted,Active:true,'Display Name':name});
+  }
   await airtableUpdate(TABLES.volunteerApplications,app.id,{Status:'Approved','Onboarding Complete':true,'Decision Date':new Date().toISOString().slice(0,10),'Onboarding Reviewed By':reviewer,'Onboarding Reviewed At':new Date().toISOString()});
-  return 'Onboarding complete. Roster links and Volunteer'+(role?' and Clinic Team':'')+' portal access are ready. The volunteer can sign in using '+email+'.';
+  return 'Onboarding complete. Portal access is ready. First-time users must create an account using '+email+'; returning users can sign in with that same email.';
  });
 }

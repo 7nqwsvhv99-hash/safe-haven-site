@@ -13,11 +13,40 @@ export async function getOnboardingData() {
   await requireOnboarding();
   const [applications,volunteers,members,access]=await Promise.all([
     airtableList(TABLES.volunteerApplications,['Applicant Name','Email','Cell Phone','Status','Submitted At','Contact & Address','Availability','Experience & Interests','Emergency Contact','Clinic Role Requested','Clinic Experience & Training','Professional Credential Details','Preferred Contact','Scheduling Email Consent','Approved Clinic Role','Approved Clinic Skills','Clinic Team Member','Volunteers','Reviewer Notes','Next Follow-Up Date','Credentials Verified','Orientation Completed','Onboarding Complete','Onboarding Reviewed By','Onboarding Reviewed At','Signed Volunteer Waiver','Waiver Signed By','Waiver Signed Date'],{sort:[{field:'Submitted At',direction:'desc'}]}),
-    airtableList(TABLES.volunteers,['Volunteer Name','Email','Status','Application']),
-    airtableList(TABLES.clinicMembers,['Team Member Name','Email','Role','Active','Volunteer Record','Volunteer Skills']),
+    airtableList(TABLES.volunteers,['Volunteer Name','Email','Cell Phone','Status','Application']),
+    airtableList(TABLES.clinicMembers,['Team Member Name','Email','Phone','Role','Active','Volunteer Record','Volunteer Skills']),
     airtableList(TABLES.portalAccess,['Email','Display Name','Roles','Active'])
   ]);
   return {applications,volunteers,members,access};
+}
+function normalizePhone(value:string){return value.replace(/\D/g,'').slice(-10);}
+export function hasLikelyEmailTypo(value:string){
+  const email=value.trim().toLowerCase();
+  const domain=email.split('@')[1]||'';
+  return ['gamail.com','gamil.com','gmial.com','gmal.com'].includes(domain);
+}
+export function resolveProfileMatches(
+  fields:Record<string,unknown>,
+  volunteers:Array<{id:string;fields:Record<string,unknown>}>,
+  members:Array<{id:string;fields:Record<string,unknown>}>
+){
+  const email=asText(fields.Email).trim().toLowerCase();
+  const phone=normalizePhone(asText(fields['Cell Phone']));
+  const linkedVolunteers=new Set(asStrings(fields.Volunteers));
+  const linkedMembers=new Set(asStrings(fields['Clinic Team Member']));
+  const matches=(rows:Array<{id:string;fields:Record<string,unknown>}>,emailField:string,phoneField:string,linked:Set<string>)=>
+    rows.filter(record=>{
+      const recordEmail=asText(record.fields[emailField]).trim().toLowerCase();
+      const recordPhone=normalizePhone(asText(record.fields[phoneField]));
+      if(email&&recordEmail===email)return true;
+      if(phone&&recordPhone===phone)return true;
+      if(linked.has(record.id)&&(!recordEmail&&!recordPhone))return true;
+      return false;
+    });
+  return {
+    volunteers:matches(volunteers,'Email','Cell Phone',linkedVolunteers),
+    members:matches(members,'Email','Phone',linkedMembers),
+  };
 }
 export function needsGeneralOrientation(fields:Record<string,unknown>) {
   const details=asText(fields['Experience & Interests']);

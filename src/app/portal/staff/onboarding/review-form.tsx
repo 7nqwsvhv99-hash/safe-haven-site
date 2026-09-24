@@ -6,15 +6,14 @@ import {saveReview,type OnboardingActionState} from './actions';
 
 const control='mt-2 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm';
 
-type PersonOption={id:string;name:string;email:string};
-
 export function ReviewForm({
- applicationId,orientationApplies,initialStatus,initialFollowUp,initialVolunteerId,initialMemberId,initialRole,
- initialCredentials,initialApprovedSkills,initialNotes,initialSaved,volunteers,members,roles,availableSkills
+ applicationId,orientationApplies,initialStatus,initialFollowUp,volunteerMatch,clinicMatch,volunteerAmbiguous,clinicAmbiguous,initialRole,
+ initialCredentials,initialApprovedSkills,initialNotes,initialSaved,roles,availableSkills
 }:{
- applicationId:string;orientationApplies:boolean;initialStatus:string;initialFollowUp:string;initialVolunteerId:string;initialMemberId:string;
+ applicationId:string;orientationApplies:boolean;initialStatus:string;initialFollowUp:string;
+ volunteerMatch:{name:string;email:string}|null;clinicMatch:{name:string;email:string}|null;volunteerAmbiguous:boolean;clinicAmbiguous:boolean;
  initialRole:string;initialCredentials:boolean;initialApprovedSkills:string[];initialNotes:string;initialSaved:boolean;
- volunteers:PersonOption[];members:PersonOption[];roles:string[];availableSkills:string[];
+ roles:string[];availableSkills:string[];
 }){
  const router=useRouter();
  const [pending,setPending]=useState(false);
@@ -22,8 +21,6 @@ export function ReviewForm({
  const [saved,setSaved]=useState(initialSaved);
  const [status,setStatus]=useState(initialStatus);
  const [followUp,setFollowUp]=useState(initialFollowUp);
- const [volunteerId,setVolunteerId]=useState(initialVolunteerId);
- const [memberId,setMemberId]=useState(initialMemberId);
  const [role,setRole]=useState(initialRole);
  const [credentials,setCredentials]=useState(initialCredentials);
  const [approvedSkills,setApprovedSkills]=useState(initialApprovedSkills);
@@ -72,18 +69,8 @@ export function ReviewForm({
    {orientationApplies&&<label className="text-sm font-medium">Scheduled Orientation Date
     <input type="date" name="followUp" value={followUp} onChange={event=>setFollowUp(event.target.value)} className={control}/>
    </label>}
-   <label className="text-sm font-medium">Existing volunteer profile
-    <select name="volunteerId" value={volunteerId} onChange={event=>setVolunteerId(event.target.value)} className={control}>
-     <option value="">Match by email or create at completion</option>
-     {volunteers.map(person=><option key={person.id} value={person.id}>{person.name} · {person.email||'Email missing'}</option>)}
-    </select>
-   </label>
-   <label className="text-sm font-medium">Existing clinic team member
-    <select name="memberId" value={memberId} onChange={event=>setMemberId(event.target.value)} className={control}>
-     <option value="">Match by email or create if needed</option>
-     {members.map(person=><option key={person.id} value={person.id}>{person.name} · {person.email||'Email missing'}</option>)}
-    </select>
-   </label>
+   <div className="rounded-xl border bg-slate-50 p-3 text-sm"><p className="font-medium">Existing volunteer profile</p><p className="mt-1 text-muted-foreground">{volunteerAmbiguous?'Multiple possible matches found. Resolve duplicate records before onboarding.':volunteerMatch?('Matched automatically: '+volunteerMatch.name+' · '+(volunteerMatch.email||'Email missing')):'No existing volunteer profile matched. A new profile will be created at completion.'}</p></div>
+   <div className="rounded-xl border bg-slate-50 p-3 text-sm"><p className="font-medium">Existing clinic team member</p><p className="mt-1 text-muted-foreground">{clinicAmbiguous?'Multiple possible matches found. Resolve duplicate records before onboarding.':clinicMatch?('Matched automatically: '+clinicMatch.name+' · '+(clinicMatch.email||'Email missing')):'No existing Clinic Team record matched. One will be created if a clinic role is approved.'}</p></div>
   </div>
 
   <label className="block text-sm font-medium">Approved clinic role

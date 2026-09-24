@@ -53,6 +53,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Parent or guardian phone is required for applicants under 18." }, { status: 400 })
     }
     if (interests.length === 0) return NextResponse.json({ error: "Please select at least one volunteer interest." }, { status: 400 })
+    const emailDomain = asString(body.email).toLowerCase().split("@")[1] || ""
+    if (["gamail.com","gamil.com","gmial.com","gmal.com"].includes(emailDomain)) {
+      return NextResponse.json({ error: "Please double-check your email address. It looks like the Gmail domain may be misspelled." }, { status: 400 })
+    }
 
     const clinicInterest = interests.some((interest) => interest.startsWith("Clinic Team"))
     const clinicRole = asString(body.clinicRole)

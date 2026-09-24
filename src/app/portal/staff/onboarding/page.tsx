@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {getOnboardingData,requireOnboarding,readiness,skills,clinicRoles,needsGeneralOrientation} from '@/lib/onboarding';
+import {getOnboardingData,requireOnboarding,readiness,skills,clinicRoles,needsGeneralOrientation,resolveProfileMatches} from '@/lib/onboarding';
 import {asText,asStrings} from '@/lib/portal';
 import {ReviewForm} from './review-form';
 import {WaiverForm} from './waiver-form';
@@ -14,7 +14,9 @@ export default async function OnboardingPage({searchParams}:{searchParams:Promis
  const query=await searchParams;const data=await getOnboardingData();
  const filtered=data.applications.filter(r=>(!query.q||[r.fields['Applicant Name'],r.fields.Email].join(' ').toLowerCase().includes(query.q.toLowerCase()))&&(!query.status||(query.status==='Complete'?Boolean(r.fields['Onboarding Complete']):!r.fields['Onboarding Complete']&&asText(r.fields.Status)!=='Closed')));
  const app=data.applications.find(r=>r.id===query.application)||filtered[0];const f=app?.fields||{};
- const missing=app?readiness(f):[];
+ const autoMatches=app?resolveProfileMatches(f,data.volunteers,data.members):{volunteers:[],members:[]};
+ const duplicateMatch=autoMatches.volunteers.length>1||autoMatches.members.length>1;
+ const missing=app?[...readiness(f),...(duplicateMatch?['Resolve duplicate existing records']:[])]:[];
  const role=asText(f['Approved Clinic Role']);
  const waiverFiles=files(f['Signed Volunteer Waiver']);
  const hasWaiver=waiverFiles.length>0;
@@ -33,21 +35,21 @@ export default async function OnboardingPage({searchParams}:{searchParams:Promis
    </aside>
    {!app?<section className={card}><h2 className="text-xl font-bold">Ready for your first application</h2><p className="mt-3 text-muted-foreground">Have the volunteer complete the application using the email they will use to sign in. Then return here to review and finish onboarding.</p></section>:<div className="space-y-6">
     <section className={card}><h2 className="text-2xl font-bold">{asText(f['Applicant Name'])}</h2><p className="mt-2">{asText(f.Email)} · {asText(f['Cell Phone'])}</p><p className="mt-2 text-sm text-muted-foreground">Submitted {asText(f['Submitted At']).slice(0,10)} · Requested clinic role: {asText(f['Clinic Role Requested'])||'None'}</p><details className="mt-5" open><summary className="cursor-pointer font-semibold">Application details</summary><dl className="mt-4 grid gap-5 sm:grid-cols-2">{['Contact & Address','Emergency Contact','Availability','Experience & Interests','Clinic Experience & Training','Professional Credential Details'].map(key=><div key={key}><dt className="text-sm font-semibold">{key}</dt><dd className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{asText(f[key])||'Not provided'}</dd></div>)}</dl><p className="mt-4 text-sm">Scheduling email consent: {f['Scheduling Email Consent']?'Yes':'No'}</p></details></section>
-    <section className={card}><h2 className="text-xl font-bold">1. Review and match existing records</h2><p className="mt-2 text-sm text-muted-foreground">Select an existing profile when this person already volunteers. Otherwise, leave it blank and a profile will be created when onboarding is completed.</p>
+    <section className={card}><h2 className="text-xl font-bold">1. Review and match existing records</h2><p className="mt-2 text-sm text-muted-foreground">The system matches existing Volunteer and Clinic Team records automatically using the application email, phone number, and existing links. New profiles are created only when no existing record matches.</p>
      <ReviewForm
       applicationId={app.id}
       orientationApplies={orientationApplies}
       initialStatus={asText(f.Status)||'New'}
       initialFollowUp={asText(f['Next Follow-Up Date'])}
-      initialVolunteerId={asStrings(f.Volunteers)[0]||''}
-      initialMemberId={asStrings(f['Clinic Team Member'])[0]||''}
+      volunteerMatch={autoMatches.volunteers.length===1?{name:asText(autoMatches.volunteers[0].fields['Volunteer Name']),email:asText(autoMatches.volunteers[0].fields.Email)}:null}
+      clinicMatch={autoMatches.members.length===1?{name:asText(autoMatches.members[0].fields['Team Member Name']),email:asText(autoMatches.members[0].fields.Email)}:null}
+      volunteerAmbiguous={autoMatches.volunteers.length>1}
+      clinicAmbiguous={autoMatches.members.length>1}
       initialRole={role}
       initialCredentials={Boolean(f['Credentials Verified'])}
       initialApprovedSkills={asStrings(f['Approved Clinic Skills'])}
       initialNotes={asText(f['Reviewer Notes'])}
       initialSaved={reviewSaved}
-      volunteers={data.volunteers.map(r=>({id:r.id,name:asText(r.fields['Volunteer Name']),email:asText(r.fields.Email)}))}
-      members={data.members.map(r=>({id:r.id,name:asText(r.fields['Team Member Name']),email:asText(r.fields.Email)}))}
       roles={clinicRoles}
       availableSkills={skills}
      />
@@ -62,7 +64,7 @@ export default async function OnboardingPage({searchParams}:{searchParams:Promis
     </section>
     <section className={card}><h2 className="text-xl font-bold">3. Complete onboarding and grant access</h2><p className="mt-2 text-sm text-muted-foreground">This connects the approved volunteer profile, creates or updates the clinic profile when applicable, and grants Volunteer{role?' and Clinic Team':''} access. Staff, Medical, and administrator permissions are never granted here.</p>
      {completed?
-      <p role="status" className="my-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm font-medium">Onboarding complete. The volunteer profile and portal access are ready.</p>
+      <div className="my-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm"><p role="status" className="font-semibold">Onboarding complete. Portal access is ready.</p><p className="mt-2">First-time user: choose <strong>Sign up</strong> and create the account using <strong>{asText(f.Email)}</strong>. Returning user: choose <strong>Sign in</strong> with that same email.</p><div className="mt-3 flex flex-wrap gap-3"><Link href="/sign-up" className="font-semibold text-primary underline">First-time user: Sign up</Link><Link href="/sign-in" className="font-semibold text-primary underline">Returning user: Sign in</Link></div></div>
       :<>
        {missing.length?<div className="my-4 rounded-xl bg-amber-50 p-4 text-sm"><p className="font-semibold">Still needed</p><ul className="mt-2 list-disc pl-5">{missing.map(item=><li key={item}>{item}</li>)}</ul></div>:<p className="my-4 rounded-xl bg-green-50 p-4 text-sm">All required review items are recorded.</p>}
        <CompleteOnboardingForm applicationId={app.id} disabled={Boolean(missing.length)}/>
