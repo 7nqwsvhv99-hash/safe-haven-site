@@ -68,7 +68,7 @@ export default async function IntakeManagementPage({
   await requirePortalRole("Staff");
   const query = await searchParams;
 
-  const [requests, intakes, animals, fosterApplications, fosterPlacements] = await Promise.all([
+  const [requests, intakes, animals, fosterApplications] = await Promise.all([
     airtableList(TABLES.surrenderRequests, [
       "Submitted At","Status","Owner First Name","Owner Last Name","Email","Phone",
       "Street Address","City","State","ZIP","Animal Name","Species","Sex","Approximate Age",
