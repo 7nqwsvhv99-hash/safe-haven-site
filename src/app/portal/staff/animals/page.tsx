@@ -137,7 +137,7 @@ export default async function AnimalManagementPage({
     const existing = await airtableList(TABLES.animals, ["Animal ID"]);
     const animalId = nextAnimalId(existing, species);
     const adoptionStatus = field(formData, "adoptionStatus") || "Getting Ready for Adoption";
-    const housingType = field(formData, "housingType") || "In Shelter";
+    const housingType = "In Shelter";
     const housingLocation = field(formData, "housingLocation");
     const microchipStatus = field(formData, "microchipStatus") || "Unknown";
 
@@ -316,7 +316,7 @@ export default async function AnimalManagementPage({
             <div>
               <h3 className="mb-4 font-semibold">Housing & identification</h3>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <Select name="housingType" label="Housing type" options={["In Shelter", "Foster Home"]} defaultValue="In Shelter" />
+                <label className="block text-sm font-medium">Housing type<input value="In Shelter" readOnly className="mt-2 w-full rounded-xl border bg-slate-50 px-3 py-2.5 text-muted-foreground" /><span className="mt-1 block text-xs text-muted-foreground">For a direct-to-foster intake, use Intake & Owner Surrender so the Foster Placement is created at the same time.</span></label>
                 <label className="block text-sm font-medium">
                   Shelter location
                   <select name="housingLocation" defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
