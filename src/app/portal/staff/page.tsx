@@ -16,6 +16,7 @@ import {
   PawPrint,
   BedDouble,
   UserCheck,
+  HeartHandshake,
 } from "lucide-react";
 import { requirePortalRole, getPortalContext, getStaffPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
@@ -210,6 +211,23 @@ export default async function StaffPortalPage() {
               </div>
               <Link href="/portal/staff/adoptions" className="inline-flex shrink-0 items-center justify-center rounded-full border border-primary px-5 py-2.5 font-semibold text-primary hover:bg-primary/5">
                 Open Adoption Management
+              </Link>
+            </div>
+          </section>
+
+          <section className="mb-8 rounded-3xl border bg-white p-7 shadow-sm">
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="rounded-2xl bg-primary/10 p-3 text-primary"><HeartHandshake className="h-6 w-6" /></div>
+                <div>
+                  <h2 className="text-2xl font-bold">Foster Management</h2>
+                  <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                    Review foster applications, create and transfer placements, oversee check-ins, and resolve foster concerns.
+                  </p>
+                </div>
+              </div>
+              <Link href="/portal/staff/fosters" className="inline-flex shrink-0 items-center justify-center rounded-full border border-primary px-5 py-2.5 font-semibold text-primary hover:bg-primary/5">
+                Open Foster Management
               </Link>
             </div>
           </section>
