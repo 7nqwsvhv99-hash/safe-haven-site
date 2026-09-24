@@ -141,6 +141,9 @@ export default async function IntakeManagementPage({
     if (!["Cat","Dog"].includes(species)) return;
     const initialPlacement = value(formData, "initialPlacement") || "In Shelter";
     const fosterApplicationId = value(formData, "fosterApplicationId");
+    const dateOfBirth = value(formData, "dateOfBirth");
+    const estimatedDateOfBirth = value(formData, "estimatedDateOfBirth");
+    if (!dateOfBirth && !estimatedDateOfBirth) return;
     if (initialPlacement === "Foster Home" && !approvedFosters.some((record) => record.id === fosterApplicationId)) return;
 
     const existingAnimals = await airtableList(TABLES.animals, ["Animal ID"]);
@@ -149,8 +152,8 @@ export default async function IntakeManagementPage({
       "Pet Name": asText(request.fields["Animal Name"]) || "Unnamed",
       Species: species,
       Sex: asText(request.fields.Sex) || "Unknown",
-      ...(value(formData, "dateOfBirth") ? { "Date of Birth": value(formData, "dateOfBirth") } : {}),
-      ...(!value(formData, "dateOfBirth") && value(formData, "estimatedDateOfBirth") ? { "Estimated Date of Birth": value(formData, "estimatedDateOfBirth") } : {}),
+      ...(dateOfBirth ? { "Date of Birth": dateOfBirth } : {}),
+      ...(!dateOfBirth && estimatedDateOfBirth ? { "Estimated Date of Birth": estimatedDateOfBirth } : {}),
       Breed: asText(request.fields["Breed / Mix"]),
       "Adoption Status": "Getting Ready for Adoption",
       "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
@@ -212,6 +215,9 @@ export default async function IntakeManagementPage({
     const fosterApplicationId = value(formData, "fosterApplicationId");
     if (initialPlacement === "Foster Home" && !approvedFosters.some((record) => record.id === fosterApplicationId)) return;
     if (!animalId) {
+      const dateOfBirth = value(formData, "dateOfBirth");
+      const estimatedDateOfBirth = value(formData, "estimatedDateOfBirth");
+      if (!dateOfBirth && !estimatedDateOfBirth) return;
       const species = value(formData, "species");
       const petName = value(formData, "petName");
       if (!["Cat","Dog"].includes(species) || !petName) return;
@@ -221,8 +227,8 @@ export default async function IntakeManagementPage({
         "Pet Name": petName,
         Species: species,
         Sex: value(formData, "sex") || "Unknown",
-        ...(value(formData, "dateOfBirth") ? { "Date of Birth": value(formData, "dateOfBirth") } : {}),
-        ...(!value(formData, "dateOfBirth") && value(formData, "estimatedDateOfBirth") ? { "Estimated Date of Birth": value(formData, "estimatedDateOfBirth") } : {}),
+        ...(dateOfBirth ? { "Date of Birth": dateOfBirth } : {}),
+        ...(!dateOfBirth && estimatedDateOfBirth ? { "Estimated Date of Birth": estimatedDateOfBirth } : {}),
         Breed: value(formData, "breed"),
         "Color / Markings": value(formData, "color"),
         "Adoption Status": "Getting Ready for Adoption",
