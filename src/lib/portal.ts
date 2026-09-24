@@ -33,6 +33,10 @@ const TABLES = {
   documents: "tblpqIQQvuAJXzF6K",
   animalIntakes: "tblkcwdDABVsxtaJH",
   surrenderRequests: "tblEFkAKG8KxtlSWj",
+  inventoryTransactions: "tbldEaUyR21Ys7wyi",
+  testimonials: "tbl8npkpyXTkOdS6V",
+  newsletterSubscribers: "tblWYHSZNniov20FA",
+  donations: "tblY8o1WkBQwOMOzY",
 } as const;
 
 export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Volunteer Coordinator" | "Shelter Manager" | "Administrator";
