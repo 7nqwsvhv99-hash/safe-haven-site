@@ -145,9 +145,10 @@ export default async function WebsiteContentManagementPage(){
     "use server";await requirePortalRole("Staff");
     const id=field(formData,"subscriberId");const latest=await airtableList(TABLES.newsletterSubscribers,["Email"]);if(!latest.some(r=>r.id===id))return;
     const status=field(formData,"status");
+    const now=new Date().toISOString();
     await airtableUpdate(TABLES.newsletterSubscribers,id,{
       "First Name":field(formData,"firstName"),Status:status,Notes:field(formData,"notes"),
-      ...(status==="Unsubscribed"?{"Unsubscribed At":new Date().toISOString()}:{ }),
+      ...(status==="Unsubscribed"?{"Unsubscribed At":now}:{"Subscribed At":now,"Unsubscribed At":null}),
     },true);
     revalidatePath("/portal/staff/content");
   }
