@@ -88,9 +88,6 @@ export default async function IntakeManagementPage({
     airtableList(TABLES.fosterApplications, [
       "First Name","Last Name","Status"
     ], { sort: [{ field: "Last Name", direction: "asc" }] }),
-    airtableList(TABLES.fosterPlacements, [
-      "Foster Placement ID","Animal","Placement Status"
-    ]),
   ]);
 
   const animalById = new Map(animals.map((record) => [record.id, record]));
