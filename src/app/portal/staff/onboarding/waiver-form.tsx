@@ -63,8 +63,8 @@ export function WaiverForm({applicationId,signer,signedDate}:{applicationId:stri
    <input required type="file" name="waiver" accept="application/pdf,image/jpeg,image/png" className={control}/>
   </label>
   <div className="grid gap-4 sm:grid-cols-2">
-   <label className="text-sm font-medium">Signed by<input required name="signer" defaultValue={signer} className={control}/></label>
-   <label className="text-sm font-medium">Signing date<input required type="date" name="signedDate" defaultValue={signedDate} className={control}/></label>
+   <label className="text-sm font-medium">Volunteer or Guardian Who Signed the Waiver<input required name="signer" defaultValue={signer} className={control}/></label>
+   <label className="text-sm font-medium">Date Waiver Signed<input required type="date" name="signedDate" defaultValue={signedDate} className={control}/></label>
   </div>
   <label className="flex gap-3 text-sm"><input required type="checkbox" name="verified"/>I reviewed this signed waiver, including guardian requirements where applicable.</label>
   {state.message&&<p role={state.ok?'status':'alert'} className={state.ok?'rounded-xl border border-green-200 bg-green-50 p-3 text-sm':'rounded-xl border border-red-200 bg-red-50 p-3 text-sm'}>{state.message}</p>}
