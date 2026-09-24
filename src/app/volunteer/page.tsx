@@ -102,7 +102,6 @@ export default function VolunteerPage() {
 }
 
 const volunteerRoles = [
-  ...clinicVolunteerRoles.map(role => ({...role, icon: <Heart className="h-5 w-5 text-primary" />})),
   {
     title: "Dog Socializing & Exercise",
     icon: <Dog className="h-5 w-5 text-primary" />,
@@ -121,6 +120,7 @@ const volunteerRoles = [
     description:
       "Represent Safe Haven at adoption and community events, help with fundraisers, donor outreach, or organize an event that supports our work.",
   },
+  ...clinicVolunteerRoles.map(role => ({...role, icon: <Heart className="h-5 w-5 text-primary" />})),
   {
     title: "Transportation",
     icon: <Truck className="h-5 w-5 text-primary" />,
