@@ -528,7 +528,10 @@ export default async function AnimalProfilePage({
         </section>
 
         <section id="foster" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-          <div className="mb-5 flex items-center gap-3"><HeartHandshake className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Foster</h2><p className="text-sm text-muted-foreground">Placement history and care follow-up.</p></div></div>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3"><HeartHandshake className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Foster</h2><p className="text-sm text-muted-foreground">Placement history and care follow-up.</p></div></div>
+            <Link href="/portal/staff/fosters" className="text-sm font-semibold text-primary hover:underline">Open Foster Management</Link>
+          </div>
           <div className="space-y-3">
             {relatedFosters.length ? relatedFosters.map((record)=>(
               <article key={record.id} className="rounded-2xl bg-slate-50 p-5"><div className="flex flex-wrap justify-between gap-3"><div><p className="font-semibold">{asText(record.fields["Placement Type"])||"Foster placement"}</p><p className="text-sm text-muted-foreground">{formatDate(record.fields["Start Date"])}{asText(record.fields["End Date"])?` to ${formatDate(record.fields["End Date"])}`:""}</p></div><StatusPill>{asText(record.fields["Placement Status"])||"No status"}</StatusPill></div>{asText(record.fields["Care Instructions / Notes"])&&<p className="mt-3 text-sm"><strong>Care:</strong> {asText(record.fields["Care Instructions / Notes"])}</p>}{asText(record.fields["Foster Update Notes"])&&<p className="mt-2 text-sm"><strong>Updates:</strong> {asText(record.fields["Foster Update Notes"])}</p>}</article>
