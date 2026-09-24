@@ -42,6 +42,7 @@ function yearInChicago(value: unknown) {
 }
 
 function selectName(value: unknown) {
+  if (typeof value === "string") return value.trim()
   if (!value || typeof value !== "object" || !("name" in value)) return ""
   const name = (value as { name?: unknown }).name
   return typeof name === "string" ? name.trim() : ""
