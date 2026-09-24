@@ -144,7 +144,7 @@ export default function ClinicPage() {
               <div className="mt-7 border-t border-primary/15 pt-6">
                 <p className="text-lg italic leading-relaxed text-foreground">
                   “We love Safe Haven because it is a true safe haven for these precious animals.
-                  They were both out of their box and snuggled together in their favorite place.
+                  [When we got home from the clinic,] they were both out of their box and snuggled together in their favorite place.
                   Thank you so much for being such wonderful people.”
                 </p>
                 <p className="mt-3 text-sm font-semibold text-primary">
