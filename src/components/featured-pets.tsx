@@ -46,19 +46,38 @@ export function FeaturedPets() {
   }, [])
 
   const featuredPets = useMemo(() => {
-    const available = animals.filter(
-      (animal) => animal.status === "Available" && Boolean(animal.primaryPhoto)
+    const available = animals
+      .filter((animal) => animal.status === "Available" && Boolean(animal.primaryPhoto))
+      .sort((a, b) => a.id.localeCompare(b.id))
+
+    // Use the UTC calendar day so everyone sees the same featured group for that day.
+    // The starting point advances daily, while the display remains Cat, Dog, Cat, Dog, Cat, Dog.
+    const daySeed = Math.floor(Date.now() / 86_400_000)
+
+    function pickDaily(pool: Animal[], count: number, offsetSeed: number) {
+      if (!pool.length) return []
+      const start = offsetSeed % pool.length
+      return Array.from({ length: Math.min(count, pool.length) }, (_, index) => pool[(start + index) % pool.length])
+    }
+
+    const cats = pickDaily(
+      available.filter((animal) => animal.species === "Cat"),
+      3,
+      daySeed
+    )
+    const dogs = pickDaily(
+      available.filter((animal) => animal.species === "Dog"),
+      3,
+      daySeed * 2 + 1
     )
 
-    const cats = available.filter((animal) => animal.species === "Cat").slice(0, 3)
-    const dogs = available.filter((animal) => animal.species === "Dog").slice(0, 3)
     const selected: Animal[] = []
-
     for (let index = 0; index < 3; index += 1) {
       if (cats[index]) selected.push(cats[index])
       if (dogs[index]) selected.push(dogs[index])
     }
 
+    // Fallback only if fewer than three available animals exist for one species.
     if (selected.length < 6) {
       const selectedIds = new Set(selected.map((animal) => animal.id))
       const remaining = available.filter((animal) => !selectedIds.has(animal.id))

@@ -91,7 +91,7 @@ export function ClinicImpactCarousel() {
     if (paused) return
     const timer = window.setInterval(() => {
       setActiveIndex((current) => (current + 1) % slides.length)
-    }, 4500)
+    }, 3800)
 
     return () => window.clearInterval(timer)
   }, [paused, slides.length])
@@ -111,7 +111,7 @@ export function ClinicImpactCarousel() {
         </div>
 
         <div
-          className="relative overflow-hidden rounded-3xl border bg-white shadow-sm"
+          className="relative mx-auto w-full max-w-[820px] overflow-hidden rounded-3xl border bg-white shadow-sm"
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
           onFocusCapture={() => setPaused(true)}
