@@ -16,7 +16,6 @@ import {
   PawPrint,
   BedDouble,
   UserCheck,
-  HeartHandshake,
 } from "lucide-react";
 import { requirePortalRole, getPortalContext, getStaffPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
