@@ -380,12 +380,9 @@ export default async function IntakeManagementPage({
                 </div>
                 <select name="initialPlacement" defaultValue="In Shelter" className="w-full rounded-xl border bg-white px-3 py-2.5"><option>In Shelter</option><option>Foster Home</option></select>
                 <input name="intakeDate" type="date" defaultValue={today()} className="w-full rounded-xl border px-3 py-2.5"/>
-                <input name="source" placeholder="Source person / organization" className="w-full rounded-xl border px-3 py-2.5"/>
-                <textarea name="sourceContact" rows={2} placeholder="Source contact" className="w-full rounded-xl border px-3 py-2.5"/>
-                <input name="origin" placeholder="Found / origin location" className="w-full rounded-xl border px-3 py-2.5"/>
                 <select name="condition" defaultValue="Unknown" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Good","Fair","Needs Medical Attention","Critical","Unknown"].map((s)=><option key={s}>{s}</option>)}</select>
-                <input name="weight" type="number" min="0" step="0.1" placeholder="Weight at intake (lb)" className="w-full rounded-xl border px-3 py-2.5"/>
-                <textarea name="intakeNotes" rows={4} placeholder="Intake notes" className="w-full rounded-xl border px-3 py-2.5"/>
+                <textarea name="intakeNotes" rows={3} placeholder="Care, safety, or placement notes" className="w-full rounded-xl border px-3 py-2.5"/>
+                <details className="rounded-2xl bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold">Additional source & intake details</summary><div className="mt-4 space-y-3"><input name="source" placeholder="Source person / organization" className="w-full rounded-xl border bg-white px-3 py-2.5"/><textarea name="sourceContact" rows={2} placeholder="Source contact" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="origin" placeholder="Found / origin location" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="weight" type="number" min="0" step="0.1" placeholder="Weight at intake (lb)" className="w-full rounded-xl border bg-white px-3 py-2.5"/></div></details>
                 <button className="w-full rounded-full bg-primary px-5 py-3 font-semibold text-white">Record Intake</button>
               </form>
             </section>
