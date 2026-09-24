@@ -14,6 +14,19 @@ function field(f:FormData,n:string){return String(f.get(n)||"").trim()}
 function optionalNumber(f:FormData,n:string){const v=field(f,n);if(!v)return undefined;const x=Number(v);return Number.isFinite(x)?x:undefined}
 function fmt(v:unknown,withTime=false){const s=asText(v);if(!s)return"";const d=new Date(s);if(Number.isNaN(d.getTime()))return s;return new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric",...(withTime?{hour:"numeric",minute:"2-digit"}:{}),timeZone:"America/Chicago"}).format(d)}
 function localInput(v:unknown){const s=asText(v);if(!s)return"";const d=new Date(s);if(Number.isNaN(d.getTime()))return"";const parts=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23",timeZone:"America/Chicago"}).formatToParts(d);const get=(t:string)=>parts.find(p=>p.type===t)?.value||"";return get("year")+"-"+get("month")+"-"+get("day")+"T"+get("hour")+":"+get("minute")}
+function chicagoLocalToIso(value:string){
+  if(!value)return"";
+  const [datePart,timePart="00:00"]=value.split("T");
+  const [y,m,d]=datePart.split("-").map(Number);
+  const [hh,mm]=timePart.split(":").map(Number);
+  const naive=Date.UTC(y,m-1,d,hh,mm,0);
+  const probe=new Date(naive);
+  const parts=new Intl.DateTimeFormat("en-US",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23",timeZone:"America/Chicago"}).formatToParts(probe);
+  const get=(t:string)=>Number(parts.find(p=>p.type===t)?.value||0);
+  const represented=Date.UTC(get("year"),get("month")-1,get("day"),get("hour"),get("minute"),0);
+  const offset=represented-naive;
+  return new Date(naive-offset).toISOString();
+}
 function Status({children}:{children:ReactNode}){return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children}</span>}
 
 export default async function WebsiteContentManagementPage(){
@@ -48,8 +61,8 @@ export default async function WebsiteContentManagementPage(){
     const record=await airtableCreate(TABLES.events,{
       "Event Name":name,"Event Status":field(formData,"eventStatus")||"Draft",
       "Event Type":field(formData,"eventType")||"Other",
-      ...(field(formData,"start")?{"Start Date & Time":new Date(field(formData,"start")).toISOString()}:{ }),
-      ...(field(formData,"end")?{"End Date & Time":new Date(field(formData,"end")).toISOString()}:{ }),
+      ...(field(formData,"start")?{"Start Date & Time":chicagoLocalToIso(field(formData,"start"))}:{ }),
+      ...(field(formData,"end")?{"End Date & Time":chicagoLocalToIso(field(formData,"end"))}:{ }),
       "All Day Event":formData.get("allDay")==="on",
       "Location Name":field(formData,"locationName"),"Street Address":field(formData,"street"),
       City:field(formData,"city"),State:field(formData,"state"),ZIP:field(formData,"zip"),
@@ -71,8 +84,8 @@ export default async function WebsiteContentManagementPage(){
     await airtableUpdate(TABLES.events,id,{
       "Event Name":field(formData,"eventName"),"Event Status":field(formData,"eventStatus"),
       "Event Type":field(formData,"eventType"),
-      "Start Date & Time":field(formData,"start")?new Date(field(formData,"start")).toISOString():null,
-      "End Date & Time":field(formData,"end")?new Date(field(formData,"end")).toISOString():null,
+      "Start Date & Time":field(formData,"start")?chicagoLocalToIso(field(formData,"start")):null,
+      "End Date & Time":field(formData,"end")?chicagoLocalToIso(field(formData,"end")):null,
       "All Day Event":formData.get("allDay")==="on",
       "Location Name":field(formData,"locationName"),"Street Address":field(formData,"street"),
       City:field(formData,"city"),State:field(formData,"state"),ZIP:field(formData,"zip"),
