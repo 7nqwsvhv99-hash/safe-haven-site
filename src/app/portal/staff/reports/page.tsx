@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, BarChart3, HeartHandshake, Home, ClipboardList, Activity, Boxes, FileText, CalendarDays, Mail, DollarSign } from "lucide-react";
+import { ArrowLeft, BarChart3, HeartHandshake, Home, ClipboardList, Activity, FileText, CalendarDays, Mail, DollarSign } from "lucide-react";
 import { StaffImpactDashboard } from "@/components/staff-impact-dashboard";
-import { airtableList, asStrings, asText, requirePortalRole, TABLES } from "@/lib/portal";
+import { airtableList, asText, requirePortalRole, TABLES } from "@/lib/portal";
 
 function asNumber(v:unknown){return typeof v==="number"?v:0}
 function inYear(v:unknown,year:number){const s=asText(v);if(!s)return false;const d=new Date(s);if(Number.isNaN(d.getTime()))return false;return Number(new Intl.DateTimeFormat("en-US",{year:"numeric",timeZone:"America/Chicago"}).format(d))===year}
