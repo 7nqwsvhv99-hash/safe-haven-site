@@ -125,7 +125,6 @@ export default async function AnimalProfilePage({
       "Sex",
       "Date of Birth",
       "Estimated Date of Birth",
-      "Age Display",
       "Current Age Display",
       "Breed",
       "Color / Markings",
