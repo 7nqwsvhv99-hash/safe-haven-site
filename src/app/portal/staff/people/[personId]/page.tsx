@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { ArrowLeft, ContactRound, HeartHandshake, PawPrint, HandHeart, FileText, UsersRound, Mail, Phone } from "lucide-react";
+import { ArrowLeft, ContactRound, HeartHandshake, PawPrint, HandHeart, FileText, UsersRound } from "lucide-react";
 import {
   airtableCreate, airtableList, airtableUpdate, asStrings, asText,
   requirePortalRole, TABLES,
@@ -16,7 +16,7 @@ function intersects(a:string[],b:Set<string>){return a.some(x=>b.has(x))}
 function Pill({children}:{children:ReactNode}){return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children}</span>}
 
 export default async function PersonProfilePage({params}:{params:Promise<{personId:string}>}){
-  const context=await requirePortalRole("Staff");
+  await requirePortalRole("Staff");
   const {personId}=await params;
 
   const [
