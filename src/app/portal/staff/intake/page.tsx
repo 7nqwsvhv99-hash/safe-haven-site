@@ -32,7 +32,7 @@ function year() {
 }
 function nextAnimalId(records: Awaited<ReturnType<typeof airtableList>>, species: string) {
   const prefix = species === "Dog" ? "DOG" : "CAT";
-  const matcher = new RegExp("^" + prefix + "-" + year() + "-(\\\\d+)$");
+  const matcher = new RegExp("^" + prefix + "-" + year() + "-(\\d+)$");
   const max = records.reduce((current, record) => {
     const match = asText(record.fields["Animal ID"]).match(matcher);
     return match ? Math.max(current, Number(match[1])) : current;
@@ -40,7 +40,7 @@ function nextAnimalId(records: Awaited<ReturnType<typeof airtableList>>, species
   return prefix + "-" + year() + "-" + String(max + 1).padStart(3, "0");
 }
 function nextPlacementId(records: Awaited<ReturnType<typeof airtableList>>) {
-  const matcher = new RegExp("^FOST-" + year() + "-(\\\\d+)$");
+  const matcher = new RegExp("^FOST-" + year() + "-(\\d+)$");
   const max = records.reduce((current, record) => {
     const match = asText(record.fields["Foster Placement ID"]).match(matcher);
     return match ? Math.max(current, Number(match[1])) : current;
@@ -142,6 +142,9 @@ export default async function IntakeManagementPage({
     if (asStrings(request.fields["Animal Intakes"]).length) return;
     const species = asText(request.fields.Species);
     if (!["Cat","Dog"].includes(species)) return;
+    const initialPlacement = value(formData, "initialPlacement") || "In Shelter";
+    const fosterApplicationId = value(formData, "fosterApplicationId");
+    if (initialPlacement === "Foster Home" && !approvedFosters.some((record) => record.id === fosterApplicationId)) return;
 
     const existingAnimals = await airtableList(TABLES.animals, ["Animal ID"]);
     const animal = await airtableCreate(TABLES.animals, {
@@ -152,7 +155,7 @@ export default async function IntakeManagementPage({
       "Age Display": asText(request.fields["Approximate Age"]),
       Breed: asText(request.fields["Breed / Mix"]),
       "Adoption Status": "Getting Ready for Adoption",
-      "Housing Type": value(formData, "initialPlacement") === "Foster Home" ? "Foster Home" : "In Shelter",
+      "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
       "Public Listing": false,
       "Microchip Registration Status": "Unknown",
     }, true);
@@ -179,10 +182,7 @@ export default async function IntakeManagementPage({
       "Intake Notes": notes,
     }, true);
 
-    if (value(formData, "initialPlacement") === "Foster Home") {
-      const fosterApplicationId = value(formData, "fosterApplicationId");
-      const foster = approvedFosters.find((record) => record.id === fosterApplicationId);
-      if (!foster) return;
+    if (initialPlacement === "Foster Home") {
       const latestPlacements = await airtableList(TABLES.fosterPlacements, ["Foster Placement ID"]);
       await airtableCreate(TABLES.fosterPlacements, {
         "Foster Placement ID": nextPlacementId(latestPlacements),
@@ -210,6 +210,9 @@ export default async function IntakeManagementPage({
     "use server";
     await requirePortalRole("Staff");
     let animalId = value(formData, "existingAnimalId");
+    const initialPlacement = value(formData, "initialPlacement") || "In Shelter";
+    const fosterApplicationId = value(formData, "fosterApplicationId");
+    if (initialPlacement === "Foster Home" && !approvedFosters.some((record) => record.id === fosterApplicationId)) return;
     if (!animalId) {
       const species = value(formData, "species");
       const petName = value(formData, "petName");
@@ -224,13 +227,18 @@ export default async function IntakeManagementPage({
         Breed: value(formData, "breed"),
         "Color / Markings": value(formData, "color"),
         "Adoption Status": "Getting Ready for Adoption",
-        "Housing Type": value(formData, "initialPlacement") === "Foster Home" ? "Foster Home" : "In Shelter",
+        "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
         "Public Listing": false,
         "Microchip Registration Status": "Unknown",
       }, true);
       if (!animal) return;
       animalId = animal.id;
     }
+    await airtableUpdate(TABLES.animals, animalId, {
+      "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
+      "Current Housing Location": [],
+    }, true);
+
     await airtableCreate(TABLES.animalIntakes, {
       Animal: [animalId],
       "Intake Date": value(formData, "intakeDate") || today(),
@@ -242,10 +250,7 @@ export default async function IntakeManagementPage({
       ...(numberValue(formData, "weight") !== undefined ? { "Weight at Intake (lb)": numberValue(formData, "weight") } : {}),
       "Intake Notes": value(formData, "intakeNotes"),
     }, true);
-    if (value(formData, "initialPlacement") === "Foster Home") {
-      const fosterApplicationId = value(formData, "fosterApplicationId");
-      const foster = approvedFosters.find((record) => record.id === fosterApplicationId);
-      if (!foster) return;
+    if (initialPlacement === "Foster Home") {
       const latestPlacements = await airtableList(TABLES.fosterPlacements, ["Foster Placement ID"]);
       await airtableCreate(TABLES.fosterPlacements, {
         "Foster Placement ID": nextPlacementId(latestPlacements),
