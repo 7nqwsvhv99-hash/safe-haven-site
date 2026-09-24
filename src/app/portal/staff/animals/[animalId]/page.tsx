@@ -446,23 +446,26 @@ export default async function AnimalProfilePage({
               </div>
             </details>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              {[["goodWithCats","Good With Cats"],["goodWithDogs","Good With Dogs"],["goodWithChildren","Good With Children"],["houseTrained","House / Litter Trained"]].map(([name,label])=>(
-                <label key={name} className="text-sm font-medium">{label}<select name={name} defaultValue={asText(animal.fields[label])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Yes","No","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
-              ))}
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-2">
-              <label className="text-sm font-medium">Short bio<textarea name="shortBio" rows={5} defaultValue={asText(animal.fields["Short Bio"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <label className="text-sm font-medium">Compatibility notes<textarea name="compatibilityNotes" rows={5} defaultValue={asText(animal.fields["Compatibility Notes"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <label className="text-sm font-medium">Medical summary<textarea name="medicalSummary" rows={4} defaultValue={asText(animal.fields["Medical Summary"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <label className="text-sm font-medium">Adoption includes<textarea name="adoptionIncludes" rows={4} defaultValue={asText(animal.fields["Adoption Includes"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-            </div>
-
-            <div className="rounded-2xl bg-slate-50 p-5">
-              <label className="flex items-start gap-3 text-sm"><input name="publicListing" type="checkbox" defaultChecked={Boolean(animal.fields["Public Listing"])} className="mt-1" /><span><strong>Publish on adoption website</strong><span className="mt-1 block text-muted-foreground">The website still requires the Airtable readiness formula to equal Ready before displaying the animal.</span></span></label>
-              <p className="mt-3 text-sm text-muted-foreground"><strong>Website readiness:</strong> {readiness || "Not calculated"}</p>
-            </div>
+            <details className="rounded-2xl bg-slate-50 p-4">
+              <summary className="cursor-pointer text-sm font-semibold">Adoption & website details</summary>
+              <div className="mt-4 space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  {[["goodWithCats","Good With Cats"],["goodWithDogs","Good With Dogs"],["goodWithChildren","Good With Children"],["houseTrained","House / Litter Trained"]].map(([name,label])=>(
+                    <label key={name} className="text-sm font-medium">{label}<select name={name} defaultValue={asText(animal.fields[label])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Yes","No","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
+                  ))}
+                </div>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <label className="text-sm font-medium">Short bio<textarea name="shortBio" rows={5} defaultValue={asText(animal.fields["Short Bio"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="text-sm font-medium">Compatibility notes<textarea name="compatibilityNotes" rows={5} defaultValue={asText(animal.fields["Compatibility Notes"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="text-sm font-medium">Medical summary<textarea name="medicalSummary" rows={4} defaultValue={asText(animal.fields["Medical Summary"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="text-sm font-medium">Adoption includes<textarea name="adoptionIncludes" rows={4} defaultValue={asText(animal.fields["Adoption Includes"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                </div>
+                <div className="rounded-xl border bg-white p-4">
+                  <label className="flex items-start gap-3 text-sm"><input name="publicListing" type="checkbox" defaultChecked={Boolean(animal.fields["Public Listing"])} className="mt-1" /><span><strong>Publish on adoption website</strong><span className="mt-1 block text-muted-foreground">The animal displays only when the readiness formula is also Ready.</span></span></label>
+                  <p className="mt-3 text-sm text-muted-foreground"><strong>Website readiness:</strong> {readiness || "Not calculated"}</p>
+                </div>
+              </div>
+            </details>
 
             <button className="rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90">Save Animal Profile</button>
           </form>
