@@ -70,7 +70,11 @@ export default async function PeoplePage({searchParams}:{searchParams:Promise<{q
     for(const r of donors){const a=get(asText(r.fields.Email));if(!a)continue;fill(a,{first:asText(r.fields["First Name"]),last:asText(r.fields["Last Name"]),org:asText(r.fields["Organization Name"]),phone:asText(r.fields.Phone),street:asText(r.fields["Street Address"]),city:asText(r.fields.City),state:asText(r.fields.State),zip:asText(r.fields.ZIP),preferred:normalizePreferred(asText(r.fields["Preferred Contact"])),doNotSolicit:Boolean(r.fields["Do Not Solicit"]),notes:asText(r.fields["Relationship Notes"])});a.relations.add("Donor");a.donors.push(r.id)}
     for(const r of subscribers){const a=get(asText(r.fields.Email));if(!a)continue;fill(a,{first:asText(r.fields["First Name"]),notes:asText(r.fields.Notes)});a.relations.add("Newsletter Subscriber");a.newsletterStatus=asText(r.fields.Status)||"Subscribed";a.subscribers.push(r.id)}
 
-    const existingByEmail=new Map(existing.map(r=>[normalizeEmail(asText(r.fields.Email)),r]).filter(([email])=>Boolean(email)));
+    const existingByEmail=new Map<string,(typeof existing)[number]>();
+    for(const r of existing){
+      const email=normalizeEmail(asText(r.fields.Email));
+      if(email)existingByEmail.set(email,r);
+    }
     for(const [email,a] of byEmail){
       const current=existingByEmail.get(email);
       const payload:Record<string,unknown>={
