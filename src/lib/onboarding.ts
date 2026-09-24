@@ -22,7 +22,6 @@ export async function getOnboardingData() {
 export function readiness(fields:Record<string,unknown>) {
   const missing:string[]=[];
   if(!asText(fields.Email)||!asText(fields['Applicant Name']))missing.push('Name and email');
-  if(!fields['Orientation Completed'])missing.push('Orientation');
   const role=asText(fields['Approved Clinic Role']);
   if(asText(fields['Clinic Role Requested'])&&!role)missing.push('Approved clinic role');
   if(['Veterinarian','Vet Tech'].includes(role)&&!fields['Credentials Verified'])missing.push('Credential verification');

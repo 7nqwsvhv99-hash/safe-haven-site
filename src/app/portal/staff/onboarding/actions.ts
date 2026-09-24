@@ -34,7 +34,7 @@ export async function saveReview(form:FormData) {
   if(status==='Approved'&&asText(app.fields.Status)!=='Approved')throw Error('Use Complete onboarding to approve a new applicant.');
   await airtableUpdate(TABLES.volunteerApplications,app.id,{
    Status:status,'Approved Clinic Role':role||null,'Approved Clinic Skills':approved,
-   'Credentials Verified':credentials,'Orientation Completed':form.get('orientation')==='on',
+   'Credentials Verified':credentials,
    'Volunteers':volunteer?[volunteer]:[],'Clinic Team Member':member?[member]:[],
    'Reviewer Notes':String(form.get('notes')||''),'Next Follow-Up Date':String(form.get('followUp')||'')||null,
    'Onboarding Reviewed By':email,'Onboarding Reviewed At':new Date().toISOString()
@@ -42,15 +42,24 @@ export async function saveReview(form:FormData) {
   return 'Review saved. Complete onboarding when the remaining requirements are satisfied.';
  });
 }
-export async function saveWaiver(form:FormData) {
- await execute(form,async(_data,app,email)=>{
+export type WaiverSaveState={ok:boolean;message:string};
+export async function saveWaiver(_previous:WaiverSaveState,form:FormData):Promise<WaiverSaveState> {
+ const context=await requireOnboarding();
+ const id=String(form.get('applicationId')||'');
+ try {
+  const data=await getOnboardingData();
+  const app=data.applications.find(r=>r.id===id);
+  if(!app)throw Error('Application not found.');
   const file=form.get('waiver');const signer=String(form.get('signer')||'').trim();const date=String(form.get('signedDate')||'');
   if(!signer||!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>new Date().toISOString().slice(0,10)||form.get('verified')!=='on')throw Error('Enter the signer and signing date, and confirm you reviewed the signed document.');
   if(!(file instanceof File)||!file.size||!['application/pdf','image/jpeg','image/png'].includes(file.type)||file.size>5*1024*1024)throw Error('Upload a signed PDF, JPG, or PNG up to 5 MB.');
   await airtableUploadAttachment(app.id,'fldd0FD8FDEKWNFgj',file,true);
-  await airtableUpdate(TABLES.volunteerApplications,app.id,{'Waiver Signed By':signer,'Waiver Signed Date':date,'Onboarding Reviewed By':email,'Onboarding Reviewed At':new Date().toISOString()});
-  return 'Signed waiver saved with this application.';
- });
+  await airtableUpdate(TABLES.volunteerApplications,app.id,{'Waiver Signed By':signer,'Waiver Signed Date':date,'Onboarding Reviewed By':context.email,'Onboarding Reviewed At':new Date().toISOString()});
+  revalidatePath(path);revalidatePath('/portal');
+  return {ok:true,message:'Signed waiver saved with this application.'};
+ } catch(error) {
+  return {ok:false,message:error instanceof Error?error.message:'Could not save. Please retry.'};
+ }
 }
 export async function completeOnboarding(form:FormData) {
  await execute(form,async(data,app,reviewer)=>{
