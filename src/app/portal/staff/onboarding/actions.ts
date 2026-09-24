@@ -1,25 +1,26 @@
 'use server';
 import {onboardingAccess} from '@/lib/onboarding-policy';
-import {redirect} from 'next/navigation';
 import {revalidatePath} from 'next/cache';
-import {requireOnboarding,getOnboardingData,readiness,skills,clinicRoles} from '@/lib/onboarding';
+import {requireOnboarding,getOnboardingData,readiness,skills,clinicRoles,needsGeneralOrientation} from '@/lib/onboarding';
 import {airtableUpdate,airtableCreate,airtableUploadAttachment,TABLES,asText,asStrings,normalizeEmail} from '@/lib/portal';
 const path='/portal/staff/onboarding';
-async function execute(form:FormData,action:(data:Awaited<ReturnType<typeof getOnboardingData>>,app:Awaited<ReturnType<typeof getOnboardingData>>['applications'][number],email:string)=>Promise<string>) {
+export type OnboardingActionState={ok:boolean;message:string};
+async function execute(form:FormData,action:(data:Awaited<ReturnType<typeof getOnboardingData>>,app:Awaited<ReturnType<typeof getOnboardingData>>['applications'][number],email:string)=>Promise<string>):Promise<OnboardingActionState> {
   const context=await requireOnboarding();
   const id=String(form.get('applicationId')||'');
-  let message='';
   try {
     const data=await getOnboardingData();
     const app=data.applications.find(r=>r.id===id);
     if(!app)throw Error('Application not found.');
-    message=await action(data,app,context.email);
-  } catch(error) {message=error instanceof Error?error.message:'Could not save. Please retry.';}
-  revalidatePath(path);revalidatePath('/portal');
-  redirect(path+'?application='+encodeURIComponent(id)+'&message='+encodeURIComponent(message));
+    const message=await action(data,app,context.email);
+    revalidatePath(path);revalidatePath('/portal');
+    return {ok:true,message};
+  } catch(error) {
+    return {ok:false,message:error instanceof Error?error.message:'Could not save. Please retry.'};
+  }
 }
-export async function saveReview(form:FormData) {
- await execute(form,async(data,app,email)=>{
+export async function saveReview(_previous:OnboardingActionState,form:FormData):Promise<OnboardingActionState> {
+ return execute(form,async(data,app,email)=>{
   const role=String(form.get('clinicRole')||'');
   if(role&&!clinicRoles.includes(role))throw Error('Choose a valid clinic role.');
   const approved=form.getAll('skill').map(String);
@@ -36,15 +37,15 @@ export async function saveReview(form:FormData) {
    Status:status,'Approved Clinic Role':role||null,'Approved Clinic Skills':approved,
    'Credentials Verified':credentials,
    'Volunteers':volunteer?[volunteer]:[],'Clinic Team Member':member?[member]:[],
-   'Reviewer Notes':String(form.get('notes')||''),'Next Follow-Up Date':String(form.get('followUp')||'')||null,
+   'Reviewer Notes':String(form.get('notes')||''),'Next Follow-Up Date':needsGeneralOrientation(app.fields)?(String(form.get('followUp')||'')||null):null,
    'Onboarding Reviewed By':email,'Onboarding Reviewed At':new Date().toISOString()
   });
-  return 'Review saved. Complete onboarding when the remaining requirements are satisfied.';
+  return 'Review saved.';
  });
 }
 export type WaiverSaveState={ok:boolean;message:string};
 export async function saveWaiver(_previous:WaiverSaveState,form:FormData):Promise<WaiverSaveState> {
- const context=await requireOnboarding();
+ await requireOnboarding();
  const id=String(form.get('applicationId')||'');
  try {
   const data=await getOnboardingData();
@@ -54,16 +55,16 @@ export async function saveWaiver(_previous:WaiverSaveState,form:FormData):Promis
   if(!signer||!/^\d{4}-\d{2}-\d{2}$/.test(date)||date>new Date().toISOString().slice(0,10)||form.get('verified')!=='on')throw Error('Enter the signer and signing date, and confirm you reviewed the signed document.');
   if(!(file instanceof File)||!file.size||!['application/pdf','image/jpeg','image/png'].includes(file.type)||file.size>5*1024*1024)throw Error('Upload a signed PDF, JPG, or PNG up to 5 MB.');
   await airtableUploadAttachment(app.id,'fldd0FD8FDEKWNFgj',file,true);
-  await airtableUpdate(TABLES.volunteerApplications,app.id,{'Waiver Signed By':signer,'Waiver Signed Date':date,'Onboarding Reviewed By':context.email,'Onboarding Reviewed At':new Date().toISOString()});
+  await airtableUpdate(TABLES.volunteerApplications,app.id,{'Waiver Signed By':signer,'Waiver Signed Date':date});
   revalidatePath(path);revalidatePath('/portal');
   return {ok:true,message:'Signed waiver saved with this application.'};
  } catch(error) {
   return {ok:false,message:error instanceof Error?error.message:'Could not save. Please retry.'};
  }
 }
-export async function completeOnboarding(form:FormData) {
- await execute(form,async(data,app,reviewer)=>{
-  if(app.fields.Status==='Closed')throw Error('Reopen this application in the review before completing onboarding.');
+export async function completeOnboarding(_previous:OnboardingActionState,form:FormData):Promise<OnboardingActionState> {
+ return execute(form,async(data,app,reviewer)=>{
+  if(app.fields.Status==='Closed')throw Error('This application is Closed / Not Moving Forward. Change the review status before completing onboarding.');
   const missing=readiness(app.fields);if(missing.length)throw Error('Still needed: '+missing.join(', ')+'.');
   if(form.get('confirm')!=='on')throw Error('Confirm the review before completing onboarding.');
   const f=app.fields,email=normalizeEmail(asText(f.Email)),name=asText(f['Applicant Name']),role=asText(f['Approved Clinic Role']);

@@ -19,6 +19,13 @@ export async function getOnboardingData() {
   ]);
   return {applications,volunteers,members,access};
 }
+export function needsGeneralOrientation(fields:Record<string,unknown>) {
+  const details=asText(fields['Experience & Interests']);
+  const line=details.split(/\r?\n/).find(value=>value.startsWith('Volunteer Interests:'));
+  const interests=line?line.slice('Volunteer Interests:'.length).split(',').map(value=>value.trim()).filter(Boolean):[];
+  if(interests.length)return interests.some(interest=>!interest.startsWith('Clinic Team'));
+  return !asText(fields['Clinic Role Requested']);
+}
 export function readiness(fields:Record<string,unknown>) {
   const missing:string[]=[];
   if(!asText(fields.Email)||!asText(fields['Applicant Name']))missing.push('Name and email');

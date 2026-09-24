@@ -1,12 +1,14 @@
 'use client';
 
 import {FormEvent,useRef,useState} from 'react';
+import {useRouter} from 'next/navigation';
 import {saveWaiver,type WaiverSaveState} from './actions';
 
 const control='mt-2 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm';
 
 export function WaiverForm({applicationId,signer,signedDate}:{applicationId:string;signer:string;signedDate:string}){
  const formRef=useRef<HTMLFormElement>(null);
+ const router=useRouter();
  const [pending,setPending]=useState(false);
  const [state,setState]=useState<WaiverSaveState>({ok:false,message:''});
 
@@ -23,6 +25,7 @@ export function WaiverForm({applicationId,signer,signedDate}:{applicationId:stri
     if(fileInput instanceof HTMLInputElement)fileInput.value='';
     const verified=formRef.current?.elements.namedItem('verified');
     if(verified instanceof HTMLInputElement)verified.checked=false;
+    router.refresh();
    }
   }finally{
    setPending(false);
