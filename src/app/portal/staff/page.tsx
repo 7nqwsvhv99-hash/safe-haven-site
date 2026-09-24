@@ -13,6 +13,7 @@ import {
   Megaphone,
   HeartHandshake,
   Activity,
+  PawPrint,
 } from "lucide-react";
 import { requirePortalRole, getPortalContext, getStaffPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
@@ -156,6 +157,23 @@ export default async function StaffPortalPage() {
                 </div>
               );
             })}
+          </section>
+
+          <section className="mb-8 rounded-3xl border bg-white p-7 shadow-sm">
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-4">
+                <div className="rounded-2xl bg-primary/10 p-3 text-primary"><PawPrint className="h-6 w-6" /></div>
+                <div>
+                  <h2 className="text-2xl font-bold">Animal Management</h2>
+                  <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                    Add animals, update shelter records, and open a unified animal profile for medical, timeline, foster, adoption, documents, and photos.
+                  </p>
+                </div>
+              </div>
+              <Link href="/portal/staff/animals" className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">
+                Open Animal Management
+              </Link>
+            </div>
           </section>
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
