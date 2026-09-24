@@ -263,7 +263,6 @@ export default async function StaffPortalPage() {
             </div>
           </section>
 
-          <div className="mb-4 mt-10"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Supporting Operations & Administration</p></div>
           <section className="mb-8 rounded-3xl border bg-white p-7 shadow-sm">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div className="flex items-start gap-4">
