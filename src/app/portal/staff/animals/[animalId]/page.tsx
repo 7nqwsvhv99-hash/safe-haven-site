@@ -291,7 +291,7 @@ export default async function AnimalProfilePage({
 
     const weight = optionalNumber(formData, "weight");
     const fee = optionalNumber(formData, "adoptionFee");
-    const location = field(formData, "housingLocation");
+    const location = currentLocationIds[0] || "";
 
     await airtableUpdate(TABLES.animals, animalId, {
       "Pet Name": field(formData, "petName"),
@@ -312,7 +312,7 @@ export default async function AnimalProfilePage({
       "Good With Dogs": field(formData, "goodWithDogs"),
       "Good With Children": field(formData, "goodWithChildren"),
       "House / Litter Trained": field(formData, "houseTrained"),
-      "Housing Type": field(formData, "housingType"),
+      "Housing Type": asText(animal.fields["Housing Type"]),
       "Current Housing Location": location ? [location] : [],
       "Microchip Number": field(formData, "microchipNumber"),
       "Microchip Registration Status": field(formData, "microchipStatus"),
@@ -425,19 +425,25 @@ export default async function AnimalProfilePage({
               <label className="text-sm font-medium">Species<input readOnly value={asText(animal.fields.Species)} className="mt-2 w-full rounded-xl border bg-slate-50 px-3 py-2.5 text-muted-foreground" /></label>
               <label className="text-sm font-medium">Adoption status<select name="adoptionStatus" defaultValue={status} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Getting Ready for Adoption","Available","Pending","Adopted"].map((v)=><option key={v}>{v}</option>)}</select></label>
               <label className="text-sm font-medium">Sex<select name="sex" defaultValue={asText(animal.fields.Sex)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Female","Male","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
-              <label className="text-sm font-medium">Date of birth<input name="dateOfBirth" type="date" defaultValue={asText(animal.fields["Date of Birth"]).slice(0,10)} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <label className="text-sm font-medium">Age display<input name="ageDisplay" defaultValue={asText(animal.fields["Age Display"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
+              <label className="text-sm font-medium">Age / estimated age<input name="ageDisplay" defaultValue={asText(animal.fields["Age Display"])} placeholder="Example: about 3 years" className="mt-2 w-full rounded-xl border px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">An exact birth date is not required.</span></label>
               <label className="text-sm font-medium">Breed<input name="breed" defaultValue={asText(animal.fields.Breed)} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               <label className="text-sm font-medium">Color / markings<input name="color" defaultValue={asText(animal.fields["Color / Markings"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               <label className="text-sm font-medium">Weight (lb)<input name="weight" type="number" min="0" step="0.1" defaultValue={asNumber(animal.fields["Weight (lb)"]) ?? ""} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <label className="text-sm font-medium">Adoption fee<input name="adoptionFee" type="number" min="0" step="0.01" defaultValue={asNumber(animal.fields["Adoption Fee"]) ?? ""} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <label className="text-sm font-medium">Fee status<select name="adoptionFeeStatus" defaultValue={asText(animal.fields["Adoption Fee Status"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="">Select</option>{["Standard","Reduced","Waived","Sponsored"].map((v)=><option key={v}>{v}</option>)}</select></label>
-              <label className="text-sm font-medium">Available since<input name="availableSince" type="date" defaultValue={asText(animal.fields["Available Since"]).slice(0,10)} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <label className="text-sm font-medium">Housing type<select name="housingType" defaultValue={asText(animal.fields["Housing Type"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["In Shelter","Foster Home"].map((v)=><option key={v}>{v}</option>)}</select></label>
-              <label className="text-sm font-medium">Shelter location<select name="housingLocation" defaultValue={currentLocationIds[0] || ""} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="">No in-shelter location</option>{locations.filter((r)=>Boolean(r.fields.Active)).map((r)=><option key={r.id} value={r.id}>{asText(r.fields["Location Name"])}</option>)}</select></label>
-              <label className="text-sm font-medium">Microchip number<input name="microchipNumber" defaultValue={asText(animal.fields["Microchip Number"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <label className="text-sm font-medium">Microchip registration<select name="microchipStatus" defaultValue={asText(animal.fields["Microchip Registration Status"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["No Microchip","Needs Registration","Registered to Safe Haven","Transferred to Adopter","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
             </div>
+            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-muted-foreground">
+              <strong>Current placement:</strong> {currentLocation || asText(animal.fields["Housing Type"]) || "Not assigned"}. Use Housing Management or Foster Management to change placement so the related records stay consistent.
+            </div>
+            <details className="rounded-2xl bg-slate-50 p-4">
+              <summary className="cursor-pointer text-sm font-semibold">Additional animal, identification & adoption details</summary>
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <label className="text-sm font-medium">Exact date of birth, if known<input name="dateOfBirth" type="date" defaultValue={asText(animal.fields["Date of Birth"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                <label className="text-sm font-medium">Adoption fee<input name="adoptionFee" type="number" min="0" step="0.01" defaultValue={asNumber(animal.fields["Adoption Fee"]) ?? ""} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                <label className="text-sm font-medium">Fee status<select name="adoptionFeeStatus" defaultValue={asText(animal.fields["Adoption Fee Status"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="">Select</option>{["Standard","Reduced","Waived","Sponsored"].map((v)=><option key={v}>{v}</option>)}</select></label>
+                <label className="text-sm font-medium">Available since<input name="availableSince" type="date" defaultValue={asText(animal.fields["Available Since"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                <label className="text-sm font-medium">Microchip number<input name="microchipNumber" defaultValue={asText(animal.fields["Microchip Number"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                <label className="text-sm font-medium">Microchip registration<select name="microchipStatus" defaultValue={asText(animal.fields["Microchip Registration Status"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["No Microchip","Needs Registration","Registered to Safe Haven","Transferred to Adopter","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
+              </div>
+            </details>
 
             <div className="grid gap-4 md:grid-cols-2">
               {[["goodWithCats","Good With Cats"],["goodWithDogs","Good With Dogs"],["goodWithChildren","Good With Children"],["houseTrained","House / Litter Trained"]].map(([name,label])=>(
