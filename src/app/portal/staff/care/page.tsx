@@ -235,10 +235,10 @@ export default async function CareAndHousingPage({
     const animal = latestAnimals.find((record) => record.id === animalId);
     if (!animal) return;
 
-    const selectedLocation = field(formData, "housingLocation");
     const currentLocation = asStrings(animal.fields["Current Housing Location"])[0] || "";
     const alertLevel = field(formData, "alertLevel") || "Normal";
-    const followUpNeeded = formData.get("followUpNeeded") === "on";
+    const followUpDate = field(formData, "followUpDate");
+    const followUpNeeded = ["Needs Attention", "Urgent"].includes(alertLevel) || Boolean(followUpDate);
     const weight = optionalNumber(formData, "weight");
 
     const careRecord = await airtableCreate(
@@ -247,11 +247,11 @@ export default async function CareAndHousingPage({
         Animal: [animalId],
         "Date / Time": new Date().toISOString(),
         "Care Type": careType,
-        ...(selectedLocation || currentLocation ? { "Housing Location": [selectedLocation || currentLocation] } : {}),
+        ...(currentLocation ? { "Housing Location": [currentLocation] } : {}),
         "Completed By": current.displayName,
         "Alert Level": alertLevel,
         "Follow-Up Needed": followUpNeeded,
-        ...(field(formData, "followUpDate") ? { "Follow-Up Date": field(formData, "followUpDate") } : {}),
+        ...(followUpDate ? { "Follow-Up Date": followUpDate } : {}),
         ...(weight !== undefined ? { "Weight (lb)": weight } : {}),
         ...(field(formData, "notes") ? { "Notes / Observation": field(formData, "notes") } : {}),
         ...(followUpNeeded
@@ -458,15 +458,18 @@ export default async function CareAndHousingPage({
               <form action={recordCare} className="space-y-4">
                 <label className="block text-sm font-medium">Animal<select name="animalId" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select animal</option>{activeAnimals.map((animal)=><option key={animal.id} value={animal.id}>{asText(animal.fields["Pet Name"])} · {asText(animal.fields["Animal ID"])}</option>)}</select></label>
                 <label className="block text-sm font-medium">Care type<select name="careType" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select care type</option>{["Feeding","Water","Litter / Kennel Cleaning","Medication Support","Exercise / Walk","Enrichment / Socialization","Weight","Behavior Observation","Health Observation","Grooming","Other"].map((value)=><option key={value}>{value}</option>)}</select></label>
-                <label className="block text-sm font-medium">Housing location<select name="housingLocation" defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="">Use animal&apos;s current location</option>{locations.filter((record)=>Boolean(record.fields.Active)).map((location)=><option key={location.id} value={location.id}>{asText(location.fields["Location Name"])}</option>)}</select></label>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="block text-sm font-medium">Alert level<select name="alertLevel" defaultValue="Normal" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Normal","Monitor","Needs Attention","Urgent"].map((value)=><option key={value}>{value}</option>)}</select></label>
-                  <label className="block text-sm font-medium">Weight (lb)<input name="weight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                </div>
-                <label className="block text-sm font-medium">Notes / observation<textarea name="notes" rows={4} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <label className="flex items-start gap-3 rounded-xl bg-slate-50 p-4 text-sm"><input name="followUpNeeded" type="checkbox" className="mt-1" /><span><strong>Follow-up needed</strong><span className="mt-1 block text-muted-foreground">Use for concerns that should stay visible until staff completes the follow-up.</span></span></label>
-                <label className="block text-sm font-medium">Follow-up date<input name="followUpDate" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Photo / attachment<input name="photo" type="file" accept="image/*" className="mt-2 block w-full text-sm" /></label>
+                <label className="block text-sm font-medium">Alert level<select name="alertLevel" defaultValue="Normal" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Normal","Monitor","Needs Attention","Urgent"].map((value)=><option key={value}>{value}</option>)}</select><span className="mt-1 block text-xs text-muted-foreground">Needs Attention or Urgent automatically creates a follow-up.</span></label>
+                <details className="rounded-2xl bg-slate-50 p-4">
+                  <summary className="cursor-pointer text-sm font-semibold">Add details only if needed</summary>
+                  <div className="mt-4 space-y-4">
+                    <label className="block text-sm font-medium">Notes / observation<textarea name="notes" rows={3} placeholder="Only record something noteworthy." className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="block text-sm font-medium">Weight (lb)<input name="weight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Use for a weight check or when weight is clinically relevant.</span></label>
+                      <label className="block text-sm font-medium">Follow-up date<input name="followUpDate" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    </div>
+                    <label className="block text-sm font-medium">Photo / attachment<input name="photo" type="file" accept="image/*" className="mt-2 block w-full text-sm" /></label>
+                  </div>
+                </details>
                 <button className="w-full rounded-full bg-primary px-5 py-3 font-semibold text-white">Save Care Entry</button>
               </form>
             </section>
