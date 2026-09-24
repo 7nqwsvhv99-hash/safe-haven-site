@@ -524,7 +524,7 @@ export default async function AnimalProfilePage({
               <article key={record.id} className="grid gap-2 rounded-2xl bg-slate-50 p-5 sm:grid-cols-[160px_1fr]"><p className="text-sm text-muted-foreground">{formatDate(record.fields["Activity Date / Time"], true)}</p><div><p className="font-semibold">{asText(record.fields.Summary)||asText(record.fields["Activity Type"])||"Animal activity"}</p>{asText(record.fields.Details)&&<p className="mt-1 text-sm text-muted-foreground">{asText(record.fields.Details)}</p>}</div></article>
             )):<Empty>No timeline activity has been recorded yet.</Empty>}
           </div>
-          {relatedIntakes.length > 0 && <div className="mt-6 border-t pt-6"><div className="mb-4 flex items-center gap-2"><ClipboardList className="h-5 w-5 text-primary"/><h3 className="font-bold">Intake history</h3></div>{relatedIntakes.map((record)=><article key={record.id} className="mb-3 rounded-2xl bg-slate-50 p-5 text-sm"><p className="font-semibold">{asText(record.fields["Intake Type"])||"Intake"} · {formatDate(record.fields["Intake Date"])}</p><p className="mt-2 text-muted-foreground">{[asText(record.fields["Source Person / Organization"]),asText(record.fields["Found / Origin Location"])].filter(Boolean).join(" · ")}</p>{asText(record.fields["Intake Notes"])&&<p className="mt-2">{asText(record.fields["Intake Notes"])}</p>}</article>)}</div>}
+          {relatedIntakes.length > 0 && <div className="mt-6 border-t pt-6"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><ClipboardList className="h-5 w-5 text-primary"/><h3 className="font-bold">Intake history</h3></div><Link href="/portal/staff/intake" className="text-sm font-semibold text-primary hover:underline">Open Intake Management</Link></div>{relatedIntakes.map((record)=><article key={record.id} className="mb-3 rounded-2xl bg-slate-50 p-5 text-sm"><p className="font-semibold">{asText(record.fields["Intake Type"])||"Intake"} · {formatDate(record.fields["Intake Date"])}</p><p className="mt-2 text-muted-foreground">{[asText(record.fields["Source Person / Organization"]),asText(record.fields["Found / Origin Location"])].filter(Boolean).join(" · ")}</p>{asText(record.fields["Intake Notes"])&&<p className="mt-2">{asText(record.fields["Intake Notes"])}</p>}</article>)}</div>}
         </section>
 
         <section id="foster" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
@@ -551,7 +551,7 @@ export default async function AnimalProfilePage({
         </section>
 
         <section id="documents" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-          <div className="mb-5 flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Documents</h2><p className="text-sm text-muted-foreground">Agreements and files linked to this animal.</p></div></div>
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Documents</h2><p className="text-sm text-muted-foreground">Agreements and files linked to this animal.</p></div></div><Link href="/portal/staff/documents" className="text-sm font-semibold text-primary hover:underline">Open Documents & Agreements</Link></div>
           <div className="space-y-3">
             {relatedDocuments.length?relatedDocuments.map((record)=>{
               const files=attachments(record.fields["Document File"]);
