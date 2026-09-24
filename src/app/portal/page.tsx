@@ -81,7 +81,7 @@ export default async function PortalPage() {
                 </div>
               )}
             </div>
-            <UserButton appearance={{ elements: { userButtonAvatarBox: { width: "80px", height: "80px" } } }} />
+            <UserButton appearance={{ elements: { userButtonAvatarBox: { width: "120px", height: "120px" } } }} />
           </div>
 
           {sections.length > 0 ? (

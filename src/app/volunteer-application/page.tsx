@@ -35,7 +35,6 @@ const interestOptions = [
   "Administrative Support",
   "Fundraising & Event Support",
   ...clinicVolunteerRoles.map(role => role.interest),
-  "Clinic Team - General Volunteer",
 ]
 
 export default function VolunteerApplicationPage() {
@@ -197,7 +196,6 @@ export default function VolunteerApplicationPage() {
           <div className="grid md:grid-cols-2 gap-3">
             {interestOptions.map((interest)=><label key={interest} className="flex items-center gap-2"><input className={checkboxClass} type="checkbox" value={interest} checked={interests.includes(interest)} onChange={()=>toggleInterest(interest)} />{interest}</label>)}
           </div>
-          <div className="grid gap-3 md:grid-cols-2">{clinicVolunteerRoles.map(role => <p key={role.title} className="text-sm text-muted-foreground"><strong className="text-foreground">{role.title}: </strong>{role.description}</p>)}</div>
           <Field label="Anything Else You Would Like Us to Know?"><Textarea name="anythingElse" /></Field>
         </Section>
 
