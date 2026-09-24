@@ -44,15 +44,22 @@ export default function VolunteerPage() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {volunteerRoles.map((role) => (
-              <Card key={role.title} className="volunteer-role-glow-card relative p-6 space-y-4 h-full">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    {role.icon}
+              <Link
+                key={role.title}
+                href="/volunteer-application"
+                aria-label={`Apply to volunteer: ${role.title}`}
+                className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                <Card className="volunteer-role-glow-card relative p-6 space-y-4 h-full cursor-pointer transition-transform duration-200 hover:-translate-y-1">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      {role.icon}
+                    </div>
+                    <h3 className="font-bold text-lg">{role.title}</h3>
                   </div>
-                  <h3 className="font-bold text-lg">{role.title}</h3>
-                </div>
-                <p className="text-sm leading-relaxed text-muted-foreground">{role.description}</p>
-              </Card>
+                  <p className="text-sm leading-relaxed text-muted-foreground">{role.description}</p>
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
