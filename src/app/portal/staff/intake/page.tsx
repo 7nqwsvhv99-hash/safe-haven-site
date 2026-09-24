@@ -39,6 +39,14 @@ function nextAnimalId(records: Awaited<ReturnType<typeof airtableList>>, species
   }, 0);
   return prefix + "-" + year() + "-" + String(max + 1).padStart(3, "0");
 }
+function nextPlacementId(records: Awaited<ReturnType<typeof airtableList>>) {
+  const matcher = new RegExp("^FOST-" + year() + "-(\\\\d+)$");
+  const max = records.reduce((current, record) => {
+    const match = asText(record.fields["Foster Placement ID"]).match(matcher);
+    return match ? Math.max(current, Number(match[1])) : current;
+  }, 0);
+  return "FOST-" + year() + "-" + String(max + 1).padStart(3, "0");
+}
 function formatDate(input: unknown) {
   const text = asText(input);
   if (!text) return "";
@@ -60,7 +68,7 @@ export default async function IntakeManagementPage({
   await requirePortalRole("Staff");
   const query = await searchParams;
 
-  const [requests, intakes, animals] = await Promise.all([
+  const [requests, intakes, animals, fosterApplications, fosterPlacements] = await Promise.all([
     airtableList(TABLES.surrenderRequests, [
       "Submitted At","Status","Owner First Name","Owner Last Name","Email","Phone",
       "Street Address","City","State","ZIP","Animal Name","Species","Sex","Approximate Age",
@@ -77,9 +85,16 @@ export default async function IntakeManagementPage({
     airtableList(TABLES.animals, [
       "Animal ID","Pet Name","Species","Adoption Status","Housing Type"
     ], { sort: [{ field: "Pet Name", direction: "asc" }] }),
+    airtableList(TABLES.fosterApplications, [
+      "First Name","Last Name","Status"
+    ], { sort: [{ field: "Last Name", direction: "asc" }] }),
+    airtableList(TABLES.fosterPlacements, [
+      "Foster Placement ID","Animal","Placement Status"
+    ]),
   ]);
 
   const animalById = new Map(animals.map((record) => [record.id, record]));
+  const approvedFosters = fosterApplications.filter((record) => asText(record.fields.Status) === "Approved");
   const q = (query.q || "").trim().toLowerCase();
   const filtered = requests.filter((record) => {
     const haystack = [
@@ -137,7 +152,7 @@ export default async function IntakeManagementPage({
       "Age Display": asText(request.fields["Approximate Age"]),
       Breed: asText(request.fields["Breed / Mix"]),
       "Adoption Status": "Getting Ready for Adoption",
-      "Housing Type": value(formData, "initialPlacement") || "In Shelter",
+      "Housing Type": value(formData, "initialPlacement") === "Foster Home" ? "Foster Home" : "In Shelter",
       "Public Listing": false,
       "Microchip Registration Status": "Unknown",
     }, true);
@@ -163,6 +178,23 @@ export default async function IntakeManagementPage({
       ...(numberValue(formData, "weight") !== undefined ? { "Weight at Intake (lb)": numberValue(formData, "weight") } : {}),
       "Intake Notes": notes,
     }, true);
+
+    if (value(formData, "initialPlacement") === "Foster Home") {
+      const fosterApplicationId = value(formData, "fosterApplicationId");
+      const foster = approvedFosters.find((record) => record.id === fosterApplicationId);
+      if (!foster) return;
+      const latestPlacements = await airtableList(TABLES.fosterPlacements, ["Foster Placement ID"]);
+      await airtableCreate(TABLES.fosterPlacements, {
+        "Foster Placement ID": nextPlacementId(latestPlacements),
+        Animal: [animal.id],
+        "Foster Application": [fosterApplicationId],
+        "Placement Status": "Active",
+        "Placement Type": value(formData, "placementType") || "Other",
+        "Start Date": value(formData, "intakeDate") || today(),
+        ...(value(formData, "nextCheckInDate") ? { "Next Check-In Date": value(formData, "nextCheckInDate"), "Check-In Status": "Not Due" } : {}),
+        ...(value(formData, "careInstructions") ? { "Care Instructions / Notes": value(formData, "careInstructions") } : {}),
+      }, true);
+    }
 
     await airtableUpdate(TABLES.surrenderRequests, requestId, {
       Status: "Completed",
@@ -192,7 +224,7 @@ export default async function IntakeManagementPage({
         Breed: value(formData, "breed"),
         "Color / Markings": value(formData, "color"),
         "Adoption Status": "Getting Ready for Adoption",
-        "Housing Type": value(formData, "initialPlacement") || "In Shelter",
+        "Housing Type": value(formData, "initialPlacement") === "Foster Home" ? "Foster Home" : "In Shelter",
         "Public Listing": false,
         "Microchip Registration Status": "Unknown",
       }, true);
@@ -210,8 +242,26 @@ export default async function IntakeManagementPage({
       ...(numberValue(formData, "weight") !== undefined ? { "Weight at Intake (lb)": numberValue(formData, "weight") } : {}),
       "Intake Notes": value(formData, "intakeNotes"),
     }, true);
+    if (value(formData, "initialPlacement") === "Foster Home") {
+      const fosterApplicationId = value(formData, "fosterApplicationId");
+      const foster = approvedFosters.find((record) => record.id === fosterApplicationId);
+      if (!foster) return;
+      const latestPlacements = await airtableList(TABLES.fosterPlacements, ["Foster Placement ID"]);
+      await airtableCreate(TABLES.fosterPlacements, {
+        "Foster Placement ID": nextPlacementId(latestPlacements),
+        Animal: [animalId],
+        "Foster Application": [fosterApplicationId],
+        "Placement Status": "Active",
+        "Placement Type": value(formData, "placementType") || "Other",
+        "Start Date": value(formData, "intakeDate") || today(),
+        ...(value(formData, "nextCheckInDate") ? { "Next Check-In Date": value(formData, "nextCheckInDate"), "Check-In Status": "Not Due" } : {}),
+        ...(value(formData, "careInstructions") ? { "Care Instructions / Notes": value(formData, "careInstructions") } : {}),
+      }, true);
+    }
+
     revalidatePath("/portal/staff/intake");
     revalidatePath("/portal/staff/animals");
+    revalidatePath("/portal/staff/fosters");
     redirect("/portal/staff/animals/" + animalId);
   }
 
@@ -290,6 +340,14 @@ export default async function IntakeManagementPage({
                           <h4 className="font-bold">Accept Into Safe Haven Care</h4>
                           <input name="intakeDate" type="date" defaultValue={today()} className="w-full rounded-xl border bg-white px-3 py-2.5"/>
                           <select name="initialPlacement" defaultValue="In Shelter" className="w-full rounded-xl border bg-white px-3 py-2.5"><option>In Shelter</option><option>Foster Home</option></select>
+                <select name="fosterApplicationId" defaultValue="" className="w-full rounded-xl border bg-white px-3 py-2.5"><option value="">If foster, select approved foster</option>{approvedFosters.map((foster)=><option key={foster.id} value={foster.id}>{[asText(foster.fields["First Name"]),asText(foster.fields["Last Name"])].filter(Boolean).join(" ")}</option>)}</select>
+                <select name="placementType" defaultValue="Other" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Bottle Babies","Pregnant Mom","Nursing Mom with Litter","Orphaned Litter","Kitten / Puppy","Adult Animal","Medical","Behavior Support","Short-Term / Emergency","Other"].map((s)=><option key={s}>{s}</option>)}</select>
+                <input name="nextCheckInDate" type="date" className="w-full rounded-xl border bg-white px-3 py-2.5"/>
+                <textarea name="careInstructions" rows={2} placeholder="Foster care instructions, if applicable" className="w-full rounded-xl border px-3 py-2.5"/>
+                          <select name="fosterApplicationId" defaultValue="" className="w-full rounded-xl border bg-white px-3 py-2.5"><option value="">If foster, select approved foster</option>{approvedFosters.map((foster)=><option key={foster.id} value={foster.id}>{[asText(foster.fields["First Name"]),asText(foster.fields["Last Name"])].filter(Boolean).join(" ")}</option>)}</select>
+                          <select name="placementType" defaultValue="Other" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Bottle Babies","Pregnant Mom","Nursing Mom with Litter","Orphaned Litter","Kitten / Puppy","Adult Animal","Medical","Behavior Support","Short-Term / Emergency","Other"].map((s)=><option key={s}>{s}</option>)}</select>
+                          <input name="nextCheckInDate" type="date" className="w-full rounded-xl border bg-white px-3 py-2.5"/>
+                          <textarea name="careInstructions" rows={2} placeholder="Foster care instructions, if applicable" className="w-full rounded-xl border bg-white px-3 py-2.5"/>
                           <select name="condition" defaultValue="Unknown" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Good","Fair","Needs Medical Attention","Critical","Unknown"].map((s)=><option key={s}>{s}</option>)}</select>
                           <input name="weight" type="number" min="0" step="0.1" placeholder="Weight at intake (lb)" className="w-full rounded-xl border bg-white px-3 py-2.5"/>
                           <textarea name="intakeNotes" rows={3} placeholder="Additional intake notes" className="w-full rounded-xl border bg-white px-3 py-2.5"/>
