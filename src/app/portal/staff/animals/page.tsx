@@ -304,19 +304,15 @@ export default async function AnimalManagementPage({
                 <label className="block text-sm font-medium">Pet name<input name="petName" required className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
                 <Select name="species" label="Species" options={["Cat", "Dog"]} required />
                 <Select name="sex" label="Sex" options={["Female", "Male", "Unknown"]} required />
-                <label className="block text-sm font-medium">Date of birth<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Age display<input name="ageDisplay" placeholder="Example: 5 months old" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
+                <label className="block text-sm font-medium">Age / estimated age<input name="ageDisplay" placeholder="Example: 5 months old, about 3 years" className="mt-2 w-full rounded-xl border px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Use an estimate when the exact birth date is unknown.</span></label>
                 <label className="block text-sm font-medium">Breed<input name="breed" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
                 <label className="block text-sm font-medium">Color / markings<input name="color" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Current weight (lb)<input name="weight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <Select name="adoptionStatus" label="Adoption status" options={["Getting Ready for Adoption", "Available", "Pending", "Adopted"]} defaultValue="Getting Ready for Adoption" />
               </div>
             </div>
 
             <div>
-              <h3 className="mb-4 font-semibold">Housing & identification</h3>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <label className="block text-sm font-medium">Housing type<input value="In Shelter" readOnly className="mt-2 w-full rounded-xl border bg-slate-50 px-3 py-2.5 text-muted-foreground" /><span className="mt-1 block text-xs text-muted-foreground">For a direct-to-foster intake, use Intake & Owner Surrender so the Foster Placement is created at the same time.</span></label>
+              <h3 className="mb-4 font-semibold">Placement</h3>
+              <div className="grid gap-4 md:grid-cols-2">
                 <label className="block text-sm font-medium">
                   Shelter location
                   <select name="housingLocation" defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
@@ -326,8 +322,7 @@ export default async function AnimalManagementPage({
                     ))}
                   </select>
                 </label>
-                <label className="block text-sm font-medium">Microchip number<input name="microchipNumber" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <Select name="microchipStatus" label="Microchip registration" options={["No Microchip", "Needs Registration", "Registered to Safe Haven", "Transferred to Adopter", "Unknown"]} defaultValue="Unknown" />
+                <p className="self-end rounded-xl bg-slate-50 p-4 text-sm text-muted-foreground">New animals created here enter shelter care. For direct-to-foster intake, use Intake & Owner Surrender so the Foster Placement is created correctly.</p>
               </div>
             </div>
 
@@ -337,12 +332,21 @@ export default async function AnimalManagementPage({
                 <label className="block text-sm font-medium">Intake date<input name="intakeDate" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
                 <Select name="intakeType" label="Intake type" options={["Owner Surrender", "Stray", "Transfer In", "Adoption Return", "Born in Care", "Other"]} defaultValue="Other" />
                 <Select name="condition" label="Condition at intake" options={["Good", "Fair", "Needs Medical Attention", "Critical", "Unknown"]} defaultValue="Unknown" />
-                <label className="block text-sm font-medium">Source person / organization<input name="source" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Source contact<input name="sourceContact" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Found / origin location<input name="origin" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Weight at intake (lb)<input name="intakeWeight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               </div>
-              <label className="mt-4 block text-sm font-medium">Intake notes<textarea name="intakeNotes" rows={3} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
+              <label className="mt-4 block text-sm font-medium">Intake notes<textarea name="intakeNotes" rows={3} placeholder="Record only information important to care, safety, or placement." className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
+              <details className="mt-4 rounded-2xl bg-slate-50 p-4">
+                <summary className="cursor-pointer text-sm font-semibold">Additional intake & identification details</summary>
+                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <label className="block text-sm font-medium">Exact date of birth, if known<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="block text-sm font-medium">Source person / organization<input name="source" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="block text-sm font-medium">Source contact<input name="sourceContact" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="block text-sm font-medium">Found / origin location<input name="origin" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="block text-sm font-medium">Weight at intake (lb)<input name="intakeWeight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="block text-sm font-medium">Current weight (lb)<input name="weight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="block text-sm font-medium">Microchip number<input name="microchipNumber" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <Select name="microchipStatus" label="Microchip registration" options={["No Microchip", "Needs Registration", "Registered to Safe Haven", "Transferred to Adopter", "Unknown"]} defaultValue="Unknown" />
+                </div>
+              </details>
             </div>
 
             <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90">
