@@ -6,6 +6,7 @@ import {
   Activity,
   ArrowLeft,
   ClipboardList,
+  ClipboardCheck,
   FileText,
   HeartHandshake,
   ImageIcon,
@@ -114,6 +115,7 @@ export default async function AnimalProfilePage({
     applications,
     adoptions,
     documents,
+    dailyCare,
   ] = await Promise.all([
     airtableList(TABLES.animals, [
       "Animal ID",
@@ -242,6 +244,19 @@ export default async function AnimalProfilePage({
       "Document File",
       "Notes",
     ], { sort: [{ field: "Generated Date", direction: "desc" }] }),
+    airtableList(TABLES.dailyCare, [
+      "Animal",
+      "Date / Time",
+      "Care Type",
+      "Housing Location",
+      "Completed By",
+      "Alert Level",
+      "Follow-Up Needed",
+      "Follow-Up Date",
+      "Weight (lb)",
+      "Notes / Observation",
+      "Follow-Up Status",
+    ], { sort: [{ field: "Date / Time", direction: "desc" }] }),
   ]);
 
   const animal = animals.find((record) => record.id === animalId);
@@ -266,6 +281,7 @@ export default async function AnimalProfilePage({
   const relatedApplications = applications.filter((record) => linked(record, "Preferred Animal", animalId));
   const relatedAdoptions = adoptions.filter((record) => linked(record, "Animal", animalId));
   const relatedDocuments = documents.filter((record) => linked(record, "Animal", animalId));
+  const relatedCare = dailyCare.filter((record) => linked(record, "Animal", animalId));
 
   async function saveAnimal(formData: FormData) {
     "use server";
@@ -386,6 +402,7 @@ export default async function AnimalProfilePage({
         <nav className="mb-8 flex gap-2 overflow-x-auto rounded-2xl border bg-white p-2 text-sm font-semibold shadow-sm">
           {[
             ["overview", "Overview"],
+            ["care", "Daily Care"],
             ["medical", "Medical"],
             ["timeline", "Timeline"],
             ["foster", "Foster"],
@@ -442,6 +459,47 @@ export default async function AnimalProfilePage({
 
             <button className="rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90">Save Animal Profile</button>
           </form>
+        </section>
+
+        <section id="care" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <ClipboardCheck className="h-6 w-6 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold">Daily Care</h2>
+                <p className="text-sm text-muted-foreground">Feeding, cleaning, enrichment, exercise, weight, behavior, health observations, and follow-up.</p>
+              </div>
+            </div>
+            <Link href="/portal/staff/care" className="text-sm font-semibold text-primary hover:underline">Open Daily Care & Housing</Link>
+          </div>
+          <div className="space-y-3">
+            {relatedCare.length ? relatedCare.slice(0, 30).map((record) => {
+              const locationId = asStrings(record.fields["Housing Location"])[0];
+              const location = locationById.get(locationId);
+              const alert = asText(record.fields["Alert Level"]);
+              return (
+                <article key={record.id} className="rounded-2xl bg-slate-50 p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold">{asText(record.fields["Care Type"]) || "Care entry"}</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {formatDate(record.fields["Date / Time"], true)}
+                        {asText(record.fields["Completed By"]) ? ` · ${asText(record.fields["Completed By"])}` : ""}
+                        {location ? ` · ${location}` : ""}
+                      </p>
+                    </div>
+                    {alert && alert !== "Normal" && <StatusPill>{alert}</StatusPill>}
+                  </div>
+                  {asText(record.fields["Notes / Observation"]) && <p className="mt-3 text-sm">{asText(record.fields["Notes / Observation"])}</p>}
+                  <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                    {asNumber(record.fields["Weight (lb)"]) !== null && <span>Weight: {asNumber(record.fields["Weight (lb)"])} lb</span>}
+                    {Boolean(record.fields["Follow-Up Needed"]) && <span>Follow-up: {asText(record.fields["Follow-Up Status"]) || "Needed"}</span>}
+                    {asText(record.fields["Follow-Up Date"]) && <span>Due {formatDate(record.fields["Follow-Up Date"])}</span>}
+                  </div>
+                </article>
+              );
+            }) : <Empty>No daily care entries have been recorded for this animal yet.</Empty>}
+          </div>
         </section>
 
         <section id="medical" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
