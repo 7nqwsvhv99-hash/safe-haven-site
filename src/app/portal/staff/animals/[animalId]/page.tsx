@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import {
@@ -75,7 +76,7 @@ function linked(record: { fields: Record<string, unknown> }, fieldName: string, 
   return asStrings(record.fields[fieldName]).includes(animalId);
 }
 
-function Detail({ label, value }: { label: string; value: React.ReactNode }) {
+function Detail({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</dt>
@@ -84,11 +85,11 @@ function Detail({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function Empty({ children }: { children: React.ReactNode }) {
+function Empty({ children }: { children: ReactNode }) {
   return <p className="rounded-2xl bg-slate-50 p-4 text-sm text-muted-foreground">{children}</p>;
 }
 
-function StatusPill({ children }: { children: React.ReactNode }) {
+function StatusPill({ children }: { children: ReactNode }) {
   return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children}</span>;
 }
 
