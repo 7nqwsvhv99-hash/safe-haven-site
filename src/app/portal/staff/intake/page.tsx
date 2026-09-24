@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, ClipboardPlus, Inbox, PawPrint, Search } from "lucide-react";
@@ -47,7 +48,7 @@ function formatDate(input: unknown) {
     month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago",
   }).format(date);
 }
-function Status({ children }: { children: React.ReactNode }) {
+function Status({ children }: { children: ReactNode }) {
   return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children || "No status"}</span>;
 }
 
