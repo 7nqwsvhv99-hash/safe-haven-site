@@ -132,9 +132,9 @@ export default async function StaffPortalPage() {
 
           <div className="mb-10">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Staff Portal</p>
-            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Operations at a Glance</h1>
+            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Animal Care First</h1>
             <p className="mt-4 max-w-3xl text-muted-foreground">
-              Action Required, medical care, shelter inventory, events, current needs, volunteer administration, and reporting.
+              Start with animal care, medical needs, housing, intake, foster, and adoption. Supporting operations remain available below when needed.
             </p>
           </div>
 
@@ -156,6 +156,7 @@ export default async function StaffPortalPage() {
             })}
           </section>
 
+          <div className="mb-4"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Animal Care & Placement</p></div>
           <section className="mb-8 grid gap-4 lg:grid-cols-2">
             <div className="rounded-3xl border bg-white p-7 shadow-sm">
               <div className="flex h-full flex-col gap-5">
@@ -262,6 +263,7 @@ export default async function StaffPortalPage() {
             </div>
           </section>
 
+          <div className="mb-4 mt-10"><p className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">Supporting Operations & Administration</p></div>
           <section className="mb-8 rounded-3xl border bg-white p-7 shadow-sm">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
               <div className="flex items-start gap-4">
