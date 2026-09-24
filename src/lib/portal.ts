@@ -26,6 +26,8 @@ const TABLES = {
   medicalRecords: "tblpL1w9JWylKpwQT",
   fosterResources: "tblyMumQGKqH2oGvJ",
   fosterUpdates: "tbl3B6nEH5a495vmS",
+  housingLocations: "tblmwvODdr1Iuvy72",
+  dailyCare: "tblojxEUAQid7VNvQ",
 } as const;
 
 export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Volunteer Coordinator" | "Shelter Manager" | "Administrator";
