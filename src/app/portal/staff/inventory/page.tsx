@@ -10,7 +10,6 @@ import {
 function num(v: unknown){ return typeof v==="number"?v:0 }
 function field(f:FormData,n:string){ return String(f.get(n)||"").trim() }
 function optionalNumber(f:FormData,n:string){ const v=field(f,n); if(!v)return undefined; const x=Number(v); return Number.isFinite(x)?x:undefined }
-function fmt(v:unknown){ const s=asText(v); if(!s)return""; const d=new Date(s); if(Number.isNaN(d.getTime()))return s; return new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric",timeZone:"America/Chicago"}).format(d) }
 function Pill({children}:{children:ReactNode}){return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children}</span>}
 
 export default async function ShelterInventoryPage(){
