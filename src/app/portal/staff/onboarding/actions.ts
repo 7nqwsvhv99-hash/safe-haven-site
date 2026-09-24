@@ -103,3 +103,22 @@ export async function completeOnboarding(_previous:OnboardingActionState,form:Fo
   }
  });
 }
+
+export async function sendPortalInvitation(form:FormData){
+ const context=await requireOnboarding();
+ const id=String(form.get('applicationId')||'');
+ try{
+  const data=await getOnboardingData();
+  const app=data.applications.find(record=>record.id===id);
+  if(!app)throw Error('Application not found.');
+  if(!app.fields['Onboarding Complete'])throw Error('Complete onboarding before sending a portal invitation.');
+  const email=normalizeEmail(asText(app.fields.Email));
+  if(!email)throw Error('This application does not have an email address.');
+  if(hasLikelyEmailTypo(email))throw Error('The applicant email appears to contain a Gmail domain typo. Correct it before sending an invitation.');
+  const result=await ensureClerkInvitation(email);
+  revalidatePath(path);revalidatePath('/portal');
+  return {ok:true,message:result.message};
+ }catch(error){
+  return {ok:false,message:error instanceof Error?error.message:'Could not send the account invitation.'};
+ }
+}
