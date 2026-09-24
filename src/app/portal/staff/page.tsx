@@ -367,6 +367,14 @@ export default async function StaffPortalPage() {
                 </div>
 
                 <p className="mb-5 text-sm leading-relaxed text-muted-foreground">Post supplies, volunteer help, or other resources your team needs. Include the item or task, quantity or goal, when it is needed, and how someone can help. Choose the audience below: volunteer and website posts should contain only information safe to share publicly.</p>
+                <div className="mb-5 rounded-xl bg-slate-50 p-4 text-sm leading-relaxed text-muted-foreground">
+                  <p className="mb-2 font-semibold text-foreground">Example entry</p>
+                  <p><strong>What is needed?</strong> Laundry help</p>
+                  <p><strong>Area:</strong> Shelter · <strong>Priority:</strong> Normal</p>
+                  <p><strong>Quantity or goal:</strong> 2 volunteers</p>
+                  <p><strong>Details:</strong> Help wash and fold animal bedding on Thursday from 1–3 p.m. Contact the volunteer coordinator to arrange your shift.</p>
+                  <p className="mt-2"><strong>Audience:</strong> Check “Show to volunteers” to share this request in the Volunteer Portal.</p>
+                </div>
                 {data.needs.length > 0 && (
                   <div className="mb-6 space-y-3">
                     {data.needs.slice(0, 8).map((item) => (
