@@ -100,7 +100,7 @@ export default async function DocumentsManagementPage() {
       ...(adoptionId ? { Adoption: [adoptionId] } : {}),
       ...(fosterPlacementId ? { "Foster Placement": [fosterPlacementId] } : {}),
       ...(surrenderRequestId ? { "Surrender Request": [surrenderRequestId] } : {}),
-      "Generated Date": value(formData, "generatedDate") || today(),
+      "Generated Date": today(),
       ...(value(formData, "sentDate") ? { "Sent Date": value(formData, "sentDate") } : {}),
       ...(value(formData, "templateVersion") ? { "Template / Version": value(formData, "templateVersion") } : {}),
       ...(value(formData, "externalDocumentId") ? { "External Document ID": value(formData, "externalDocumentId") } : {}),
@@ -242,13 +242,9 @@ export default async function DocumentsManagementPage() {
                 <label className="mt-3 block text-sm font-medium">Surrender request<select name="surrenderRequestId" defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="">No surrender request link</option>{surrenderRequests.map((r)=><option key={r.id} value={r.id}>{asText(r.fields["Animal Name"])} · {[asText(r.fields["Owner First Name"]),asText(r.fields["Owner Last Name"])].filter(Boolean).join(" ")}</option>)}</select></label>
               </div>
 
-              <label className="block text-sm font-medium">Generated date<input name="generatedDate" type="date" defaultValue={today()} className="mt-2 w-full rounded-xl border px-3 py-2.5"/></label>
-              <label className="block text-sm font-medium">Sent date<input name="sentDate" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5"/></label>
-              <input name="templateVersion" placeholder="Template / version" className="w-full rounded-xl border px-3 py-2.5"/>
-              <input name="signatureProvider" placeholder="Signature provider, if external" className="w-full rounded-xl border px-3 py-2.5"/>
-              <input name="externalDocumentId" placeholder="External document ID" className="w-full rounded-xl border px-3 py-2.5"/>
-              <textarea name="notes" rows={3} placeholder="Notes" className="w-full rounded-xl border px-3 py-2.5"/>
               <label className="block text-sm font-medium">Document file<input name="file" type="file" accept="application/pdf,image/*" className="mt-2 block w-full text-sm"/></label>
+              <p className="text-xs text-muted-foreground">Generated date is recorded automatically.</p>
+              <details className="rounded-2xl bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold">Additional document details</summary><div className="mt-4 space-y-3"><label className="block text-sm font-medium">Sent date<input name="sentDate" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label><input name="templateVersion" placeholder="Template / version" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="signatureProvider" placeholder="Signature provider, if external" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="externalDocumentId" placeholder="External document ID" className="w-full rounded-xl border bg-white px-3 py-2.5"/><textarea name="notes" rows={3} placeholder="Notes" className="w-full rounded-xl border bg-white px-3 py-2.5"/></div></details>
               <button className="w-full rounded-full bg-primary px-5 py-3 font-semibold text-white">Create Document Record</button>
             </form>
           </section>
