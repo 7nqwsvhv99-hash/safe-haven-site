@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { revalidatePath } from "next/cache";
 import {
   ArrowLeft,
@@ -46,7 +47,7 @@ function attachments(input: unknown) {
     }))
     .filter((item) => item.url);
 }
-function Status({ children }: { children: React.ReactNode }) {
+function Status({ children }: { children: ReactNode }) {
   return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children || "No status"}</span>;
 }
 
