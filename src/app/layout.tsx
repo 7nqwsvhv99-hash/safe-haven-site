@@ -6,7 +6,6 @@ import ClientBody from "./ClientBody";
 import Script from "next/script";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { MobileCTA } from "@/components/mobile-cta";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,7 +41,6 @@ export default function RootLayout({
           <Navigation />
           <main className="min-h-screen">{children}</main>
           <Footer />
-          <MobileCTA />
           </ClientBody>
         </ClerkProvider>
       </body>

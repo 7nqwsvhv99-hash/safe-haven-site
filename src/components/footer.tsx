@@ -5,7 +5,7 @@ import { NewsletterSignup } from "@/components/newsletter-signup"
 export function Footer() {
   return (
     <footer className="bg-slate-50 border-t">
-      <div className="container-custom py-10 md:py-12">
+      <div className="container-custom px-4 py-10 md:px-6 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand */}
           <div className="space-y-4">
