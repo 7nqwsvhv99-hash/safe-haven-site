@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {getOnboardingData,requireOnboarding,readiness,skills,clinicRoles,needsGeneralOrientation,resolveProfileMatches} from '@/lib/onboarding';
+import {getOnboardingData,requireOnboarding,readiness,skills,clinicRoles,needsGeneralOrientation,resolveProfileMatches,getClerkAccessStatus} from '@/lib/onboarding';
 import {asText,asStrings} from '@/lib/portal';
 import {ReviewForm} from './review-form';
 import {WaiverForm} from './waiver-form';
@@ -22,6 +22,7 @@ export default async function OnboardingPage({searchParams}:{searchParams:Promis
  const hasWaiver=waiverFiles.length>0;
  const reviewSaved=Boolean(f['Onboarding Reviewed At']);
  const completed=Boolean(f['Onboarding Complete']);
+ const clerkStatus=completed?await getClerkAccessStatus(asText(f.Email)):null;
  const orientationApplies=app?needsGeneralOrientation(f):false;
  return <main className="min-h-screen bg-slate-50"><div className="container-custom py-10">
   <Link href={context.canStaff?'/portal/staff':'/portal'} className="text-sm font-semibold text-primary">← {context.canStaff?'Staff Portal':'Team Portal'}</Link>
@@ -64,7 +65,7 @@ export default async function OnboardingPage({searchParams}:{searchParams:Promis
     </section>
     <section className={card}><h2 className="text-xl font-bold">3. Complete onboarding and grant access</h2><p className="mt-2 text-sm text-muted-foreground">This connects the approved volunteer profile, creates or updates the clinic profile when applicable, and grants Volunteer{role?' and Clinic Team':''} access. Staff, Medical, and administrator permissions are never granted here.</p>
      {completed?
-      <div className="my-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm"><p role="status" className="font-semibold">Onboarding complete. Portal access is ready.</p><p className="mt-2">First-time user: choose <strong>Sign up</strong> and create the account using <strong>{asText(f.Email)}</strong>. Returning user: choose <strong>Sign in</strong> with that same email.</p><div className="mt-3 flex flex-wrap gap-3"><Link href="/sign-up" className="font-semibold text-primary underline">First-time user: Sign up</Link><Link href="/sign-in" className="font-semibold text-primary underline">Returning user: Sign in</Link></div></div>
+      <div className="my-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm"><p role="status" className="font-semibold">Onboarding complete. Portal access is ready.</p>{clerkStatus==='existing-account'?<p className="mt-2">A portal account already exists for <strong>{asText(f.Email)}</strong>. The volunteer can sign in.</p>:clerkStatus==='pending-invitation'?<p className="mt-2">A first-time account invitation is pending for <strong>{asText(f.Email)}</strong>. The volunteer should use the invitation email to finish account setup.</p>:<p className="mt-2">No Clerk account or pending invitation was found for <strong>{asText(f.Email)}</strong>. They can still choose Sign up using this exact email.</p>}<div className="mt-3 flex flex-wrap gap-3"><Link href="/sign-up" className="font-semibold text-primary underline">First-time user: Sign up</Link><Link href="/sign-in" className="font-semibold text-primary underline">Returning user: Sign in</Link></div></div>
       :<>
        {missing.length?<div className="my-4 rounded-xl bg-amber-50 p-4 text-sm"><p className="font-semibold">Still needed</p><ul className="mt-2 list-disc pl-5">{missing.map(item=><li key={item}>{item}</li>)}</ul></div>:<p className="my-4 rounded-xl bg-green-50 p-4 text-sm">All required review items are recorded.</p>}
        <CompleteOnboardingForm applicationId={app.id} disabled={Boolean(missing.length)}/>

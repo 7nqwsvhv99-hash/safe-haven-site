@@ -1,7 +1,7 @@
 'use server';
 import {onboardingAccess} from '@/lib/onboarding-policy';
 import {revalidatePath} from 'next/cache';
-import {requireOnboarding,getOnboardingData,readiness,skills,clinicRoles,needsGeneralOrientation,resolveProfileMatches,hasLikelyEmailTypo} from '@/lib/onboarding';
+import {requireOnboarding,getOnboardingData,readiness,skills,clinicRoles,needsGeneralOrientation,resolveProfileMatches,hasLikelyEmailTypo,ensureClerkInvitation} from '@/lib/onboarding';
 import {airtableUpdate,airtableCreate,airtableUploadAttachment,TABLES,asText,asStrings,normalizeEmail} from '@/lib/portal';
 const path='/portal/staff/onboarding';
 export type OnboardingActionState={ok:boolean;message:string};
@@ -94,6 +94,12 @@ export async function completeOnboarding(_previous:OnboardingActionState,form:Fo
    await airtableUpdate(TABLES.portalAccess,accesses[0].id,{Roles:granted,Active:true,'Display Name':name});
   }
   await airtableUpdate(TABLES.volunteerApplications,app.id,{Status:'Approved','Onboarding Complete':true,'Decision Date':new Date().toISOString().slice(0,10),'Onboarding Reviewed By':reviewer,'Onboarding Reviewed At':new Date().toISOString()});
-  return 'Onboarding complete. Portal access is ready. First-time users must create an account using '+email+'; returning users can sign in with that same email.';
+  try{
+   const clerk=await ensureClerkInvitation(email);
+   return 'Onboarding complete. Portal access is ready. '+clerk.message;
+  }catch(error){
+   console.error('Could not create Clerk invitation',error);
+   return 'Onboarding complete. Portal access is ready, but the account invitation could not be sent automatically. Ask the volunteer to use Sign up with '+email+'.';
+  }
  });
 }

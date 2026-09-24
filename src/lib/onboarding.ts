@@ -1,9 +1,30 @@
 import 'server-only';
 import {redirect} from 'next/navigation';
+import {clerkClient} from '@clerk/nextjs/server';
 import {getPortalContext, airtableList, TABLES, asText, asStrings} from './portal';
 
 export const skills=['Front Room System','Back Room System','Autoclave','General Support'];
 export const clinicRoles=['Veterinarian','Vet Tech','Clinic Volunteer'];
+export type ClerkAccessStatus='existing-account'|'pending-invitation'|'no-account';
+export async function getClerkAccessStatus(email:string):Promise<ClerkAccessStatus>{
+  const normalized=email.trim().toLowerCase();
+  if(!normalized)return 'no-account';
+  const client=await clerkClient();
+  const users=await client.users.getUserList({emailAddress:[normalized],limit:1});
+  if(users.data.length)return 'existing-account';
+  const invitations=await client.invitations.getInvitationList({query:normalized,status:'pending',limit:10});
+  if(invitations.data.some(invitation=>invitation.emailAddress.trim().toLowerCase()===normalized))return 'pending-invitation';
+  return 'no-account';
+}
+export async function ensureClerkInvitation(email:string){
+  const normalized=email.trim().toLowerCase();
+  const status=await getClerkAccessStatus(normalized);
+  if(status==='existing-account')return {status,message:'An existing portal account was found. The volunteer can sign in with '+normalized+'.'};
+  if(status==='pending-invitation')return {status,message:'A portal account invitation is already pending for '+normalized+'.'};
+  const client=await clerkClient();
+  await client.invitations.createInvitation({emailAddress:normalized,redirectUrl:'/sign-up',notify:true,expiresInDays:30});
+  return {status:'pending-invitation' as const,message:'A first-time portal account invitation was sent to '+normalized+'.'};
+}
 export async function requireOnboarding() {
   const context=await getPortalContext();
   if(!context.canOnboard)redirect('/portal');
