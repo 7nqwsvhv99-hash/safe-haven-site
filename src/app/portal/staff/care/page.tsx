@@ -115,10 +115,8 @@ export default async function CareAndHousingPage({
   const openAlerts = care.filter((record) => {
     const level = asText(record.fields["Alert Level"]);
     const status = asText(record.fields["Follow-Up Status"]);
-    return (
-      ["Needs Attention", "Urgent"].includes(level) ||
-      (Boolean(record.fields["Follow-Up Needed"]) && !["Completed"].includes(status))
-    );
+    if (status === "Completed") return false;
+    return ["Needs Attention", "Urgent"].includes(level) || Boolean(record.fields["Follow-Up Needed"]);
   });
 
   async function createLocation(formData: FormData) {
@@ -153,6 +151,17 @@ export default async function CareAndHousingPage({
     const latest = await airtableList(TABLES.housingLocations, ["Location Name"]);
     if (!latest.some((record) => record.id === id)) return;
 
+    const active = formData.get("active") === "on";
+    if (!active) {
+      const latestAnimals = await airtableList(TABLES.animals, ["Current Housing Location", "Adoption Status"]);
+      const occupied = latestAnimals.some(
+        (record) =>
+          asText(record.fields["Adoption Status"]) !== "Adopted" &&
+          asStrings(record.fields["Current Housing Location"]).includes(id)
+      );
+      if (occupied) return;
+    }
+
     await airtableUpdate(
       TABLES.housingLocations,
       id,
@@ -160,7 +169,7 @@ export default async function CareAndHousingPage({
         "Location Name": field(formData, "name"),
         "Location Type": field(formData, "type"),
         Capacity: optionalNumber(formData, "capacity") ?? null,
-        Active: formData.get("active") === "on",
+        Active: active,
         Notes: field(formData, "notes"),
       },
       true
@@ -506,7 +515,7 @@ export default async function CareAndHousingPage({
                       <select name="type" defaultValue={asText(location.fields["Location Type"])} className="w-full rounded-xl border bg-white px-3 py-2.5">{["Cat Room","Cat Cage","Dog Kennel","Isolation","Medical","Recovery","Other"].map((value)=><option key={value}>{value}</option>)}</select>
                       <input name="capacity" type="number" min="0" step="1" defaultValue={asNumber(location.fields.Capacity) ?? ""} placeholder="Capacity" className="w-full rounded-xl border px-3 py-2.5" />
                       <textarea name="notes" rows={2} defaultValue={asText(location.fields.Notes)} className="w-full rounded-xl border px-3 py-2.5" />
-                      <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked={Boolean(location.fields.Active)} /> Active location</label>
+                      <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked={Boolean(location.fields.Active)} disabled={(occupancyByLocation.get(location.id) || 0) > 0} /> Active location</label>{(occupancyByLocation.get(location.id) || 0) > 0 && <p className="text-xs text-muted-foreground">Move all animals out before deactivating this location.</p>}
                       <button className="rounded-full border px-4 py-2 text-sm font-semibold">Save Location</button>
                     </form>
                   </details>
