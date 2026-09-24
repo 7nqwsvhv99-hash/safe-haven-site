@@ -124,7 +124,9 @@ export default async function AnimalProfilePage({
       "Adoption Status",
       "Sex",
       "Date of Birth",
+      "Estimated Date of Birth",
       "Age Display",
+      "Current Age Display",
       "Breed",
       "Color / Markings",
       "Weight (lb)",
@@ -298,8 +300,7 @@ export default async function AnimalProfilePage({
       "Pet Name": field(formData, "petName"),
       "Adoption Status": field(formData, "adoptionStatus"),
       Sex: field(formData, "sex"),
-      ...(field(formData, "dateOfBirth") ? { "Date of Birth": field(formData, "dateOfBirth") } : { "Date of Birth": null }),
-      "Age Display": field(formData, "ageDisplay"),
+      ...(field(formData, "dateOfBirth") ? { "Date of Birth": field(formData, "dateOfBirth"), "Estimated Date of Birth": null } : { "Date of Birth": null, "Estimated Date of Birth": field(formData, "estimatedDateOfBirth") || null }),
       Breed: field(formData, "breed"),
       "Color / Markings": field(formData, "color"),
       "Weight (lb)": weight,
@@ -388,7 +389,7 @@ export default async function AnimalProfilePage({
 
               <dl className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
                 <Detail label="Sex" value={asText(animal.fields.Sex)} />
-                <Detail label="Age" value={asText(animal.fields["Age Display"])} />
+                <Detail label="Age" value={asText(animal.fields["Current Age Display"])} />
                 <Detail label="Breed" value={asText(animal.fields.Breed)} />
                 <Detail label="Housing" value={currentLocation || asText(animal.fields["Housing Type"])} />
                 <Detail label="Microchip" value={asText(animal.fields["Microchip Number"])} />
@@ -426,7 +427,7 @@ export default async function AnimalProfilePage({
               <label className="text-sm font-medium">Species<input readOnly value={asText(animal.fields.Species)} className="mt-2 w-full rounded-xl border bg-slate-50 px-3 py-2.5 text-muted-foreground" /></label>
               <label className="text-sm font-medium">Adoption status<select name="adoptionStatus" defaultValue={status} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Getting Ready for Adoption","Available","Pending","Adopted"].map((v)=><option key={v}>{v}</option>)}</select></label>
               <label className="text-sm font-medium">Sex<select name="sex" defaultValue={asText(animal.fields.Sex)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Female","Male","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
-              <label className="text-sm font-medium">Age / estimated age<input name="ageDisplay" defaultValue={asText(animal.fields["Age Display"])} placeholder="Example: about 3 years" className="mt-2 w-full rounded-xl border px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">An exact birth date is not required.</span></label>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm"><span className="font-medium">Current age</span><p className="mt-1 text-muted-foreground">{asText(animal.fields["Current Age Display"]) || "Birth date not yet recorded"}</p></div>
               <label className="text-sm font-medium">Breed<input name="breed" defaultValue={asText(animal.fields.Breed)} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               <label className="text-sm font-medium">Color / markings<input name="color" defaultValue={asText(animal.fields["Color / Markings"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               <label className="text-sm font-medium">Weight (lb)<input name="weight" type="number" min="0" step="0.1" defaultValue={asNumber(animal.fields["Weight (lb)"]) ?? ""} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
@@ -437,7 +438,8 @@ export default async function AnimalProfilePage({
             <details className="rounded-2xl bg-slate-50 p-4">
               <summary className="cursor-pointer text-sm font-semibold">Additional animal, identification & adoption details</summary>
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <label className="text-sm font-medium">Exact date of birth, if known<input name="dateOfBirth" type="date" defaultValue={asText(animal.fields["Date of Birth"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                <label className="text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" defaultValue={asText(animal.fields["Date of Birth"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                <label className="text-sm font-medium">Estimated date of birth, if exact date is unknown<input name="estimatedDateOfBirth" type="date" defaultValue={asText(animal.fields["Estimated Date of Birth"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Use one or the other. Actual DOB takes priority if both are present.</span></label>
                 <label className="text-sm font-medium">Adoption fee<input name="adoptionFee" type="number" min="0" step="0.01" defaultValue={asNumber(animal.fields["Adoption Fee"]) ?? ""} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                 <label className="text-sm font-medium">Fee status<select name="adoptionFeeStatus" defaultValue={asText(animal.fields["Adoption Fee Status"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="">Select</option>{["Standard","Reduced","Waived","Sponsored"].map((v)=><option key={v}>{v}</option>)}</select></label>
                 <label className="text-sm font-medium">Available since<input name="availableSince" type="date" defaultValue={asText(animal.fields["Available Since"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
