@@ -90,7 +90,7 @@ export default async function AnimalManagementPage({
         "Species",
         "Adoption Status",
         "Sex",
-        "Age Display",
+        "Current Age Display",
         "Breed",
         "Primary Photo",
         "Housing Type",
@@ -140,6 +140,9 @@ export default async function AnimalManagementPage({
     const housingType = "In Shelter";
     const housingLocation = field(formData, "housingLocation");
     const microchipStatus = field(formData, "microchipStatus") || "Unknown";
+    const dateOfBirth = field(formData, "dateOfBirth");
+    const estimatedDateOfBirth = field(formData, "estimatedDateOfBirth");
+    if (!dateOfBirth && !estimatedDateOfBirth) return;
 
     const animal = await airtableCreate(
       TABLES.animals,
@@ -149,8 +152,8 @@ export default async function AnimalManagementPage({
         Species: species,
         "Adoption Status": adoptionStatus,
         Sex: sex,
-        ...(field(formData, "dateOfBirth") ? { "Date of Birth": field(formData, "dateOfBirth") } : {}),
-        ...(field(formData, "ageDisplay") ? { "Age Display": field(formData, "ageDisplay") } : {}),
+        ...(dateOfBirth ? { "Date of Birth": dateOfBirth } : {}),
+        ...(!dateOfBirth && estimatedDateOfBirth ? { "Estimated Date of Birth": estimatedDateOfBirth } : {}),
         ...(field(formData, "breed") ? { Breed: field(formData, "breed") } : {}),
         ...(field(formData, "color") ? { "Color / Markings": field(formData, "color") } : {}),
         ...(optionalNumber(formData, "weight") !== undefined ? { "Weight (lb)": optionalNumber(formData, "weight") } : {}),
@@ -272,7 +275,7 @@ export default async function AnimalManagementPage({
                         </div>
                         {Boolean(record.fields["Public Listing"]) && <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">Public</span>}
                       </div>
-                      <p className="mt-2 text-sm">{asText(record.fields.Species)} · {asText(record.fields.Sex)} · {asText(record.fields["Age Display"]) || "Age not entered"}</p>
+                      <p className="mt-2 text-sm">{asText(record.fields.Species)} · {asText(record.fields.Sex)} · {asText(record.fields["Current Age Display"]) || "Age not entered"}</p>
                       <p className="mt-1 truncate text-sm text-muted-foreground">{asText(record.fields.Breed) || "Breed not entered"}</p>
                       <div className="mt-3 flex flex-wrap gap-2 text-xs">
                         <span className="rounded-full bg-slate-100 px-2.5 py-1">{asText(record.fields["Adoption Status"])}</span>
@@ -304,7 +307,8 @@ export default async function AnimalManagementPage({
                 <label className="block text-sm font-medium">Pet name<input name="petName" required className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
                 <Select name="species" label="Species" options={["Cat", "Dog"]} required />
                 <Select name="sex" label="Sex" options={["Female", "Male", "Unknown"]} required />
-                <label className="block text-sm font-medium">Age / estimated age<input name="ageDisplay" placeholder="Example: 5 months old, about 3 years" className="mt-2 w-full rounded-xl border px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Use an estimate when the exact birth date is unknown.</span></label>
+                <label className="block text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
+                <label className="block text-sm font-medium">Estimated date of birth, if exact date is unknown<input name="estimatedDateOfBirth" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Enter one birth date. Current age is calculated automatically.</span></label>
                 <label className="block text-sm font-medium">Breed<input name="breed" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
                 <label className="block text-sm font-medium">Color / markings<input name="color" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               </div>
@@ -337,7 +341,6 @@ export default async function AnimalManagementPage({
               <details className="mt-4 rounded-2xl bg-slate-50 p-4">
                 <summary className="cursor-pointer text-sm font-semibold">Additional intake & identification details</summary>
                 <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <label className="block text-sm font-medium">Exact date of birth, if known<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                   <label className="block text-sm font-medium">Source person / organization<input name="source" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                   <label className="block text-sm font-medium">Source contact<input name="sourceContact" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                   <label className="block text-sm font-medium">Found / origin location<input name="origin" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
