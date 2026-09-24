@@ -16,6 +16,8 @@ import {
   PawPrint,
   BedDouble,
   UserCheck,
+  ClipboardPlus,
+  FileText,
 } from "lucide-react";
 import { requirePortalRole, getPortalContext, getStaffPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
@@ -228,6 +230,42 @@ export default async function StaffPortalPage() {
               <Link href="/portal/staff/fosters" className="inline-flex shrink-0 items-center justify-center rounded-full border border-primary px-5 py-2.5 font-semibold text-primary hover:bg-primary/5">
                 Open Foster Management
               </Link>
+            </div>
+          </section>
+
+          <section className="mb-8 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-3xl border bg-white p-7 shadow-sm">
+              <div className="flex h-full flex-col gap-5">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-2xl bg-primary/10 p-3 text-primary"><ClipboardPlus className="h-6 w-6" /></div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Intake & Owner Surrender</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Review surrender requests, accept animals into care, and record direct intakes.
+                    </p>
+                  </div>
+                </div>
+                <Link href="/portal/staff/intake" className="mt-auto inline-flex w-fit items-center justify-center rounded-full border border-primary px-5 py-2.5 font-semibold text-primary hover:bg-primary/5">
+                  Open Intake Management
+                </Link>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border bg-white p-7 shadow-sm">
+              <div className="flex h-full flex-col gap-5">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-2xl bg-primary/10 p-3 text-primary"><FileText className="h-6 w-6" /></div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Documents & Agreements</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Manage contracts, surrender agreements, foster agreements, medical releases, waivers, receipts, and signed files.
+                    </p>
+                  </div>
+                </div>
+                <Link href="/portal/staff/documents" className="mt-auto inline-flex w-fit items-center justify-center rounded-full border border-primary px-5 py-2.5 font-semibold text-primary hover:bg-primary/5">
+                  Open Documents
+                </Link>
+              </div>
             </div>
           </section>
 
