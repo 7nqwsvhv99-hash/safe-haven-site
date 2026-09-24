@@ -286,12 +286,13 @@ export default async function AnimalProfilePage({
   async function saveAnimal(formData: FormData) {
     "use server";
     await requirePortalRole("Staff");
-    const current = (await airtableList(TABLES.animals, ["Pet Name"])).find((record) => record.id === animalId);
+    const current = (await airtableList(TABLES.animals, ["Pet Name", "Housing Type", "Current Housing Location"])).find((record) => record.id === animalId);
     if (!current) return;
 
     const weight = optionalNumber(formData, "weight");
     const fee = optionalNumber(formData, "adoptionFee");
-    const location = currentLocationIds[0] || "";
+    const currentHousingType = asText(current.fields["Housing Type"]);
+    const currentLocation = asStrings(current.fields["Current Housing Location"])[0] || "";
 
     await airtableUpdate(TABLES.animals, animalId, {
       "Pet Name": field(formData, "petName"),
@@ -312,8 +313,8 @@ export default async function AnimalProfilePage({
       "Good With Dogs": field(formData, "goodWithDogs"),
       "Good With Children": field(formData, "goodWithChildren"),
       "House / Litter Trained": field(formData, "houseTrained"),
-      "Housing Type": asText(animal.fields["Housing Type"]),
-      "Current Housing Location": location ? [location] : [],
+      "Housing Type": currentHousingType,
+      "Current Housing Location": currentLocation ? [currentLocation] : [],
       "Microchip Number": field(formData, "microchipNumber"),
       "Microchip Registration Status": field(formData, "microchipStatus"),
       "Public Listing": formData.get("publicListing") === "on",
