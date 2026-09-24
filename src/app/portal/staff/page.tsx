@@ -14,6 +14,7 @@ import {
   HeartHandshake,
   Activity,
   PawPrint,
+  BedDouble,
 } from "lucide-react";
 import { requirePortalRole, getPortalContext, getStaffPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
 
@@ -159,20 +160,39 @@ export default async function StaffPortalPage() {
             })}
           </section>
 
-          <section className="mb-8 rounded-3xl border bg-white p-7 shadow-sm">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="rounded-2xl bg-primary/10 p-3 text-primary"><PawPrint className="h-6 w-6" /></div>
-                <div>
-                  <h2 className="text-2xl font-bold">Animal Management</h2>
-                  <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                    Add animals, update shelter records, and open a unified animal profile for medical, timeline, foster, adoption, documents, and photos.
-                  </p>
+          <section className="mb-8 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-3xl border bg-white p-7 shadow-sm">
+              <div className="flex h-full flex-col gap-5">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-2xl bg-primary/10 p-3 text-primary"><PawPrint className="h-6 w-6" /></div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Animal Management</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Add animals, update shelter records, and open the unified animal profile.
+                    </p>
+                  </div>
                 </div>
+                <Link href="/portal/staff/animals" className="mt-auto inline-flex w-fit items-center justify-center rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">
+                  Open Animal Management
+                </Link>
               </div>
-              <Link href="/portal/staff/animals" className="inline-flex shrink-0 items-center justify-center rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">
-                Open Animal Management
-              </Link>
+            </div>
+
+            <div className="rounded-3xl border bg-white p-7 shadow-sm">
+              <div className="flex h-full flex-col gap-5">
+                <div className="flex items-start gap-4">
+                  <div className="rounded-2xl bg-primary/10 p-3 text-primary"><BedDouble className="h-6 w-6" /></div>
+                  <div>
+                    <h2 className="text-2xl font-bold">Kennel, Daily Care & Housing</h2>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Manage housing locations and capacity, move animals, record daily care, and resolve care follow-ups.
+                    </p>
+                  </div>
+                </div>
+                <Link href="/portal/staff/care" className="mt-auto inline-flex w-fit items-center justify-center rounded-full border border-primary px-5 py-2.5 font-semibold text-primary hover:bg-primary/5">
+                  Open Daily Care
+                </Link>
+              </div>
             </div>
           </section>
 
