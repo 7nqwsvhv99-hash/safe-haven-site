@@ -31,14 +31,6 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
-const airtableLinks = {
-  events: "https://airtable.com/app2vpch2JJVrP9pu/pagVQvZ7x9lM6bMo9",
-  volunteerApplications: "https://airtable.com/app2vpch2JJVrP9pu/pagHPwcMad88IOtl0",
-  volunteerRoster: "https://airtable.com/app2vpch2JJVrP9pu/pagLwnoP1FYFQ50aI",
-  shelterInventory: "https://airtable.com/app2vpch2JJVrP9pu/pag478oTML8mrIKEc",
-  reports: "https://airtable.com/app2vpch2JJVrP9pu/pagYrBkWqKPQpNbEH",
-};
-
 export default async function StaffPortalPage() {
   const context = await getPortalContext();
   if (!context.canStaff) redirect(context.canOnboard ? "/portal/staff/onboarding" : "/portal");
@@ -437,9 +429,9 @@ export default async function StaffPortalPage() {
                       </div>
                     ))}
                 </div>
-                <a href={airtableLinks.shelterInventory} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">
+                <Link href="/portal/staff/inventory" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">
                   Manage shelter inventory
-                </a>
+                </Link>
               </section>
 
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
@@ -464,9 +456,9 @@ export default async function StaffPortalPage() {
                 ) : (
                   <p className="text-muted-foreground">No upcoming events are currently scheduled.</p>
                 )}
-                <a href={airtableLinks.events} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">
-                  Manage events
-                </a>
+                <Link href="/portal/staff/content" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">
+                  Manage events & website content
+                </Link>
               </section>
             </div>
 
@@ -554,7 +546,7 @@ export default async function StaffPortalPage() {
                   <h2 className="text-2xl font-bold">Website & Content Tools</h2>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <Link href="/events" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">Review Events Page</Link>
+                  <Link href="/portal/staff/content" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">Manage Events & Website Content</Link>
                   <Link href="/resources" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">Review Resources</Link>
                   <Link href="/volunteer" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">Review Volunteer Page</Link>
                   <Link href="/clinic" className="rounded-xl border p-4 text-sm font-semibold hover:bg-slate-50">Review Clinic Page</Link>
@@ -567,9 +559,9 @@ export default async function StaffPortalPage() {
                   <Link href="/portal/staff/training" className="rounded-xl border p-4 hover:bg-slate-50"><strong>Staff Onboarding</strong><p className="mt-2 text-sm text-muted-foreground">Training materials, assigned onboarding tasks, and completion reviews.</p></Link>
                   <Link href="/portal/staff/schedule" className="rounded-xl border p-4 hover:bg-slate-50"><strong>Staff Scheduling</strong><p className="mt-2 text-sm text-muted-foreground">Shift assignments, confirmations, and coverage.</p></Link>
                   {context.canOnboard && <Link href="/portal/staff/onboarding" className="rounded-xl border p-4 hover:bg-slate-50"><div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><span className="font-semibold">Volunteer Onboarding</span></div><p className="mt-2 text-sm text-muted-foreground">Applications, credentials, trained roles, waivers, roster links, and volunteer portal access.</p></Link>}
-                  <a href={airtableLinks.reports} target="_blank" rel="noopener noreferrer" className="rounded-xl border p-4 hover:bg-slate-50">
+                  <Link href="/portal/staff/reports" className="rounded-xl border p-4 hover:bg-slate-50">
                     <div className="flex items-center gap-3"><BarChart3 className="h-5 w-5 text-primary" /><span className="font-semibold">Reports & Dashboards</span></div>
-                  </a>
+                  </Link>
                 </div>
                 {context.isAdministrator && (
                   <p className="mt-5 text-sm text-muted-foreground">
