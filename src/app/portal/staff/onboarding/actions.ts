@@ -104,7 +104,7 @@ export async function completeOnboarding(_previous:OnboardingActionState,form:Fo
  });
 }
 
-export async function sendPortalInvitation(form:FormData){
+export async function sendPortalInvitation(_previous:OnboardingActionState,form:FormData):Promise<OnboardingActionState>{
  const context=await requireOnboarding();
  const id=String(form.get('applicationId')||'');
  try{
