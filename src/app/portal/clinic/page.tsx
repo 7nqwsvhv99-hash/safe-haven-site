@@ -44,6 +44,7 @@ function daysUntilClinic(value: string) {
 export default async function ClinicPortalPage() {
   const context = await requirePortalRole("Clinic Team");
   const data = await getClinicPortalData(context.email);
+  const canWriteClinic = context.isAdministrator || context.roles.includes("Clinic Team");
 
   async function submitVeterinarianPreference(formData: FormData) {
     "use server";
@@ -505,7 +506,7 @@ export default async function ClinicPortalPage() {
                   </div>
                   <p className="mb-5 text-sm text-muted-foreground">Update physical counts, add supplies, edit item details, and request reorders from the clinic portal.</p>
 
-                  {!context.isBoard && (
+                  {canWriteClinic && (
                     <details className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                       <summary className="cursor-pointer font-semibold text-primary">+ Add a supply</summary>
                       <form action={addClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -568,7 +569,7 @@ export default async function ClinicPortalPage() {
                             </div>
                             {lowStock && !reorderActive && <p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
 
-                            {!context.isBoard && (
+                            {canWriteClinic && (
                               <details className="mt-4 border-t pt-4">
                                 <summary className="cursor-pointer text-sm font-semibold text-primary">Modify item</summary>
                                 <form action={updateClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
