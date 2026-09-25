@@ -10,11 +10,14 @@ export const FIELDS = {
 };
 export async function staffContext(manager = false, write = false) {
   const context = await getPortalContext();
-  const boardView = context.isBoard && !context.isAdministrator;
+  const staffAccess = isStaff(context.roles);
   const managerAccess = managesStaff(context.roles);
-  if (write && boardView) redirect("/portal");
-  if (!boardView && (!isStaff(context.roles) || (manager && !managerAccess))) redirect("/portal");
-  return { ...context, manager: boardView || managerAccess };
+  if (write) {
+    if (!staffAccess || (manager && !managerAccess)) redirect("/portal");
+  } else if (!context.isBoard && (!staffAccess || (manager && !managerAccess))) {
+    redirect("/portal");
+  }
+  return { ...context, manager: managerAccess || (context.isBoard && !write) };
 }
 export async function staffRoster() {
   return (await airtableList(TABLES.portalAccess, ["Email", "Display Name", "Roles", "Active"]))
