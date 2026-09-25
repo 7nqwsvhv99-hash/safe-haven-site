@@ -175,8 +175,8 @@ export default async function ClinicPortalPage() {
       "Preferred Vendor": formText(formData, "vendor"),
       "Purchase URL": formText(formData, "purchaseUrl"),
       ...(optionalNumber(formData, "unitCost") !== undefined ? { "Typical Unit Cost": optionalNumber(formData, "unitCost") } : {}),
-      "Responsible Person": formText(formData, "responsiblePerson"),
-      "Responsible Email": formText(formData, "responsibleEmail"),
+      "Responsible Person": formText(formData, "responsiblePerson") || "Sam Smith",
+      "Responsible Email": formText(formData, "responsibleEmail") || "sa7smith@msn.com",
       "Track Lot / Expiration": formData.get("trackLot") === "on",
       Notes: formText(formData, "notes"),
       Active: true,
@@ -488,14 +488,14 @@ export default async function ClinicPortalPage() {
                         </select>
                         <input name="unit" placeholder="Unit of measure, e.g. box, dose, each" className="rounded-xl border bg-white px-3 py-2.5" />
                         <div className="grid grid-cols-2 gap-3">
-                          <input name="reorderPoint" type="number" min="0" step="0.01" placeholder="Reorder point" className="rounded-xl border bg-white px-3 py-2.5" />
-                          <input name="targetQuantity" type="number" min="0" step="0.01" placeholder="Target quantity" className="rounded-xl border bg-white px-3 py-2.5" />
+                          <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                          <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                         </div>
                         <input name="vendor" placeholder="Preferred vendor" className="rounded-xl border bg-white px-3 py-2.5" />
                         <input name="purchaseUrl" type="url" placeholder="Purchase URL" className="rounded-xl border bg-white px-3 py-2.5" />
                         <input name="unitCost" type="number" min="0" step="0.01" placeholder="Typical unit cost" className="rounded-xl border bg-white px-3 py-2.5" />
-                        <input name="responsiblePerson" placeholder="Responsible person" className="rounded-xl border bg-white px-3 py-2.5" />
-                        <input name="responsibleEmail" type="email" placeholder="Responsible email" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <input name="responsiblePerson" defaultValue="Sam Smith" placeholder="Responsible person" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <input name="responsibleEmail" type="email" defaultValue="sa7smith@msn.com" placeholder="Responsible email" className="rounded-xl border bg-white px-3 py-2.5" />
                         <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" /> Track lot / expiration</label>
                         <textarea name="notes" rows={2} placeholder="Notes" className="rounded-xl border bg-white px-3 py-2.5 sm:col-span-2" />
                         <button className="w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white sm:col-span-2">Add supply</button>
@@ -512,7 +512,7 @@ export default async function ClinicPortalPage() {
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                               <div>
                                 <p className="font-semibold">{item.name}</p>
-                                <p className="text-xs text-muted-foreground">{item.category}{item.unit ? ` · ${item.unit}` : ""}</p>
+                                {item.unit && <p className="text-xs text-muted-foreground">Unit: {item.unit}</p>}
                                 <p className={`mt-1 text-xs font-semibold ${lowStock || reorderActive ? "text-primary" : "text-muted-foreground"}`}>
                                   {reorderActive ? `Reorder ${item.reorderStatus.toLowerCase()}` : (item.status || "No status")}
                                 </p>
@@ -552,8 +552,8 @@ export default async function ClinicPortalPage() {
                                   </select>
                                   <input name="unit" defaultValue={item.unit} placeholder="Unit of measure" className="rounded-xl border bg-white px-3 py-2.5" />
                                   <div className="grid grid-cols-2 gap-3">
-                                    <input name="reorderPoint" type="number" min="0" step="0.01" defaultValue={item.reorderPoint ?? ""} placeholder="Reorder point" className="rounded-xl border bg-white px-3 py-2.5" />
-                                    <input name="targetQuantity" type="number" min="0" step="0.01" defaultValue={item.target ?? ""} placeholder="Target quantity" className="rounded-xl border bg-white px-3 py-2.5" />
+                                    <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" defaultValue={item.reorderPoint ?? ""} placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                    <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" defaultValue={item.target ?? ""} placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                                   </div>
                                   <input name="vendor" defaultValue={item.vendor} placeholder="Preferred vendor" className="rounded-xl border bg-white px-3 py-2.5" />
                                   <input name="purchaseUrl" type="url" defaultValue={item.purchaseUrl} placeholder="Purchase URL" className="rounded-xl border bg-white px-3 py-2.5" />
