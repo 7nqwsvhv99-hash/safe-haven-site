@@ -65,11 +65,11 @@ export default async function OnboardingPage({searchParams}:{searchParams:Promis
      {completed?
       <div className="my-4 rounded-xl border border-green-200 bg-green-50 p-4 text-sm">
        <p role="status" className="font-semibold">Onboarding complete. Portal access is ready.</p>
-       <p className="mt-2">The volunteer should create their secure portal account using the same email address as their application.</p>
-       <div className="mt-3 flex flex-wrap gap-3">
+       <p className="mt-2"><strong>First-time user:</strong> create your secure portal account using the same email address as your application.</p>
+       <div className="mt-3">
         <a href="https://thorough-rattler-854.accounts.dev/sign-up" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary underline">Create portal account</a>
-        <a href="https://same-abupp8cny20-latest.netlify.app/sign-in" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary underline">Portal sign in</a>
        </div>
+       <p className="mt-3 text-muted-foreground"><strong className="text-foreground">Returning user:</strong> use the portal account you already created with your application email.</p>
       </div>
       :<>
        {missing.length?<div className="my-4 rounded-xl bg-amber-50 p-4 text-sm"><p className="font-semibold">Still needed</p><ul className="mt-2 list-disc pl-5">{missing.map(item=><li key={item}>{item}</li>)}</ul></div>:<p className="my-4 rounded-xl bg-green-50 p-4 text-sm">All required review items are recorded.</p>}
