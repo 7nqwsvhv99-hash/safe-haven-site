@@ -68,7 +68,7 @@ export default async function StaffPortalPage() {
 
   async function resolveFosterAlert(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Staff");
+    const current = await requirePortalRole("Staff", "write");
 
     const updateId = String(formData.get("updateId") || "");
     const response = String(formData.get("response") || "").trim();
@@ -95,7 +95,7 @@ export default async function StaffPortalPage() {
 
   async function addStaffMedicalEntry(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const latest = await getStaffPortalData();
     const animalId = String(formData.get("animalId") || "");
     const recordType = String(formData.get("recordType") || "Other");
@@ -577,7 +577,7 @@ export default async function StaffPortalPage() {
                 <div className="mt-5 grid gap-3">
                   <Link href="/portal/staff/training" className="rounded-xl border p-4 hover:bg-slate-50"><strong>Staff Onboarding</strong><p className="mt-2 text-sm text-muted-foreground">Training materials, assigned onboarding tasks, and completion reviews.</p></Link>
                   <Link href="/portal/staff/schedule" className="rounded-xl border p-4 hover:bg-slate-50"><strong>Staff Scheduling</strong><p className="mt-2 text-sm text-muted-foreground">Shift assignments, confirmations, and coverage.</p></Link>
-                  {context.canOnboard && <Link href="/portal/staff/onboarding" className="rounded-xl border p-4 hover:bg-slate-50"><div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><span className="font-semibold">Volunteer Onboarding</span></div><p className="mt-2 text-sm text-muted-foreground">Applications, credentials, trained roles, waivers, roster links, and volunteer portal access.</p></Link>}
+                  {context.canViewOnboarding && <Link href="/portal/staff/onboarding" className="rounded-xl border p-4 hover:bg-slate-50"><div className="flex items-center gap-3"><Users className="h-5 w-5 text-primary" /><span className="font-semibold">Volunteer Onboarding</span></div><p className="mt-2 text-sm text-muted-foreground">Applications, credentials, trained roles, waivers, roster links, and volunteer portal access.</p></Link>}
                   <Link href="/portal/staff/reports" className="rounded-xl border p-4 hover:bg-slate-50">
                     <div className="flex items-center gap-3"><BarChart3 className="h-5 w-5 text-primary" /><span className="font-semibold">Reports & Dashboards</span></div>
                   </Link>

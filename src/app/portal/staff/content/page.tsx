@@ -56,7 +56,7 @@ export default async function WebsiteContentManagementPage(){
   const activeSubscribers=subscribers.filter(r=>asText(r.fields.Status)==="Subscribed");
 
   async function createEvent(formData:FormData){
-    "use server";await requirePortalRole("Staff");
+    "use server";await requirePortalRole("Staff", "write");
     const name=field(formData,"eventName");if(!name)return;
     const record=await airtableCreate(TABLES.events,{
       "Event Name":name,"Event Status":field(formData,"eventStatus")||"Draft",
@@ -79,7 +79,7 @@ export default async function WebsiteContentManagementPage(){
   }
 
   async function updateEvent(formData:FormData){
-    "use server";await requirePortalRole("Staff");
+    "use server";await requirePortalRole("Staff", "write");
     const id=field(formData,"eventId");const latest=await airtableList(TABLES.events,["Event Name"]);if(!latest.some(r=>r.id===id))return;
     await airtableUpdate(TABLES.events,id,{
       "Event Name":field(formData,"eventName"),"Event Status":field(formData,"eventStatus"),
@@ -102,7 +102,7 @@ export default async function WebsiteContentManagementPage(){
   }
 
   async function createTestimonial(formData:FormData){
-    "use server";await requirePortalRole("Staff");
+    "use server";await requirePortalRole("Staff", "write");
     const quote=field(formData,"quote");if(!quote)return;
     const animalId=field(formData,"animalId");
     const record=await airtableCreate(TABLES.testimonials,{
@@ -122,7 +122,7 @@ export default async function WebsiteContentManagementPage(){
   }
 
   async function updateTestimonial(formData:FormData){
-    "use server";await requirePortalRole("Staff");
+    "use server";await requirePortalRole("Staff", "write");
     const id=field(formData,"testimonialId");const latest=await airtableList(TABLES.testimonials,["Quote"]);if(!latest.some(r=>r.id===id))return;
     const animalId=field(formData,"animalId");
     await airtableUpdate(TABLES.testimonials,id,{
@@ -142,7 +142,7 @@ export default async function WebsiteContentManagementPage(){
   }
 
   async function updateSubscriber(formData:FormData){
-    "use server";await requirePortalRole("Staff");
+    "use server";await requirePortalRole("Staff", "write");
     const id=field(formData,"subscriberId");const latest=await airtableList(TABLES.newsletterSubscribers,["Email"]);if(!latest.some(r=>r.id===id))return;
     const status=field(formData,"status");
     const now=new Date().toISOString();

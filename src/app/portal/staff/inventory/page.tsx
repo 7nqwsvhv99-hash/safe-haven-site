@@ -33,7 +33,7 @@ export default async function ShelterInventoryPage(){
 
   async function addItem(formData:FormData){
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const name=field(formData,"itemName"); if(!name)return;
     await airtableCreate(TABLES.inventory,{
       "Item Name":name, Area:"Shelter", Category:field(formData,"category")||"Other",
@@ -54,7 +54,7 @@ export default async function ShelterInventoryPage(){
 
   async function updateItem(formData:FormData){
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const id=field(formData,"itemId");
     const latest=await airtableList(TABLES.inventory,["Area"]);
     if(!latest.some(r=>r.id===id&&asText(r.fields.Area)==="Shelter"))return;
@@ -78,7 +78,7 @@ export default async function ShelterInventoryPage(){
 
   async function recordTransaction(formData:FormData){
     "use server";
-    const current=await requirePortalRole("Staff");
+    const current=await requirePortalRole("Staff", "write");
     const itemId=field(formData,"itemId"), type=field(formData,"type");
     const qty=optionalNumber(formData,"quantity");
     if(!itemId||!type||qty===undefined||qty<=0)return;

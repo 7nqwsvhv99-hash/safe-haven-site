@@ -121,7 +121,7 @@ export default async function CareAndHousingPage({
 
   async function createLocation(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const name = field(formData, "name");
     const type = field(formData, "type");
     if (!name || !type) return;
@@ -146,7 +146,7 @@ export default async function CareAndHousingPage({
 
   async function updateLocation(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const id = field(formData, "locationId");
     const latest = await airtableList(TABLES.housingLocations, ["Location Name"]);
     if (!latest.some((record) => record.id === id)) return;
@@ -181,7 +181,7 @@ export default async function CareAndHousingPage({
 
   async function moveAnimal(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const animalId = field(formData, "animalId");
     const locationId = field(formData, "locationId");
 
@@ -223,7 +223,7 @@ export default async function CareAndHousingPage({
 
   async function recordCare(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Staff");
+    const current = await requirePortalRole("Staff", "write");
     const animalId = field(formData, "animalId");
     const careType = field(formData, "careType");
     if (!animalId || !careType) return;
@@ -277,7 +277,7 @@ export default async function CareAndHousingPage({
 
   async function completeFollowUp(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const careId = field(formData, "careId");
     const latest = await airtableList(TABLES.dailyCare, ["Follow-Up Status"]);
     if (!latest.some((record) => record.id === careId)) return;
