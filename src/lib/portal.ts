@@ -309,6 +309,7 @@ export async function getVolunteerPortalData(email: string) {
     "Email",
     "Status",
     "Volunteer Areas",
+    "Application Interests / Experience",
   ]);
   const volunteer = volunteers.find(
     (record) =>
@@ -347,6 +348,7 @@ export async function getVolunteerPortalData(email: string) {
       id: volunteer.id,
       name: asText(volunteer.fields["Volunteer Name"]),
       areas: asStrings(volunteer.fields["Volunteer Areas"]),
+      applicationInterests: asText(volunteer.fields["Application Interests / Experience"]),
     },
     shifts: shifts
       .filter((record) => asStrings(record.fields.Volunteer).includes(volunteer.id))
