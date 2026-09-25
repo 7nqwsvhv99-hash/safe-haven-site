@@ -31,7 +31,7 @@ export default async function VolunteerPortalPage() {
 
   async function logHours(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Volunteer");
+    const current = await requirePortalRole("Volunteer", "write");
     const latest = await getVolunteerPortalData(current.email);
     if (!latest.volunteer) return;
 
@@ -71,7 +71,7 @@ export default async function VolunteerPortalPage() {
             </p>
           </div>
 
-          {!data.volunteer ? (
+          {!data.volunteer && !context.isBoard ? (
             <div className="rounded-3xl border bg-white p-8 shadow-sm">
               <h2 className="text-2xl font-bold">We could not match this sign-in to an active volunteer record.</h2>
               <p className="mt-3 text-muted-foreground">
@@ -80,6 +80,7 @@ export default async function VolunteerPortalPage() {
             </div>
           ) : (
             <div className="space-y-8">
+              {context.isBoard && !data.volunteer && <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm"><strong>Board View:</strong> This account is not linked to a volunteer profile. Shared announcements, current needs, resources, and the volunteer interface are available below. Personalized schedules and hour history appear only for an active volunteer.</div>}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
