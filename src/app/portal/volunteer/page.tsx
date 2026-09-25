@@ -244,6 +244,47 @@ export default async function VolunteerPortalPage() {
                 </section>
               </div>
 
+              {data.needs.length > 0 && (
+                <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                  <div className="mb-5 flex items-center gap-3">
+                    <Wrench className="h-6 w-6 text-primary" />
+                    <h2 className="text-2xl font-bold">Current Needs</h2>
+                  </div>
+                  <div className="space-y-4">
+                    {data.needs.map((need) => (
+                      <div key={need.id} className="rounded-2xl bg-slate-50 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold">{need.need}</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">{need.details}</p>
+                            {need.goal && <p className="mt-1 text-xs font-medium text-muted-foreground">{need.goal}</p>}
+                          </div>
+                          {need.priority !== "Normal" && <span className="text-xs font-semibold text-primary">{need.priority}</span>}
+                        </div>
+                        {need.ctaUrl && (
+                          <a href={need.ctaUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+                            {need.ctaLabel || "Help with this need"}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-4 flex items-center gap-3">
+                  <CalendarDays className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Volunteer Calendar</h2>
+                </div>
+                <p className="mb-5 text-sm text-muted-foreground">
+                  View upcoming Safe Haven volunteer opportunities and scheduled activities.
+                </p>
+                <a href="https://www.calendarwiz.com/calendars/calendar.php?crd=safehavenil&nolog=0&cid[]=all" target="_blank" rel="noopener noreferrer" className="inline-flex rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5">
+                  Open Volunteer Calendar
+                </a>
+              </section>
+
               {data.volunteer && canWriteVolunteer && (
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
@@ -285,40 +326,6 @@ export default async function VolunteerPortalPage() {
                 </section>
               )}
 
-              <section className="rounded-3xl border bg-white p-7 shadow-sm">
-                <div className="mb-5 flex items-center gap-3">
-                  <Wrench className="h-6 w-6 text-primary" />
-                  <h2 className="text-2xl font-bold">Current Needs</h2>
-                </div>
-                {data.needs.length ? (
-                  <div className="space-y-4">
-                    {data.needs.map((need) => (
-                      <div key={need.id} className="rounded-2xl bg-slate-50 p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="font-semibold">{need.need}</h3>
-                            <p className="mt-1 text-sm text-muted-foreground">{need.details}</p>
-                            {need.goal && <p className="mt-1 text-xs font-medium text-muted-foreground">{need.goal}</p>}
-                          </div>
-                          {need.priority !== "Normal" && <span className="text-xs font-semibold text-primary">{need.priority}</span>}
-                        </div>
-                        {need.ctaUrl && (
-                          <a href={need.ctaUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
-                            {need.ctaLabel || "Help with this need"}
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">There are no volunteer needs posted right now.</p>
-                )}
-                <div className="mt-6">
-                  <a href="https://www.calendarwiz.com/calendars/calendar.php?crd=safehavenil&nolog=0&cid[]=all" target="_blank" rel="noopener noreferrer" className="inline-flex rounded-full border px-4 py-2 text-sm font-semibold hover:bg-slate-50">
-                    Volunteer Calendar
-                  </a>
-                </div>
-              </section>
             </div>
           )}
         </div>
