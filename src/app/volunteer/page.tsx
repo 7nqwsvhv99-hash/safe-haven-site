@@ -100,6 +100,7 @@ export default function VolunteerPage() {
                 <Button asChild size="lg">
                   <Link href="/volunteer-application">Complete the Volunteer Application</Link>
                 </Button>
+                <p className="mt-4 text-sm text-muted-foreground">Already a Safe Haven volunteer? <Link href="/portal/volunteer" className="font-semibold text-primary underline">Sign in to request another opportunity.</Link></p>
               </div>
             </Card>
         </div>

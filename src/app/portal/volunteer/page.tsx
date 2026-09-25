@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { CalendarDays, Clock3, Megaphone, Wrench, ArrowLeft } from "lucide-react";
+import { CalendarDays, Clock3, Megaphone, Wrench, ArrowLeft, HeartHandshake } from "lucide-react";
 import { requirePortalRole, getVolunteerPortalData, airtableCreate, TABLES } from "@/lib/portal";
+import { isVolunteerOpportunity, volunteerOpportunityNames } from "@/lib/volunteer-opportunities";
 
 function formatDateTime(value: string) {
   if (!value) return "";
@@ -51,6 +52,35 @@ export default async function VolunteerPortalPage() {
     });
 
     revalidatePath("/portal/volunteer");
+  }
+
+  async function requestOpportunity(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Volunteer", "write");
+    const latest = await getVolunteerPortalData(current.email);
+    if (!latest.volunteer) return;
+
+    const opportunity = String(formData.get("opportunity") || "");
+    const note = String(formData.get("note") || "").trim();
+    if (!isVolunteerOpportunity(opportunity)) return;
+
+    const alreadyOpen = latest.opportunityRequests.some(
+      (request) =>
+        request.opportunity === opportunity &&
+        ["Pending Review", "Training / Verification Required", "Approved"].includes(request.status)
+    );
+    if (alreadyOpen) return;
+
+    await airtableCreate(TABLES.volunteerOpportunityRequests, {
+      Volunteer: [latest.volunteer.id],
+      Opportunity: opportunity,
+      "Request Status": "Pending Review",
+      "Submitted At": new Date().toISOString(),
+      "Volunteer Note": note,
+    }, true);
+
+    revalidatePath("/portal/volunteer");
+    revalidatePath("/portal/staff/volunteer-opportunities");
   }
 
   return (
@@ -168,6 +198,46 @@ export default async function VolunteerPortalPage() {
                   )}
                 </section>
               </div>
+
+              {data.volunteer && !context.isBoard && (
+                <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                  <div className="mb-5 flex items-center gap-3">
+                    <HeartHandshake className="h-6 w-6 text-primary" />
+                    <div>
+                      <h2 className="text-2xl font-bold">Interested in Another Volunteer Opportunity?</h2>
+                      <p className="mt-1 text-sm text-muted-foreground">You do not need to complete another volunteer application. Send a request here and staff will review it. Clinic specialties remain pending until required training or credential verification is complete.</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+                    <form action={requestOpportunity} className="space-y-4 rounded-2xl bg-slate-50 p-5">
+                      <label className="block text-sm font-medium">Volunteer opportunity
+                        <select name="opportunity" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
+                          <option value="" disabled>Select an opportunity</option>
+                          {volunteerOpportunityNames.map((opportunity) => <option key={opportunity}>{opportunity}</option>)}
+                        </select>
+                      </label>
+                      <label className="block text-sm font-medium">Anything staff should know? <span className="font-normal text-muted-foreground">(optional)</span>
+                        <textarea name="note" rows={3} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" />
+                      </label>
+                      <button className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white">Send Opportunity Request</button>
+                    </form>
+                    <div>
+                      <h3 className="font-semibold">Your requests</h3>
+                      <div className="mt-3 space-y-3">
+                        {data.opportunityRequests.length ? data.opportunityRequests.slice(0,8).map((request) => (
+                          <div key={request.id} className="rounded-2xl border p-4">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div><p className="font-semibold">{request.opportunity}</p><p className="mt-1 text-xs text-muted-foreground">{formatDate(request.submittedAt)}</p></div>
+                              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{request.status}</span>
+                            </div>
+                            {request.staffNote && <p className="mt-3 text-sm text-muted-foreground">{request.staffNote}</p>}
+                          </div>
+                        )) : <p className="text-sm text-muted-foreground">You have not submitted any additional opportunity requests yet.</p>}
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
 
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">

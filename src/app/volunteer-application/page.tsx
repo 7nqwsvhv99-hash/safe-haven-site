@@ -101,6 +101,9 @@ export default function VolunteerApplicationPage() {
       </section>
 
       <form onSubmit={onSubmit} className="container-custom max-w-4xl py-10 space-y-8">
+        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 text-sm">
+          <strong>Already volunteering with Safe Haven?</strong> Please do not submit another application. <Link href="/portal/volunteer" className="font-semibold text-primary underline">Sign in to the Volunteer Portal</Link> to request an additional volunteer opportunity.
+        </div>
         {result && !result.ok && <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-destructive">{result.message}</div>}
 
         <Section title="Applicant & Contact Information">

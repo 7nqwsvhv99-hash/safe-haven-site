@@ -13,6 +13,7 @@ const TABLES = {
   volunteers: "tblpVwUgbClbtcQfz",
   volunteerHours: "tblEHjmBlgEg9Z7Tm",
   volunteerShifts: "tblJhGBEAkoGOAPNU",
+  volunteerOpportunityRequests: "tblKWTTkFZdy5Pgdp",
   clinicMembers: "tblVG88gCVYbRC8Qo",
   clinicDates: "tblJvWn5fh7Rtfp3O",
   clinicResponses: "tblEVlmHvHzItbcVl",
@@ -314,10 +315,10 @@ export async function getVolunteerPortalData(email: string) {
   );
 
   if (!volunteer) {
-    return { volunteer: null, shifts: [], hours: [], announcements: [], needs: [] };
+    return { volunteer: null, shifts: [], hours: [], announcements: [], needs: [], opportunityRequests: [] };
   }
 
-  const [shifts, hours, announcements, needs] = await Promise.all([
+  const [shifts, hours, announcements, needs, opportunityRequests] = await Promise.all([
     airtableList(
       TABLES.volunteerShifts,
       ["Shift", "Volunteer", "Start Date & Time", "End Date & Time", "Area", "Status", "Location", "Notes"],
@@ -330,6 +331,11 @@ export async function getVolunteerPortalData(email: string) {
     ),
     getPortalAnnouncements(["Volunteer"]),
     getCurrentNeeds(true),
+    airtableList(
+      TABLES.volunteerOpportunityRequests,
+      ["Volunteer", "Opportunity", "Request Status", "Submitted At", "Volunteer Note", "Staff Note", "Reviewed At"],
+      { sort: [{ field: "Submitted At", direction: "desc" }] }
+    ),
   ]);
 
   const now = Date.now();
@@ -367,6 +373,17 @@ export async function getVolunteerPortalData(email: string) {
         hours: asNumber(record.fields.Hours),
         activity: asText(record.fields["Volunteer Activity"]),
         notes: asText(record.fields.Notes),
+      })),
+    opportunityRequests: opportunityRequests
+      .filter((record) => asStrings(record.fields.Volunteer).includes(volunteer.id))
+      .map((record) => ({
+        id: record.id,
+        opportunity: asText(record.fields.Opportunity),
+        status: asText(record.fields["Request Status"]),
+        submittedAt: safeDate(record.fields["Submitted At"]),
+        volunteerNote: asText(record.fields["Volunteer Note"]),
+        staffNote: asText(record.fields["Staff Note"]),
+        reviewedAt: safeDate(record.fields["Reviewed At"]),
       })),
     announcements,
     needs,

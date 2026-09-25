@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 const AIRTABLE_BASE_ID = "app2vpch2JJVrP9pu"
 const AIRTABLE_VOLUNTEER_APPLICATIONS_TABLE_ID = "tblonEhsjg3vWumoj"
+const AIRTABLE_VOLUNTEERS_TABLE_ID = "tblpVwUgbClbtcQfz"
 
 function asString(value: unknown) {
   return typeof value === "string" ? value.trim() : ""
@@ -56,6 +57,26 @@ export async function POST(request: Request) {
     const emailDomain = asString(body.email).toLowerCase().split("@")[1] || ""
     if (["gamail.com","gamil.com","gmial.com","gmal.com"].includes(emailDomain)) {
       return NextResponse.json({ error: "Please double-check your email address. It looks like the Gmail domain may be misspelled." }, { status: 400 })
+    }
+
+    const normalizedEmail = asString(body.email).toLowerCase()
+    const escapedEmail = normalizedEmail.replace(/'/g, "\\'")
+    const existingVolunteerUrl = new URL("https://api.airtable.com/v0/" + AIRTABLE_BASE_ID + "/" + AIRTABLE_VOLUNTEERS_TABLE_ID)
+    existingVolunteerUrl.searchParams.set("maxRecords", "1")
+    existingVolunteerUrl.searchParams.append("fields[]", "Email")
+    existingVolunteerUrl.searchParams.set("filterByFormula", "AND(LOWER({Email})='" + escapedEmail + "',{Status}='Active')")
+    const existingVolunteerResponse = await fetch(existingVolunteerUrl, {
+      headers: { Authorization: "Bearer " + token },
+      cache: "no-store",
+    })
+    if (existingVolunteerResponse.ok) {
+      const existingVolunteerResult = await existingVolunteerResponse.json()
+      if (Array.isArray(existingVolunteerResult?.records) && existingVolunteerResult.records.length > 0) {
+        return NextResponse.json(
+          { error: "It looks like you already have an active Safe Haven volunteer profile. Please sign in to the Volunteer Portal to request another opportunity instead of submitting another application." },
+          { status: 409 }
+        )
+      }
     }
 
     const clinicInterest = interests.some((interest) => interest.startsWith("Clinic Team"))
