@@ -215,6 +215,33 @@ export default async function ClinicPortalPage() {
     revalidatePath("/portal/clinic");
   }
 
+  async function deleteClinicInventoryItem(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Clinic Team", "write");
+    const latest = await getClinicPortalData(current.email);
+    const itemId = formText(formData, "itemId");
+    if (!itemId || formData.get("confirmDelete") !== "on") return;
+    const item = latest.inventory.find((entry) => entry.id === itemId);
+    if (!item) return;
+
+    const transactions = await airtableList(TABLES.inventoryTransactions, ["Item"]);
+    const hasHistory = transactions.some((record) => {
+      const links = Array.isArray(record.fields.Item) ? record.fields.Item : [];
+      return links.includes(itemId);
+    });
+
+    if (hasHistory) {
+      await airtableUpdate(TABLES.inventory, itemId, {
+        Active: false,
+        "Reorder Request Status": "Resolved",
+      }, true);
+    } else {
+      await airtableDelete(TABLES.inventory, itemId);
+    }
+
+    revalidatePath("/portal/clinic");
+  }
+
   async function saveInventoryCount(formData: FormData) {
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
@@ -564,6 +591,13 @@ export default async function ClinicPortalPage() {
                                   <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked /> Active</label>
                                   <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} defaultValue={item.notes} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                                   <button className="w-fit rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary sm:col-span-2">Save item changes</button>
+                                </form>
+                                <form action={deleteClinicInventoryItem} className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
+                                  <input type="hidden" name="itemId" value={item.id} />
+                                  <p className="text-sm font-semibold text-red-800">Delete item</p>
+                                  <p className="mt-1 text-xs text-red-700">If this item has transaction history, it will be archived instead of permanently removed so inventory history remains intact.</p>
+                                  <label className="mt-3 flex items-start gap-2 text-xs text-red-800"><input required name="confirmDelete" type="checkbox" className="mt-0.5" /> I confirm that I want to remove this item from active inventory.</label>
+                                  <button className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-700">Delete item</button>
                                 </form>
                               </details>
                             )}
