@@ -171,6 +171,8 @@ export async function getPortalContext() {
   const roles = Array.from(roleSet);
   const isAdministrator = roles.includes("Administrator");
   const isBoard = roles.includes("Board");
+  const operationalRoles = roles.filter((role) => !["Board", "Administrator"].includes(role));
+  const isBoardOnly = isBoard && !isAdministrator && operationalRoles.length === 0;
 
   return {
     userId: user.id,
@@ -190,6 +192,7 @@ export async function getPortalContext() {
     canOnboard: canManageOnboarding(roles),
     canViewOnboarding: isBoard || canManageOnboarding(roles),
     isBoard,
+    isBoardOnly,
     isAdministrator,
   };
 }
@@ -200,7 +203,6 @@ export async function requirePortalRole(
 ) {
   const context = await getPortalContext();
   if (!context.hasAccess) redirect("/portal");
-  if (mode === "write" && context.isBoard && !context.isAdministrator) redirect("/portal");
 
   const allowed =
     context.isAdministrator ||
