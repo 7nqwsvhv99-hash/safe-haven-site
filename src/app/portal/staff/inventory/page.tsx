@@ -293,6 +293,6 @@ export default async function ShelterInventoryPage(){
           </form>
         </section>
       </div>
-    </div>    </div>
+    </div>
   </div></main>
 }
