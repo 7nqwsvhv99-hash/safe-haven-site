@@ -70,9 +70,14 @@ export default async function PortalPage() {
                     Administrator access also allows you to open every portal area.
                   </span>
                 )}
-                {context.isBoard && !context.isAdministrator && (
+                {context.isBoardOnly && (
                   <span className="block">
                     Board access allows you to open every portal area in read-only mode.
+                  </span>
+                )}
+                {context.isBoard && !context.isBoardOnly && !context.isAdministrator && (
+                  <span className="block">
+                    Board access lets you review every portal area. Your operational roles retain their normal working permissions.
                   </span>
                 )}
               </p>
@@ -125,9 +130,14 @@ export default async function PortalPage() {
               <strong>Administrator access:</strong> you can open every portal area from this account.
             </div>
           )}
-          {context.isBoard && !context.isAdministrator && (
+          {context.isBoardOnly && (
             <div className="mt-8 rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm">
               <strong>Board View:</strong> you can review every portal area, but changes are disabled.
+            </div>
+          )}
+          {context.isBoard && !context.isBoardOnly && !context.isAdministrator && (
+            <div className="mt-8 rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm">
+              <strong>Board + operational access:</strong> you can review every portal area and make changes only in the areas covered by your operational roles.
             </div>
           )}
 
