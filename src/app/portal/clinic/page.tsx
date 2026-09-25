@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone } from "lucide-react";
-import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
+import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, airtableList, TABLES } from "@/lib/portal";
 
 
 function formatDate(value: string) {
