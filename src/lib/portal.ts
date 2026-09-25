@@ -618,6 +618,7 @@ export async function getClinicPortalData(email: string) {
       "Availability Clinic Date",
       "Computed Attendance Plan",
       "Clinic Assignment",
+      "Clinic Assignments",
       "Notes",
     ]),
     getPortalAnnouncements(["Clinic Team"]),
@@ -634,7 +635,7 @@ export async function getClinicPortalData(email: string) {
     ]),
     airtableList(
       TABLES.vetClinicPreferences,
-      ["Preference ID", "Veterinarian", "Preferred Clinic Date", "Preferred Clinic Type", "Preference Status", "Notes", "Submitted At", "Clinic Staffing Date"],
+      ["Veterinarian", "Preferred Clinic Date", "Preferred Clinic Type", "Preference Status", "Notes", "Submitted At", "Clinic Staffing Date"],
       { sort: [{ field: "Preferred Clinic Date", direction: "asc" }] }
     ),
   ]);
@@ -671,8 +672,14 @@ export async function getClinicPortalData(email: string) {
         confirmed.vetTechs.push(...names);
       }
       if ((asNumber(response.fields["Confirmed Volunteer Score"]) || 0) > 0) {
-        const assignment = asText(response.fields["Clinic Assignment"]);
-        if (assignment) confirmed.assignments[assignment] = [...(confirmed.assignments[assignment] || []), ...names];
+        const assignments = asStrings(response.fields["Clinic Assignments"]);
+        if (!assignments.length) {
+          const legacyAssignment = asText(response.fields["Clinic Assignment"]);
+          if (legacyAssignment) assignments.push(legacyAssignment);
+        }
+        assignments.forEach((assignment) => {
+          if (assignment) confirmed.assignments[assignment] = [...(confirmed.assignments[assignment] || []), ...names];
+        });
       }
       confirmedNamesByDate.set(dateId, confirmed);
     });
@@ -689,6 +696,12 @@ export async function getClinicPortalData(email: string) {
         finalPlan: asText(record.fields["Computed Attendance Plan"]),
         responseClinicDate: asText(record.fields["Availability Clinic Date"]),
         assignment: asText(record.fields["Clinic Assignment"]),
+        assignments: (() => {
+          const values = asStrings(record.fields["Clinic Assignments"]);
+          if (values.length) return values;
+          const legacy = asText(record.fields["Clinic Assignment"]);
+          return legacy ? [legacy === "Front Room Support" ? "General Volunteer" : legacy] : [];
+        })(),
         notes: asText(record.fields.Notes),
       }))
     )
@@ -708,7 +721,6 @@ export async function getClinicPortalData(email: string) {
           .filter((record) => asStrings(record.fields.Veterinarian).includes(member.id))
           .map((record) => ({
             id: record.id,
-            preferenceId: asText(record.fields["Preference ID"]),
             preferredDate: safeDate(record.fields["Preferred Clinic Date"]),
             clinicType: asText(record.fields["Preferred Clinic Type"]) || "Full Day",
             status: asText(record.fields["Preference Status"]) || "Submitted",
