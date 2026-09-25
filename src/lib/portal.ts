@@ -1068,6 +1068,21 @@ async function airtableUploadAttachment(
   return result;
 }
 
+async function airtableDelete(tableId: string, recordId: string) {
+  const token = process.env.AIRTABLE_ACCESS_TOKEN;
+  if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
+  const response = await fetch(
+    `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${tableId}/${recordId}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
+  );
+  const result = await response.json();
+  if (!response.ok) {
+    console.error("Portal Airtable delete error", { tableId, recordId, result });
+    throw new Error("Could not delete portal data");
+  }
+  return result;
+}
+
 async function airtableUpdate(
   tableId: string,
   recordId: string,
@@ -1106,6 +1121,7 @@ export {
   airtableCreate,
   airtableUploadAttachment,
   airtableUpdate,
+  airtableDelete,
   normalizeEmail,
   asText,
   asStrings,
