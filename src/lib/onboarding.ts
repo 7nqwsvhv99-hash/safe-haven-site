@@ -27,7 +27,6 @@ export async function ensureClerkInvitation(email:string){
 }
 export async function requireOnboarding(write=false) {
   const context=await getPortalContext();
-  if(write && context.isBoard && !context.isAdministrator)redirect('/portal');
   if(!(context.canOnboard || (!write && context.canViewOnboarding)))redirect('/portal');
   return context;
 }
