@@ -47,7 +47,7 @@ export default async function PortalPage() {
       description: "Manage portal access and assign one or more roles to each person's single sign-in.",
       href: "/portal/admin/access",
       icon: UserCog,
-      show: context.isAdministrator,
+      show: context.isAdministrator || context.isBoard,
     },
   ].filter((section) => section.show);
 
@@ -68,6 +68,11 @@ export default async function PortalPage() {
                 {context.isAdministrator && (
                   <span className="block">
                     Administrator access also allows you to open every portal area.
+                  </span>
+                )}
+                {context.isBoard && !context.isAdministrator && (
+                  <span className="block">
+                    Board access allows you to open every portal area in read-only mode.
                   </span>
                 )}
               </p>
@@ -118,6 +123,11 @@ export default async function PortalPage() {
           {context.isAdministrator && (
             <div className="mt-8 rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm">
               <strong>Administrator access:</strong> you can open every portal area from this account.
+            </div>
+          )}
+          {context.isBoard && !context.isAdministrator && (
+            <div className="mt-8 rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm">
+              <strong>Board View:</strong> you can review every portal area, but changes are disabled.
             </div>
           )}
 

@@ -8,10 +8,13 @@ export const FIELDS = {
   tasks: ["Task", "Staff Email", "Staff Name", "Material ID", "Material Version", "Training Snapshot", "Status", "Due Date", "Staff Notes", "Manager Notes", "Assigned By", "Verified By", "Completed At", "Verified At"],
   shifts: ["Shift", "Staff Email", "Staff Name", "Start", "End", "Location", "Status", "Response", "Notes", "Staff Notes", "Updated By"],
 };
-export async function staffContext(manager = false) {
+export async function staffContext(manager = false, write = false) {
   const context = await getPortalContext();
-  if (!isStaff(context.roles) || (manager && !managesStaff(context.roles))) redirect("/portal");
-  return { ...context, manager: managesStaff(context.roles) };
+  const boardView = context.isBoard && !context.isAdministrator;
+  const managerAccess = managesStaff(context.roles);
+  if (write && boardView) redirect("/portal");
+  if (!boardView && (!isStaff(context.roles) || (manager && !managerAccess))) redirect("/portal");
+  return { ...context, manager: boardView || managerAccess };
 }
 export async function staffRoster() {
   return (await airtableList(TABLES.portalAccess, ["Email", "Display Name", "Roles", "Active"]))

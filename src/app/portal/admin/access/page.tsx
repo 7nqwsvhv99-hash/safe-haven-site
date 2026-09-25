@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { ArrowLeft, UserCog } from "lucide-react";
 import {
   requireAdministrator,
+  requireAdministratorOrBoard,
   getPortalAccessRecords,
   airtableCreate,
   airtableUpdate,
@@ -10,10 +11,10 @@ import {
   PortalRole,
 } from "@/lib/portal";
 
-const portalRoles: PortalRole[] = ["Volunteer", "Foster", "Clinic Team", "Staff", "Medical", "Volunteer Coordinator", "Shelter Manager", "Administrator"];
+const portalRoles: PortalRole[] = ["Volunteer", "Foster", "Clinic Team", "Staff", "Medical", "Volunteer Coordinator", "Shelter Manager", "Board", "Administrator"];
 
 export default async function PortalAccessPage() {
-  await requireAdministrator();
+  await requireAdministratorOrBoard();
   const records = await getPortalAccessRecords();
 
   async function addAccess(formData: FormData) {
@@ -65,7 +66,7 @@ export default async function PortalAccessPage() {
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Administrator</p>
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Portal Access</h1>
             <p className="mt-4 max-w-3xl text-muted-foreground">
-              One account can have one or more Safe Haven roles. Changes here control which portal areas appear after sign-in.
+              One account can have one or more Safe Haven roles. Board access is universal and read-only; Administrator access can manage roles and settings.
             </p>
           </div>
 

@@ -25,9 +25,10 @@ export async function ensureClerkInvitation(email:string){
   await client.invitations.createInvitation({emailAddress:normalized,redirectUrl:'/sign-up',notify:true,expiresInDays:30});
   return {status:'pending-invitation' as const,message:'A first-time portal account invitation was sent to '+normalized+'.'};
 }
-export async function requireOnboarding() {
+export async function requireOnboarding(write=false) {
   const context=await getPortalContext();
-  if(!context.canOnboard)redirect('/portal');
+  if(write && context.isBoard && !context.isAdministrator)redirect('/portal');
+  if(!(context.canOnboard || (!write && context.canViewOnboarding)))redirect('/portal');
   return context;
 }
 export async function getOnboardingData() {

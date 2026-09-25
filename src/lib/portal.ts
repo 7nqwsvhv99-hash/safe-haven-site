@@ -42,7 +42,7 @@ const TABLES = {
   contactLog: "tblh32yxPhDQTM4L0",
 } as const;
 
-export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Volunteer Coordinator" | "Shelter Manager" | "Administrator";
+export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Volunteer Coordinator" | "Shelter Manager" | "Board" | "Administrator";
 
 type AirtableRecord = {
   id: string;
@@ -169,6 +169,7 @@ export async function getPortalContext() {
   if (matchedClinicMember) roleSet.add("Clinic Team");
   const roles = Array.from(roleSet);
   const isAdministrator = roles.includes("Administrator");
+  const isBoard = roles.includes("Board");
 
   return {
     userId: user.id,
@@ -180,26 +181,34 @@ export async function getPortalContext() {
     roles,
     accessRecordId: access?.id || null,
     hasAccess: roles.length > 0,
-    canVolunteer: isAdministrator || roles.includes("Volunteer"),
-    canFoster: isAdministrator || roles.includes("Foster"),
-    canClinic: isAdministrator || roles.includes("Clinic Team"),
-    canStaff: isAdministrator || roles.includes("Staff") || roles.includes("Shelter Manager"),
-    canMedical: isAdministrator || roles.includes("Staff") || roles.includes("Medical"),
+    canVolunteer: isAdministrator || isBoard || roles.includes("Volunteer"),
+    canFoster: isAdministrator || isBoard || roles.includes("Foster"),
+    canClinic: isAdministrator || isBoard || roles.includes("Clinic Team"),
+    canStaff: isAdministrator || isBoard || roles.includes("Staff") || roles.includes("Shelter Manager"),
+    canMedical: isAdministrator || isBoard || roles.includes("Staff") || roles.includes("Medical"),
     canOnboard: canManageOnboarding(roles),
+    canViewOnboarding: isBoard || canManageOnboarding(roles),
+    isBoard,
     isAdministrator,
   };
 }
 
-export async function requirePortalRole(role: Exclude<PortalRole, "Administrator">) {
+export async function requirePortalRole(
+  role: Exclude<PortalRole, "Administrator" | "Board">,
+  mode: "read" | "write" = "read"
+) {
   const context = await getPortalContext();
   if (!context.hasAccess) redirect("/portal");
+  if (mode === "write" && context.isBoard && !context.isAdministrator) redirect("/portal");
+
   const allowed =
     context.isAdministrator ||
-    (role === "Volunteer" && context.canVolunteer) ||
-    (role === "Foster" && context.canFoster) ||
-    (role === "Clinic Team" && context.canClinic) ||
-    (role === "Staff" && context.canStaff) ||
-    (role === "Medical" && context.canMedical);
+    (mode === "read" && context.isBoard) ||
+    (role === "Volunteer" && context.roles.includes("Volunteer")) ||
+    (role === "Foster" && context.roles.includes("Foster")) ||
+    (role === "Clinic Team" && context.roles.includes("Clinic Team")) ||
+    (role === "Staff" && (context.roles.includes("Staff") || context.roles.includes("Shelter Manager"))) ||
+    (role === "Medical" && (context.roles.includes("Staff") || context.roles.includes("Medical")));
   if (!allowed) redirect("/portal");
   return context;
 }
@@ -207,6 +216,12 @@ export async function requirePortalRole(role: Exclude<PortalRole, "Administrator
 export async function requireAdministrator() {
   const context = await getPortalContext();
   if (!context.isAdministrator) redirect("/portal");
+  return context;
+}
+
+export async function requireAdministratorOrBoard() {
+  const context = await getPortalContext();
+  if (!context.isAdministrator && !context.isBoard) redirect("/portal");
   return context;
 }
 
