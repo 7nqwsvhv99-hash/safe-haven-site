@@ -17,6 +17,19 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function daysUntilClinic(value: string) {
+  if (!value) return Number.POSITIVE_INFINITY;
+  const clinic = new Date(`${value.slice(0, 10)}T12:00:00-05:00`);
+  const todayText = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Chicago",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const today = new Date(`${todayText}T12:00:00-05:00`);
+  return Math.round((clinic.getTime() - today.getTime()) / 86400000);
+}
+
 export default async function ClinicPortalPage() {
   const context = await requirePortalRole("Clinic Team");
   const data = await getClinicPortalData(context.email);
@@ -249,7 +262,7 @@ export default async function ClinicPortalPage() {
                             {item.clinic?.alert && <p className="mt-2 text-sm font-medium text-primary">{item.clinic.alert}</p>}
                           </div>
                           <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[520px]">
-                            <div className="rounded-xl border bg-white p-4">
+                            <div className={`rounded-xl border bg-white p-4 ${(!item.initialResponse || item.initialResponse === "No Response" || (data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && item.assignments.length === 0) || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))) ? "portal-action-glow" : ""}`}>
                               <form action={saveAvailability}>
                                 <input type="hidden" name="responseId" value={item.responseId} />
                                 <p className="mb-2 text-sm font-semibold">My availability</p>
@@ -265,11 +278,12 @@ export default async function ClinicPortalPage() {
                               {data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && (
                                 <form action={saveClinicAssignments} className="mt-4 border-t pt-4">
                                   <input type="hidden" name="responseId" value={item.responseId} />
-                                  <p className="mb-2 text-sm font-semibold">Select your clinic role</p>
+                                  <p className="mb-1 text-sm font-semibold">Select your clinic role</p>
+                                  <p className="mb-3 text-xs text-muted-foreground">Choose one specialized role when possible. Select more than one only when additional coverage is needed.</p>
                                   <div className="space-y-2 text-sm">
-                                    {data.member.skills.includes("Front Room System") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="Front Room System" defaultChecked={item.assignments.includes("Front Room System")} /> Front Room System</label>}
-                                    {data.member.skills.includes("Back Room System") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="Back Room System" defaultChecked={item.assignments.includes("Back Room System")} /> Back Room System</label>}
-                                    {data.member.skills.includes("Autoclave") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="Autoclave" defaultChecked={item.assignments.includes("Autoclave")} /> Autoclave</label>}
+                                    {data.member.skills.includes("Front Room System") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Front Room System" defaultChecked={item.assignments.includes("Front Room System")} className="mt-0.5" /><span>Front Room System{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Front Room System"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Front Room System"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
+                                    {data.member.skills.includes("Back Room System") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Back Room System" defaultChecked={item.assignments.includes("Back Room System")} className="mt-0.5" /><span>Back Room System{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Back Room System"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Back Room System"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
+                                    {data.member.skills.includes("Autoclave") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Autoclave" defaultChecked={item.assignments.includes("Autoclave")} className="mt-0.5" /><span>Autoclave{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
                                     {data.member.skills.includes("General Support") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="General Volunteer" defaultChecked={item.assignments.includes("General Volunteer")} /> General Volunteer</label>}
                                   </div>
                                   <button type="submit" className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save role</button>
@@ -278,15 +292,16 @@ export default async function ClinicPortalPage() {
                               )}
                             </div>
 
-                            <form action={saveReconfirmation} className="rounded-xl border bg-white p-4">
-                              <fieldset disabled={item.initialResponse !== "Yes" || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))} className="disabled:opacity-50">
+                            <form action={saveReconfirmation} className={`rounded-xl border bg-white p-4 ${(daysUntilClinic(item.clinic?.date || "") <= 7 && item.initialResponse === "Yes" && (!item.reconfirmation || item.reconfirmation === "Awaiting Response")) ? "portal-action-glow" : ""}`}>
+                              <fieldset disabled={item.initialResponse !== "Yes" || daysUntilClinic(item.clinic?.date || "") > 7 || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))} className="disabled:opacity-50">
                               <input type="hidden" name="responseId" value={item.responseId} />
                               <p className="mb-2 text-sm font-semibold">Reconfirm attendance</p>
                               <div className="flex flex-wrap gap-2">
                                 <button name="reconfirmation" value="Yes, still attending" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Still attending</button>
                                 <button name="reconfirmation" value="No, can no longer attend" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Can’t attend</button>
                               </div>
-                              <p className="mt-2 text-xs text-muted-foreground">Current: {item.reconfirmation || "Awaiting response"}</p>
+                              <p className={`mt-2 text-xs ${item.reconfirmation && item.reconfirmation !== "Awaiting Response" ? "font-semibold text-green-700" : "text-muted-foreground"}`}>Current: {item.reconfirmation || "Awaiting response"}</p>
+                              {daysUntilClinic(item.clinic?.date || "") > 7 && item.initialResponse === "Yes" && <p className="mt-2 text-xs text-muted-foreground">Reconfirmation opens one week before the clinic.</p>}
                               </fieldset>
                             </form>
                           </div>
