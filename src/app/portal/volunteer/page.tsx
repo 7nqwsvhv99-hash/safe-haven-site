@@ -26,10 +26,35 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function applicationOpportunityNames(value: string) {
+  const line = value.split(/\r?\n/).find((entry) => entry.startsWith("Volunteer Interests:"));
+  if (!line) return [];
+  return line
+    .slice("Volunteer Interests:".length)
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry) => (volunteerOpportunityNames as readonly string[]).includes(entry));
+}
+
 export default async function VolunteerPortalPage() {
   const context = await requirePortalRole("Volunteer");
   const data = await getVolunteerPortalData(context.email);
   const canWriteVolunteer = context.isAdministrator || context.roles.includes("Volunteer");
+  const currentOpportunities = new Set<string>([
+    ...applicationOpportunityNames(data.volunteer?.applicationInterests || ""),
+    ...data.opportunityRequests
+      .filter((request) => request.status === "Approved")
+      .map((request) => request.opportunity),
+  ]);
+  const unavailableOpportunities = new Set<string>([
+    ...currentOpportunities,
+    ...data.opportunityRequests
+      .filter((request) => ["Pending Review", "Training / Verification Required"].includes(request.status))
+      .map((request) => request.opportunity),
+  ]);
+  const availableOpportunities = volunteerOpportunityNames.filter(
+    (opportunity) => !unavailableOpportunities.has(opportunity)
+  );
 
   async function logHours(formData: FormData) {
     "use server";
@@ -62,7 +87,6 @@ export default async function VolunteerPortalPage() {
     if (!latest.volunteer) return;
 
     const opportunity = String(formData.get("opportunity") || "");
-    const note = String(formData.get("note") || "").trim();
     if (!isVolunteerOpportunity(opportunity)) return;
 
     const alreadyOpen = latest.opportunityRequests.some(
@@ -77,7 +101,6 @@ export default async function VolunteerPortalPage() {
       Opportunity: opportunity,
       "Request Status": "Pending Review",
       "Submitted At": new Date().toISOString(),
-      "Volunteer Note": note,
     }, true);
 
     revalidatePath("/portal/volunteer");
@@ -98,7 +121,7 @@ export default async function VolunteerPortalPage() {
               {data.volunteer ? `Welcome, ${data.volunteer.name || context.displayName}` : "Volunteer Portal"}
             </h1>
             <p className="mt-4 max-w-3xl text-muted-foreground">
-              Your schedule, service hours, announcements, current needs, and volunteer resources in one place.
+              Your schedule, service hours, announcements, current needs, and volunteer opportunities in one place.
             </p>
           </div>
 
@@ -111,7 +134,35 @@ export default async function VolunteerPortalPage() {
             </div>
           ) : (
             <div className="space-y-8">
-              {context.isBoard && !data.volunteer && <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm"><strong>Board View:</strong> This account is not linked to a volunteer profile. Shared announcements, current needs, resources, and the volunteer interface are available below. Personalized schedules and hour history appear only for an active volunteer.</div>}
+              {context.isBoard && !data.volunteer && <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm"><strong>Board View:</strong> This account is not linked to a volunteer profile. Shared announcements, current needs, and the volunteer interface are available below. Personalized schedules and hour history appear only for an active volunteer.</div>}
+
+              {data.announcements.length > 0 && (
+                <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                  <div className="mb-5 flex items-center gap-3">
+                    <Megaphone className="h-6 w-6 text-primary" />
+                    <h2 className="text-2xl font-bold">Announcements</h2>
+                  </div>
+                  <div className="space-y-4">
+                    {data.announcements.map((item) => (
+                      <div key={item.id} className="rounded-2xl bg-slate-50 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h3 className="font-semibold">{item.title}</h3>
+                          {item.priority !== "Normal" && (
+                            <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{item.priority}</span>
+                          )}
+                        </div>
+                        <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{item.message}</p>
+                        {item.ctaUrl && (
+                          <a href={item.ctaUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+                            {item.ctaLabel || "Open"}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
@@ -214,13 +265,14 @@ export default async function VolunteerPortalPage() {
                       <label className="block text-sm font-medium">Volunteer opportunity
                         <select name="opportunity" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
                           <option value="" disabled>Select an opportunity</option>
-                          {volunteerOpportunityNames.map((opportunity) => <option key={opportunity}>{opportunity}</option>)}
+                          {availableOpportunities.map((opportunity) => <option key={opportunity}>{opportunity}</option>)}
                         </select>
                       </label>
-                      <label className="block text-sm font-medium">Anything staff should know? <span className="font-normal text-muted-foreground">(optional)</span>
-                        <textarea name="note" rows={3} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" />
-                      </label>
-                      <button className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white">Send Opportunity Request</button>
+                      {availableOpportunities.length ? (
+                        <button className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white">Send Opportunity Request</button>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">You are already participating in, or have a pending request for, every available opportunity.</p>
+                      )}
                     </form>
                     <div>
                       <h3 className="font-semibold">Your requests</h3>
@@ -240,74 +292,40 @@ export default async function VolunteerPortalPage() {
                 </section>
               )}
 
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <section className="rounded-3xl border bg-white p-7 shadow-sm">
-                  <div className="mb-5 flex items-center gap-3">
-                    <Megaphone className="h-6 w-6 text-primary" />
-                    <h2 className="text-2xl font-bold">Announcements & Resources</h2>
-                  </div>
-                  {data.announcements.length ? (
-                    <div className="space-y-4">
-                      {data.announcements.map((item) => (
-                        <div key={item.id} className="rounded-2xl bg-slate-50 p-4">
-                          <div className="flex items-center justify-between gap-3">
-                            <h3 className="font-semibold">{item.title}</h3>
-                            {item.priority !== "Normal" && (
-                              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">{item.priority}</span>
-                            )}
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <Wrench className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Current Needs</h2>
+                </div>
+                {data.needs.length ? (
+                  <div className="space-y-4">
+                    {data.needs.map((need) => (
+                      <div key={need.id} className="rounded-2xl bg-slate-50 p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold">{need.need}</h3>
+                            <p className="mt-1 text-sm text-muted-foreground">{need.details}</p>
+                            {need.goal && <p className="mt-1 text-xs font-medium text-muted-foreground">{need.goal}</p>}
                           </div>
-                          <p className="mt-2 text-sm text-muted-foreground whitespace-pre-line">{item.message}</p>
-                          {item.ctaUrl && (
-                            <a href={item.ctaUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
-                              {item.ctaLabel || "Open resource"}
-                            </a>
-                          )}
+                          {need.priority !== "Normal" && <span className="text-xs font-semibold text-primary">{need.priority}</span>}
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No current volunteer announcements.</p>
-                  )}
-                </section>
-
-                <section className="rounded-3xl border bg-white p-7 shadow-sm">
-                  <div className="mb-5 flex items-center gap-3">
-                    <Wrench className="h-6 w-6 text-primary" />
-                    <h2 className="text-2xl font-bold">Current Needs & Tools</h2>
+                        {need.ctaUrl && (
+                          <a href={need.ctaUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+                            {need.ctaLabel || "Help with this need"}
+                          </a>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  {data.needs.length ? (
-                    <div className="space-y-4">
-                      {data.needs.map((need) => (
-                        <div key={need.id} className="rounded-2xl bg-slate-50 p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <h3 className="font-semibold">{need.need}</h3>
-                              <p className="mt-1 text-sm text-muted-foreground">{need.details}</p>
-                              {need.goal && <p className="mt-1 text-xs font-medium text-muted-foreground">{need.goal}</p>}
-                            </div>
-                            {need.priority !== "Normal" && <span className="text-xs font-semibold text-primary">{need.priority}</span>}
-                          </div>
-                          {need.ctaUrl && (
-                            <a href={need.ctaUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
-                              {need.ctaLabel || "Help with this need"}
-                            </a>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">There are no volunteer needs posted right now.</p>
-                  )}
-                  <div className="mt-6 flex flex-wrap gap-3">
-                    <a href="https://www.calendarwiz.com/calendars/calendar.php?crd=safehavenil&nolog=0&cid[]=all" target="_blank" rel="noopener noreferrer" className="rounded-full border px-4 py-2 text-sm font-semibold hover:bg-slate-50">
-                      Volunteer Calendar
-                    </a>
-                    <Link href="/volunteer" className="rounded-full border px-4 py-2 text-sm font-semibold hover:bg-slate-50">
-                      Volunteer Resources
-                    </Link>
-                  </div>
-                </section>
-              </div>
+                ) : (
+                  <p className="text-muted-foreground">There are no volunteer needs posted right now.</p>
+                )}
+                <div className="mt-6">
+                  <a href="https://www.calendarwiz.com/calendars/calendar.php?crd=safehavenil&nolog=0&cid[]=all" target="_blank" rel="noopener noreferrer" className="inline-flex rounded-full border px-4 py-2 text-sm font-semibold hover:bg-slate-50">
+                    Volunteer Calendar
+                  </a>
+                </div>
+              </section>
             </div>
           )}
         </div>
