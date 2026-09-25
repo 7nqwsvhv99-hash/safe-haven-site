@@ -43,7 +43,6 @@ export default async function ClinicPortalPage() {
     if (duplicate) return;
 
     await airtableCreate(TABLES.vetClinicPreferences, {
-      "Preference ID": `VP-${Date.now()}`,
       Veterinarian: [latest.member.id],
       "Preferred Clinic Date": preferredDate,
       "Preferred Clinic Type": preferredClinicType,
@@ -61,28 +60,15 @@ export default async function ClinicPortalPage() {
     const latest = await getClinicPortalData(current.email);
     const responseId = String(formData.get("responseId") || "");
     const value = String(formData.get("availability") || "");
-    const requestedAssignment = String(formData.get("assignment") || "");
     if (!responseId || !["Yes", "No"].includes(value) || !latest.dates.some((item) => item.responseId === responseId)) return;
 
     let assignment = "";
     if (value === "Yes") {
       if (latest.member?.role === "Veterinarian") assignment = "Veterinarian";
       else if (["Vet Tech", "Veterinary Technician"].includes(latest.member?.role || "")) assignment = "Veterinary Technician";
-      else {
-        const allowed = new Set<string>();
-        latest.member?.skills.forEach((skill) => {
-          if (["Front Room System", "Back Room System", "Autoclave"].includes(skill)) allowed.add(skill);
-          if (skill === "General Support") {
-            allowed.add("Front Room Support");
-          }
-        });
-        if (!allowed.has(requestedAssignment)) return;
-        assignment = requestedAssignment;
-      }
     }
 
     const matchedResponse = latest.dates.find((item) => item.responseId === responseId);
-
     await airtableUpdate(TABLES.clinicResponses, responseId, {
       "Availability Clinic Date": matchedResponse!.clinic!.date.slice(0, 10),
       "One-Week Reconfirmation": "Awaiting Response",
@@ -90,7 +76,36 @@ export default async function ClinicPortalPage() {
       "Initial Response": value,
       "Initial Response Date": new Date().toISOString(),
       "Final Attendance Plan": value === "Yes" ? "Attending" : "Not Attending",
-      "Clinic Assignment": assignment || null,
+      ...(assignment ? { "Clinic Assignment": assignment } : {}),
+      ...(value === "No" && latest.member?.role === "Clinic Volunteer" ? { "Clinic Assignment": null, "Clinic Assignments": [] } : {}),
+    });
+
+    revalidatePath("/portal/clinic");
+  }
+
+  async function saveClinicAssignments(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Clinic Team", "write");
+    const latest = await getClinicPortalData(current.email);
+    if (!latest.member || latest.member.role !== "Clinic Volunteer") return;
+
+    const responseId = String(formData.get("responseId") || "");
+    const matched = latest.dates.find((item) => item.responseId === responseId);
+    if (!matched || matched.initialResponse !== "Yes") return;
+
+    const allowed = new Set<string>();
+    latest.member.skills.forEach((skill) => {
+      if (["Front Room System", "Back Room System", "Autoclave"].includes(skill)) allowed.add(skill);
+      if (skill === "General Support") allowed.add("General Volunteer");
+    });
+
+    const assignments = formData.getAll("assignments").map(String).filter((value) => allowed.has(value));
+    if (!assignments.length) return;
+
+    const legacyAssignment = assignments[0] === "General Volunteer" ? "Front Room Support" : assignments[0];
+    await airtableUpdate(TABLES.clinicResponses, responseId, {
+      "Clinic Assignments": assignments,
+      "Clinic Assignment": legacyAssignment,
     });
 
     revalidatePath("/portal/clinic");
@@ -234,24 +249,34 @@ export default async function ClinicPortalPage() {
                             {item.clinic?.alert && <p className="mt-2 text-sm font-medium text-primary">{item.clinic.alert}</p>}
                           </div>
                           <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[520px]">
-                            <form action={saveAvailability} className="rounded-xl border bg-white p-4">
-                              <input type="hidden" name="responseId" value={item.responseId} />
-                              <p className="mb-2 text-sm font-semibold">My availability</p>
-                              {data.member?.role === "Clinic Volunteer" && (
-                                <select name="assignment" defaultValue={item.assignment} className="mb-3 w-full rounded-lg border bg-white px-3 py-2 text-sm">
-                                  <option value="" disabled>Select your clinic role</option>
-                                  {data.member?.skills.includes("Front Room System") && <option>Front Room System</option>}
-                                  {data.member?.skills.includes("Back Room System") && <option>Back Room System</option>}
-                                  {data.member?.skills.includes("Autoclave") && <option>Autoclave</option>}
-                                  {data.member?.skills.includes("General Support") && <option value="Front Room Support">General Volunteer</option>}
-                                </select>
+                            <div className="rounded-xl border bg-white p-4">
+                              <form action={saveAvailability}>
+                                <input type="hidden" name="responseId" value={item.responseId} />
+                                <p className="mb-2 text-sm font-semibold">My availability</p>
+                                <div className="flex gap-2">
+                                  <button name="availability" value="Yes" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Yes</button>
+                                  <button name="availability" value="No" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">No</button>
+                                </div>
+                                <p className={`mt-2 text-xs ${item.initialResponse && item.initialResponse !== "No Response" ? "font-semibold text-green-700" : "text-muted-foreground"}`}>
+                                  Current: {item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10) ? "Date changed. Please respond again." : item.initialResponse || "No response"}
+                                </p>
+                              </form>
+
+                              {data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && (
+                                <form action={saveClinicAssignments} className="mt-4 border-t pt-4">
+                                  <input type="hidden" name="responseId" value={item.responseId} />
+                                  <p className="mb-2 text-sm font-semibold">Select your clinic role</p>
+                                  <div className="space-y-2 text-sm">
+                                    {data.member.skills.includes("Front Room System") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="Front Room System" defaultChecked={item.assignments.includes("Front Room System")} /> Front Room System</label>}
+                                    {data.member.skills.includes("Back Room System") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="Back Room System" defaultChecked={item.assignments.includes("Back Room System")} /> Back Room System</label>}
+                                    {data.member.skills.includes("Autoclave") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="Autoclave" defaultChecked={item.assignments.includes("Autoclave")} /> Autoclave</label>}
+                                    {data.member.skills.includes("General Support") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="General Volunteer" defaultChecked={item.assignments.includes("General Volunteer")} /> General Volunteer</label>}
+                                  </div>
+                                  <button type="submit" className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save role</button>
+                                  {item.assignments.length > 0 && <p className="mt-2 text-xs font-semibold text-green-700">Current role: {item.assignments.join(", ")}</p>}
+                                </form>
                               )}
-                              <div className="flex gap-2">
-                                <button name="availability" value="Yes" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Yes</button>
-                                <button name="availability" value="No" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">No</button>
-                              </div>
-                              <p className="mt-2 text-xs text-muted-foreground">Current: {item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10) ? "Date changed. Please respond again." : item.initialResponse || "No response"}</p>
-                            </form>
+                            </div>
 
                             <form action={saveReconfirmation} className="rounded-xl border bg-white p-4">
                               <fieldset disabled={item.initialResponse !== "Yes" || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))} className="disabled:opacity-50">
