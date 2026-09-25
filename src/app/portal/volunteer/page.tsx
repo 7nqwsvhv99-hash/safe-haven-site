@@ -65,8 +65,6 @@ export default async function VolunteerPortalPage() {
     const date = String(formData.get("date") || "");
     const hours = Number(formData.get("hours") || 0);
     const activity = String(formData.get("activity") || "");
-    const notes = String(formData.get("notes") || "");
-
     if (!date || !Number.isFinite(hours) || hours <= 0 || !activity) return;
 
     await airtableCreate(TABLES.volunteerHours, {
@@ -74,7 +72,6 @@ export default async function VolunteerPortalPage() {
       Volunteer: [latest.volunteer.id],
       Hours: hours,
       "Volunteer Activity": activity,
-      Notes: notes,
     });
 
     revalidatePath("/portal/volunteer");
@@ -225,10 +222,6 @@ export default async function VolunteerPortalPage() {
                         <option>Fundraising & Event Support</option>
                         <option>Other</option>
                       </select>
-                    </label>
-                    <label className="block text-sm font-medium">
-                      Notes
-                      <textarea name="notes" rows={3} className="mt-2 w-full rounded-xl border bg-white px-3 py-2" />
                     </label>
                     <button className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90" type="submit">
                       Save Hours
