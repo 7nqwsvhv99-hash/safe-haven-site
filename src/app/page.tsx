@@ -5,7 +5,7 @@ import { FeaturedPets } from "@/components/featured-pets"
 import { CommunityImpact } from "@/components/community-impact"
 import { Testimonials } from "@/components/testimonials"
 import { UpcomingEvents } from "@/components/upcoming-events"
-import { Heart, Search, FileCheck, Home as HomeIcon, Users, DollarSign, Instagram, Facebook } from "lucide-react"
+import { Heart, Search, FileCheck, Home as HomeIcon, Users, DollarSign, Facebook } from "lucide-react"
 
 export default function HomePage() {
   return (
@@ -235,15 +235,6 @@ export default function HomePage() {
               >
                 <Facebook className="h-5 w-5" />
                 Facebook
-              </a>
-              <a
-                href="https://www.instagram.com/safehaven.animalshelter"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-6 py-3 rounded-full bg-white border-2 border-primary text-primary font-semibold hover:bg-primary hover:text-white transition-colors"
-              >
-                <Instagram className="h-5 w-5" />
-                Instagram
               </a>
             </div>
           </div>
