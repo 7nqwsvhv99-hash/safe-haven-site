@@ -54,21 +54,21 @@ export default async function StaffPortalPage() {
       title: "Inventory Attention",
       value: inventoryAttention,
       detail: inventoryAttention === 1 ? "item needs reorder attention" : "items need reorder attention",
-      href: "/portal/staff/inventory",
+      href: "/portal/staff/inventory?attention=1",
       icon: Boxes,
     },
     {
       title: "Foster Alerts",
       value: data.fosterAlertCount,
       detail: data.fosterAlertCount === 1 ? "foster concern needs follow-up" : "foster concerns need follow-up",
-      href: "/portal/staff/fosters",
+      href: "/portal/staff/fosters?attention=1#foster-attention",
       icon: HeartHandshake,
     },
     {
       title: "Medical Review",
       value: data.medical.pendingReviewCount,
       detail: data.medical.pendingReviewCount === 1 ? "record awaits review" : "records await review",
-      href: "/portal/medical",
+      href: "/portal/medical?view=review",
       icon: Activity,
     },
   ];
@@ -223,17 +223,18 @@ export default async function StaffPortalPage() {
             </p>
           </header>
 
-          <nav className="sticky top-20 z-20 mb-8 flex gap-2 overflow-x-auto rounded-2xl border bg-white/95 p-2 shadow-sm backdrop-blur">
+          <nav className="sticky top-20 z-20 mb-8 flex gap-2 overflow-x-auto rounded-2xl border bg-white/95 p-2 shadow-sm backdrop-blur" aria-label="Staff Navigation">
             {[
-              ["Attention", "#attention"],
               ["Animal Care", "#animal-care"],
               ["People & Volunteers", "#people-volunteers"],
+              ["Medical", "/portal/medical"],
+              ["Inventory", "/portal/staff/inventory"],
               ["Operations", "#operations"],
-              ["Administration", "#administration"],
+              ["Reports", "/portal/staff/reports"],
             ].map(([label, href]) => (
-              <a key={href} href={href} className="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-primary/10 hover:text-primary">
+              <Link key={href} href={href} className="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-primary/10 hover:text-primary">
                 {label}
-              </a>
+              </Link>
             ))}
           </nav>
 
