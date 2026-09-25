@@ -186,7 +186,7 @@ export default async function AdoptionManagementPage({
 
   async function updateApplication(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const applicationId = field(formData, "applicationId");
     const latest = await airtableList(TABLES.adoptionApplications, ["Status"]);
     if (!latest.some((record) => record.id === applicationId)) return;
@@ -210,7 +210,7 @@ export default async function AdoptionManagementPage({
 
   async function completeAdoption(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const applicationId = field(formData, "applicationId");
     const animalId = field(formData, "animalId");
     if (!applicationId || !animalId) return;
@@ -280,7 +280,7 @@ export default async function AdoptionManagementPage({
 
   async function saveAdoptionFollowUp(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const adoptionId = field(formData, "adoptionId");
     const latest = await airtableList(TABLES.adoptions, ["Adoption Date"]);
     if (!latest.some((record) => record.id === adoptionId)) return;

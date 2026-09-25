@@ -87,7 +87,7 @@ export default async function PersonProfilePage({params}:{params:Promise<{person
   const totalDonations=personDonations.reduce((sum,r)=>sum+num(r.fields.Amount),0);
 
   async function savePerson(formData:FormData){
-    "use server";await requirePortalRole("Staff");
+    "use server";await requirePortalRole("Staff", "write");
     const latest=await airtableList(TABLES.people,["Display Name"]);if(!latest.some(r=>r.id===personId))return;
     const first=field(formData,"firstName"),last=field(formData,"lastName"),org=field(formData,"organization"),email=field(formData,"email");
     await airtableUpdate(TABLES.people,personId,{
@@ -102,7 +102,7 @@ export default async function PersonProfilePage({params}:{params:Promise<{person
   }
 
   async function addContact(formData:FormData){
-    "use server";const current=await requirePortalRole("Staff");
+    "use server";const current=await requirePortalRole("Staff", "write");
     const subject=field(formData,"subject");if(!subject)return;
     const latestContacts=await airtableList(TABLES.contactLog,["Person","Next Follow-Up Date","Follow-Up Status"]);
     const nowDate=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit",timeZone:"America/Chicago"}).format(new Date());
@@ -120,7 +120,7 @@ export default async function PersonProfilePage({params}:{params:Promise<{person
   }
 
   async function completeContactFollowUp(formData:FormData){
-    "use server";await requirePortalRole("Staff");
+    "use server";await requirePortalRole("Staff", "write");
     const contactId=field(formData,"contactId");
     const latest=await airtableList(TABLES.contactLog,["Person"]);
     const contact=latest.find(r=>r.id===contactId&&asStrings(r.fields.Person).includes(personId));

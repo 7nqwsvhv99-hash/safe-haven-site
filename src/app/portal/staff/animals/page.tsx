@@ -127,7 +127,7 @@ export default async function AnimalManagementPage({
 
   async function createAnimal(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
 
     const species = field(formData, "species");
     const petName = field(formData, "petName");

@@ -286,7 +286,7 @@ export default async function AnimalProfilePage({
 
   async function saveAnimal(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const current = (await airtableList(TABLES.animals, ["Pet Name", "Housing Type", "Current Housing Location"])).find((record) => record.id === animalId);
     if (!current) return;
 
@@ -328,7 +328,7 @@ export default async function AnimalProfilePage({
 
   async function uploadPrimaryPhoto(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const file = formData.get("photo");
     if (!(file instanceof File) || !file.size) return;
     await airtableUploadAttachment(animalId, PRIMARY_PHOTO_FIELD_ID, file);
@@ -339,7 +339,7 @@ export default async function AnimalProfilePage({
 
   async function uploadAdditionalPhoto(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const file = formData.get("photo");
     if (!(file instanceof File) || !file.size) return;
     await airtableUploadAttachment(animalId, ADDITIONAL_PHOTOS_FIELD_ID, file);
