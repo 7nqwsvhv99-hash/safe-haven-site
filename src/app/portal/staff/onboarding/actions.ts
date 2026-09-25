@@ -6,7 +6,7 @@ import {airtableUpdate,airtableCreate,airtableUploadAttachment,TABLES,asText,asS
 const path='/portal/staff/onboarding';
 export type OnboardingActionState={ok:boolean;message:string};
 async function execute(form:FormData,action:(data:Awaited<ReturnType<typeof getOnboardingData>>,app:Awaited<ReturnType<typeof getOnboardingData>>['applications'][number],email:string)=>Promise<string>):Promise<OnboardingActionState> {
-  const context=await requireOnboarding();
+  const context=await requireOnboarding(true);
   const id=String(form.get('applicationId')||'');
   try {
     const data=await getOnboardingData();
@@ -46,7 +46,7 @@ export async function saveReview(_previous:OnboardingActionState,form:FormData):
 }
 export type WaiverSaveState={ok:boolean;message:string};
 export async function saveWaiver(_previous:WaiverSaveState,form:FormData):Promise<WaiverSaveState> {
- await requireOnboarding();
+ await requireOnboarding(true);
  const id=String(form.get('applicationId')||'');
  try {
   const data=await getOnboardingData();
@@ -105,7 +105,7 @@ export async function completeOnboarding(_previous:OnboardingActionState,form:Fo
 }
 
 export async function sendPortalInvitation(_previous:OnboardingActionState,form:FormData):Promise<OnboardingActionState>{
- const context=await requireOnboarding();
+ const context=await requireOnboarding(true);
  const id=String(form.get('applicationId')||'');
  try{
   const data=await getOnboardingData();

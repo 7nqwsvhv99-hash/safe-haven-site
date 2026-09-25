@@ -13,9 +13,9 @@ async function run(path: string, work: () => Promise<void>) {
   redirect(`${path}?${error ? "error=" + encodeURIComponent(error) : "saved=1"}`);
 }
 export async function saveMaterial(form: FormData) {
-  await staffContext(true);
+  await staffContext(true, true);
   await run("/portal/staff/training", async () => {
-    const context = await staffContext(true);
+    const context = await staffContext(true, true);
     const id = text(form,"id");
     const existing = id ? (await airtableList(STAFF.materials, FIELDS.materials)).find(r=>r.id===id) : null;
     if (id && !existing) throw new Error("Training material was not found.");
@@ -28,7 +28,7 @@ export async function saveMaterial(form: FormData) {
   });
 }
 export async function assignTraining(form: FormData) {
-  await staffContext(true);
+  await staffContext(true, true);
   await run("/portal/staff/training", async()=>{
     const data = await staffData("training");
     const person = data.roster.find(r=>r.id===text(form,"person"));
@@ -41,7 +41,7 @@ export async function assignTraining(form: FormData) {
   });
 }
 export async function updateTraining(form: FormData) {
-  await staffContext();
+  await staffContext(false, true);
   await run("/portal/staff/training", async()=>{
     const data = await staffData("training"); const row = data.rows.find(r=>r.id===text(form,"id"));
     if (!row) throw new Error("Training assignment was not found.");
@@ -58,7 +58,7 @@ export async function updateTraining(form: FormData) {
   });
 }
 export async function saveShift(form: FormData) {
-  await staffContext(true);
+  await staffContext(true, true);
   await run("/portal/staff/schedule",async()=>{
     const data=await staffData("schedule"); const id=text(form,"id"); const old=data.rows.find(r=>r.id===id);
     if(id&&!old) throw new Error("Shift was not found.");
@@ -73,7 +73,7 @@ export async function saveShift(form: FormData) {
   });
 }
 export async function respondShift(form: FormData) {
-  await staffContext();
+  await staffContext(false, true);
   await run("/portal/staff/schedule",async()=>{
     const data=await staffData("schedule"); const row=data.rows.find(r=>r.id===text(form,"id"));
     if(!row||row.fields["Staff Email"]!==data.ownEmail||row.fields.Status!=="Scheduled") throw new Error("You can respond only to your own scheduled shifts.");
