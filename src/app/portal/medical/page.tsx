@@ -53,8 +53,14 @@ function MedicalRecordCard({ record }: { record: Awaited<ReturnType<typeof getMe
   );
 }
 
-export default async function MedicalPortalPage() {
+export default async function MedicalPortalPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const context = await requirePortalRole("Medical");
+  const query = await searchParams;
+  const reviewOnly = query.view === "review";
   const data = await getMedicalPortalData();
 
   async function addMedicalEntry(formData: FormData) {
@@ -126,8 +132,9 @@ export default async function MedicalPortalPage() {
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Safe Haven Medical Care</p>
             <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Medical Portal</h1>
             <p className="mt-4 max-w-3xl text-muted-foreground">
-              Review each animal&apos;s medical history, document concerns and treatments, and keep the weekly veterinary review focused on unresolved needs.
+              {reviewOnly ? "Focused review queue for medical entries that still need veterinarian attention." : "Review each animal's medical history, document concerns and treatments, and keep the weekly veterinary review focused on unresolved needs."}
             </p>
+            {reviewOnly && <Link href="/portal/medical" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">Open full Medical Portal</Link>}
           </div>
 
           <section className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -148,8 +155,8 @@ export default async function MedicalPortalPage() {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-            <div className="space-y-6">
+          <div className={reviewOnly ? "grid grid-cols-1 gap-6" : "grid grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.15fr]"}>
+            {!reviewOnly && <div className="space-y-6">
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
                 <div className="mb-5 flex items-center gap-3">
                   <ClipboardPlus className="h-6 w-6 text-primary" />
@@ -186,7 +193,7 @@ export default async function MedicalPortalPage() {
                   <button type="submit" className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">Save Medical Entry</button>
                 </form>
               </section>
-            </div>
+            </div>}
 
             <div className="space-y-6">
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
@@ -211,12 +218,12 @@ export default async function MedicalPortalPage() {
                 ) : <p className="text-muted-foreground">No medical entries are awaiting review.</p>}
               </section>
 
-              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+              {!reviewOnly && <section className="rounded-3xl border bg-white p-7 shadow-sm">
                 <div className="mb-5 flex items-center gap-3"><Pill className="h-6 w-6 text-primary" /><h2 className="text-2xl font-bold">Recent Medical History</h2></div>
                 <div className="space-y-4">
                   {data.records.length ? data.records.slice(0, 30).map((record) => <MedicalRecordCard key={record.id} record={record} />) : <p className="text-muted-foreground">No medical history has been recorded yet.</p>}
                 </div>
-              </section>
+              </section>}
             </div>
           </div>
 
