@@ -20,7 +20,18 @@ import {
   FileText,
   UsersRound,
 } from "lucide-react";
-import { requirePortalRole, getPortalContext, getStaffPortalData, airtableCreate, airtableUpdate, TABLES } from "@/lib/portal";
+import { requirePortalRole, getPortalContext, getStaffPortalData, airtableCreate, airtableUpdate, airtableList, airtableDelete, TABLES } from "@/lib/portal";
+
+function formText(formData: FormData, name: string) {
+  return String(formData.get(name) || "").trim();
+}
+
+function optionalNumber(formData: FormData, name: string) {
+  const value = formText(formData, name);
+  if (!value) return undefined;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : undefined;
+}
 
 function formatDate(value: string) {
   if (!value) return "";
@@ -36,6 +47,123 @@ export default async function StaffPortalPage() {
   const context = await getPortalContext();
   if (!context.canStaff) redirect(context.canOnboard ? "/portal/staff/onboarding" : "/portal");
   const data = await getStaffPortalData();
+  const canWriteStaff = context.isAdministrator || context.roles.includes("Staff") || context.roles.includes("Staff Manager");
+
+  async function addShelterInventoryItem(formData: FormData) {
+    "use server";
+    await requirePortalRole("Staff", "write");
+    const itemName = formText(formData, "itemName");
+    if (!itemName) return;
+    await airtableCreate(TABLES.inventory, {
+      "Item Name": itemName,
+      Area: "Shelter",
+      Category: formText(formData, "category") || "Other",
+      "Unit of Measure": formText(formData, "unit"),
+      ...(optionalNumber(formData, "reorderPoint") !== undefined ? { "Reorder Point": optionalNumber(formData, "reorderPoint") } : {}),
+      ...(optionalNumber(formData, "targetQuantity") !== undefined ? { "Target Quantity": optionalNumber(formData, "targetQuantity") } : {}),
+      "Preferred Vendor": formText(formData, "vendor"),
+      "Purchase URL": formText(formData, "purchaseUrl"),
+      ...(optionalNumber(formData, "unitCost") !== undefined ? { "Typical Unit Cost": optionalNumber(formData, "unitCost") } : {}),
+      "Responsible Person": formText(formData, "responsiblePerson") || "Sam Smith",
+      "Responsible Email": formText(formData, "responsibleEmail") || "sa7smith@msn.com",
+      "Track Lot / Expiration": formData.get("trackLot") === "on",
+      Notes: formText(formData, "notes"),
+      Active: true,
+    }, true);
+    revalidatePath("/portal/staff");
+    revalidatePath("/portal/staff/inventory");
+  }
+
+  async function updateShelterInventoryItem(formData: FormData) {
+    "use server";
+    await requirePortalRole("Staff", "write");
+    const itemId = formText(formData, "itemId");
+    const latest = await airtableList(TABLES.inventory, ["Area"]);
+    if (!latest.some((record) => record.id === itemId && String(record.fields.Area || "") === "Shelter")) return;
+    await airtableUpdate(TABLES.inventory, itemId, {
+      "Item Name": formText(formData, "itemName"),
+      Category: formText(formData, "category"),
+      "Unit of Measure": formText(formData, "unit"),
+      "Reorder Point": optionalNumber(formData, "reorderPoint") ?? null,
+      "Target Quantity": optionalNumber(formData, "targetQuantity") ?? null,
+      "Preferred Vendor": formText(formData, "vendor"),
+      "Purchase URL": formText(formData, "purchaseUrl"),
+      "Typical Unit Cost": optionalNumber(formData, "unitCost") ?? null,
+      "Responsible Person": formText(formData, "responsiblePerson"),
+      "Responsible Email": formText(formData, "responsibleEmail"),
+      "Track Lot / Expiration": formData.get("trackLot") === "on",
+      Notes: formText(formData, "notes"),
+      Active: formData.get("active") === "on",
+    }, true);
+    revalidatePath("/portal/staff");
+    revalidatePath("/portal/staff/inventory");
+  }
+
+  async function saveShelterInventoryCount(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Staff", "write");
+    const itemId = formText(formData, "itemId");
+    const newCount = optionalNumber(formData, "count");
+    if (!itemId || newCount === undefined || newCount < 0) return;
+    const latest = await airtableList(TABLES.inventory, ["Area", "Current Quantity", "Inventory Status"]);
+    const item = latest.find((record) => record.id === itemId && String(record.fields.Area || "") === "Shelter");
+    if (!item) return;
+    const existingCount = typeof item.fields["Current Quantity"] === "number" ? item.fields["Current Quantity"] : 0;
+    const delta = newCount - existingCount;
+    if (delta !== 0 || String(item.fields["Inventory Status"] || "") === "Not Counted") {
+      await airtableCreate(TABLES.inventoryTransactions, {
+        Item: [itemId],
+        "Date / Time": new Date().toISOString(),
+        "Transaction Type": delta >= 0 ? "Adjustment +" : "Adjustment -",
+        "Quantity Change": Math.abs(delta),
+        "Entered By": current.displayName || current.email,
+        Notes: String(item.fields["Inventory Status"] || "") === "Not Counted" ? "Opening physical count entered from Staff Portal." : "Physical count adjustment entered from Staff Portal.",
+      }, true);
+    }
+    revalidatePath("/portal/staff");
+    revalidatePath("/portal/staff/inventory");
+  }
+
+  async function requestShelterInventoryReorder(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Staff", "write");
+    const itemId = formText(formData, "itemId");
+    const latest = await airtableList(TABLES.inventory, ["Area", "Current Quantity", "Reorder Point", "Suggested Reorder Quantity", "Unit of Measure", "Reorder Request Status"]);
+    const item = latest.find((record) => record.id === itemId && String(record.fields.Area || "") === "Shelter");
+    if (!item) return;
+    const status = String(item.fields["Reorder Request Status"] || "");
+    if (status === "Requested" || status === "Ordered") return;
+    await airtableUpdate(TABLES.inventory, itemId, {
+      "Reorder Request Status": "Requested",
+      "Reorder Requested At": new Date().toISOString(),
+      "Reorder Requested By": current.displayName || current.email,
+      "Reorder Reason": `Manual reorder request from Staff Portal. Suggested reorder: ${typeof item.fields["Suggested Reorder Quantity"] === "number" ? item.fields["Suggested Reorder Quantity"] : 0} ${String(item.fields["Unit of Measure"] || "")}.`,
+      "Reorder Notification Sent": false,
+    }, true);
+    revalidatePath("/portal/staff");
+    revalidatePath("/portal/staff/inventory");
+  }
+
+  async function deleteShelterInventoryItem(formData: FormData) {
+    "use server";
+    await requirePortalRole("Staff", "write");
+    const itemId = formText(formData, "itemId");
+    if (!itemId || formData.get("confirmDelete") !== "on") return;
+    const [latest, transactions] = await Promise.all([
+      airtableList(TABLES.inventory, ["Area"]),
+      airtableList(TABLES.inventoryTransactions, ["Item"]),
+    ]);
+    const item = latest.find((record) => record.id === itemId && String(record.fields.Area || "") === "Shelter");
+    if (!item) return;
+    const hasHistory = transactions.some((record) => Array.isArray(record.fields.Item) && record.fields.Item.includes(itemId));
+    if (hasHistory) {
+      await airtableUpdate(TABLES.inventory, itemId, { Active: false, "Reorder Request Status": "Resolved" }, true);
+    } else {
+      await airtableDelete(TABLES.inventory, itemId);
+    }
+    revalidatePath("/portal/staff");
+    revalidatePath("/portal/staff/inventory");
+  }
 
   async function addCurrentNeed(formData: FormData) {
     "use server";
@@ -444,30 +572,107 @@ export default async function StaffPortalPage() {
               </section>
 
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
-                <div className="mb-5 flex items-center gap-3">
+                <div className="mb-2 flex items-center gap-3">
                   <Boxes className="h-6 w-6 text-primary" />
                   <h2 className="text-2xl font-bold">Shelter Inventory</h2>
                 </div>
-                <div className="space-y-3">
-                  {data.inventory
-                    .filter((item) => item.area === "Shelter")
-                    .slice(0, 12)
-                    .map((item) => (
-                      <div key={item.id} className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
-                        <div>
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-xs text-muted-foreground">{item.category}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">{item.current ?? "—"}</p>
-                          <p className="text-xs text-muted-foreground">{item.status || "No status"}</p>
-                        </div>
+                <p className="mb-5 text-sm text-muted-foreground">Update counts, add supplies, edit item details, and request reorders directly from the Staff Portal.</p>
+
+                {canWriteStaff && (
+                  <details className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                    <summary className="cursor-pointer font-semibold text-primary">+ Add a supply</summary>
+                    <form action={addShelterInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
+                      <label className="text-xs font-medium">Supply name<input name="itemName" required placeholder="e.g. Kitten wet food" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                      <label className="text-xs font-medium">Category<select name="category" defaultValue="Other" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">{["Animal Food","Litter","Cleaning","PPE","Office","Laundry","Animal Care","Other"].map((category)=><option key={category}>{category}</option>)}</select></label>
+                      <label className="text-xs font-medium">Unit of measure<input name="unit" placeholder="e.g. case, bag, each" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                        <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                       </div>
-                    ))}
+                      <label className="text-xs font-medium">Preferred vendor<input name="vendor" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                      <label className="text-xs font-medium">Purchase URL<input name="purchaseUrl" type="url" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                      <label className="text-xs font-medium">Typical unit cost<input name="unitCost" type="number" min="0" step="0.01" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                      <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue="Sam Smith" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                      <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue="sa7smith@msn.com" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                      <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" /> Track lot / expiration</label>
+                      <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                      <button className="w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white sm:col-span-2">Add supply</button>
+                    </form>
+                  </details>
+                )}
+
+                <div className="space-y-3">
+                  {data.inventory.filter((item) => item.area === "Shelter").map((item) => {
+                    const lowStock = ["Low Stock", "Out of Stock"].includes(item.status);
+                    const reorderActive = ["Requested", "Ordered"].includes(item.reorderStatus);
+                    return (
+                      <div key={item.id} className={`rounded-2xl border p-4 ${lowStock || reorderActive ? "border-orange-300 bg-orange-50/60" : "border-transparent bg-slate-50"}`}>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="font-semibold">{item.name}</p>
+                            {item.unit && <p className="text-xs text-muted-foreground">Unit: {item.unit}</p>}
+                            <p className={`mt-1 text-xs font-semibold ${lowStock || reorderActive ? "text-primary" : "text-muted-foreground"}`}>
+                              {reorderActive ? `Reorder ${item.reorderStatus.toLowerCase()}` : (item.status || "No status")}
+                            </p>
+                          </div>
+                          <div className="text-left sm:text-right">
+                            <p className="text-lg font-bold">{item.current ?? "—"}</p>
+                            <p className="text-xs text-muted-foreground">Reorder at {item.reorderPoint ?? "—"} · Target {item.target ?? "—"}</p>
+                          </div>
+                        </div>
+
+                        {canWriteStaff && (
+                          <>
+                            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+                              <form action={saveShelterInventoryCount} className="flex flex-wrap items-end gap-2">
+                                <input type="hidden" name="itemId" value={item.id} />
+                                <label className="text-xs font-medium">Current count<input name="count" type="number" min="0" step="1" defaultValue={item.current ?? ""} placeholder="Enter count" className="mt-1 w-28 rounded-lg border bg-white px-3 py-2 text-sm" /></label>
+                                <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save count</button>
+                              </form>
+                              <form action={requestShelterInventoryReorder} className="flex items-end">
+                                <input type="hidden" name="itemId" value={item.id} />
+                                <button disabled={reorderActive} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
+                                  {reorderActive ? (item.reorderStatus === "Ordered" ? "Order in progress" : "Reorder requested") : "Request reorder"}
+                                </button>
+                              </form>
+                            </div>
+
+                            <details className="mt-4 border-t pt-4">
+                              <summary className="cursor-pointer text-sm font-semibold text-primary">Modify item</summary>
+                              <form action={updateShelterInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
+                                <input type="hidden" name="itemId" value={item.id} />
+                                <label className="text-xs font-medium">Supply name<input name="itemName" required defaultValue={item.name} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                <label className="text-xs font-medium">Category<select name="category" defaultValue={item.category || "Other"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">{["Animal Food","Litter","Cleaning","PPE","Office","Laundry","Animal Care","Other"].map((category)=><option key={category}>{category}</option>)}</select></label>
+                                <label className="text-xs font-medium">Unit of measure<input name="unit" defaultValue={item.unit} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" defaultValue={item.reorderPoint ?? ""} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                  <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" defaultValue={item.target ?? ""} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                </div>
+                                <label className="text-xs font-medium">Preferred vendor<input name="vendor" defaultValue={item.vendor} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                <label className="text-xs font-medium">Purchase URL<input name="purchaseUrl" type="url" defaultValue={item.purchaseUrl} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                <label className="text-xs font-medium">Typical unit cost<input name="unitCost" type="number" min="0" step="0.01" defaultValue={item.unitCost ?? ""} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue={item.responsiblePerson || "Sam Smith"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue={item.responsibleEmail || "sa7smith@msn.com"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" defaultChecked={item.trackLotExpiration} /> Track lot / expiration</label>
+                                <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked /> Active</label>
+                                <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} defaultValue={item.notes} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                <button className="w-fit rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary sm:col-span-2">Save item changes</button>
+                              </form>
+                              <form action={deleteShelterInventoryItem} className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
+                                <input type="hidden" name="itemId" value={item.id} />
+                                <p className="text-sm font-semibold text-red-800">Delete item</p>
+                                <p className="mt-1 text-xs text-red-700">If this item has transaction history, it will be archived instead of permanently removed so inventory history remains intact.</p>
+                                <label className="mt-3 flex items-start gap-2 text-xs text-red-800"><input required name="confirmDelete" type="checkbox" className="mt-0.5" /> I confirm that I want to remove this item from active inventory.</label>
+                                <button className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-700">Delete item</button>
+                              </form>
+                            </details>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-                <Link href="/portal/staff/inventory" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">
-                  Manage shelter inventory
-                </Link>
+                <Link href="/portal/staff/inventory" className="mt-5 inline-block text-sm font-semibold text-primary hover:underline">Open full inventory history & transactions</Link>
               </section>
 
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
