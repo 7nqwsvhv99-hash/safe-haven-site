@@ -482,22 +482,22 @@ export default async function ClinicPortalPage() {
                     <details className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                       <summary className="cursor-pointer font-semibold text-primary">+ Add a supply</summary>
                       <form action={addClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <input name="itemName" required placeholder="Supply name" className="rounded-xl border bg-white px-3 py-2.5" />
-                        <select name="category" defaultValue="Medical / Clinic Supply" className="rounded-xl border bg-white px-3 py-2.5">
+                        <label className="text-xs font-medium">Supply name<input name="itemName" required placeholder="e.g. Sterile gauze sponges" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                        <label className="text-xs font-medium">Category<select name="category" defaultValue="Medical / Clinic Supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
                           {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
-                        </select>
-                        <input name="unit" placeholder="Unit of measure, e.g. box, dose, each" className="rounded-xl border bg-white px-3 py-2.5" />
+                        </select></label>
+                        <label className="text-xs font-medium">Unit of measure<input name="unit" placeholder="e.g. box, dose, each" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                         <div className="grid grid-cols-2 gap-3">
                           <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                           <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                         </div>
-                        <input name="vendor" placeholder="Preferred vendor" className="rounded-xl border bg-white px-3 py-2.5" />
-                        <input name="purchaseUrl" type="url" placeholder="Purchase URL" className="rounded-xl border bg-white px-3 py-2.5" />
-                        <input name="unitCost" type="number" min="0" step="0.01" placeholder="Typical unit cost" className="rounded-xl border bg-white px-3 py-2.5" />
-                        <input name="responsiblePerson" defaultValue="Sam Smith" placeholder="Responsible person" className="rounded-xl border bg-white px-3 py-2.5" />
-                        <input name="responsibleEmail" type="email" defaultValue="sa7smith@msn.com" placeholder="Responsible email" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <label className="text-xs font-medium">Preferred vendor<input name="vendor" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                        <label className="text-xs font-medium">Purchase URL<input name="purchaseUrl" type="url" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                        <label className="text-xs font-medium">Typical unit cost<input name="unitCost" type="number" min="0" step="0.01" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                        <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue="Sam Smith" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                        <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue="sa7smith@msn.com" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                         <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" /> Track lot / expiration</label>
-                        <textarea name="notes" rows={2} placeholder="Notes" className="rounded-xl border bg-white px-3 py-2.5 sm:col-span-2" />
+                        <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                         <button className="w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white sm:col-span-2">Add supply</button>
                       </form>
                     </details>
@@ -546,23 +546,23 @@ export default async function ClinicPortalPage() {
                                 <summary className="cursor-pointer text-sm font-semibold text-primary">Modify item</summary>
                                 <form action={updateClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
                                   <input type="hidden" name="itemId" value={item.id} />
-                                  <input name="itemName" required defaultValue={item.name} placeholder="Supply name" className="rounded-xl border bg-white px-3 py-2.5" />
-                                  <select name="category" defaultValue={item.category || "Medical / Clinic Supply"} className="rounded-xl border bg-white px-3 py-2.5">
+                                  <label className="text-xs font-medium">Supply name<input name="itemName" required defaultValue={item.name} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                  <label className="text-xs font-medium">Category<select name="category" defaultValue={item.category || "Medical / Clinic Supply"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
                                     {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
-                                  </select>
-                                  <input name="unit" defaultValue={item.unit} placeholder="Unit of measure" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  </select></label>
+                                  <label className="text-xs font-medium">Unit of measure<input name="unit" defaultValue={item.unit} placeholder="e.g. box, dose, each" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                                   <div className="grid grid-cols-2 gap-3">
                                     <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" defaultValue={item.reorderPoint ?? ""} placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                                     <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" defaultValue={item.target ?? ""} placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                                   </div>
-                                  <input name="vendor" defaultValue={item.vendor} placeholder="Preferred vendor" className="rounded-xl border bg-white px-3 py-2.5" />
-                                  <input name="purchaseUrl" type="url" defaultValue={item.purchaseUrl} placeholder="Purchase URL" className="rounded-xl border bg-white px-3 py-2.5" />
-                                  <input name="unitCost" type="number" min="0" step="0.01" defaultValue={item.unitCost ?? ""} placeholder="Typical unit cost" className="rounded-xl border bg-white px-3 py-2.5" />
-                                  <input name="responsiblePerson" defaultValue={item.responsiblePerson} placeholder="Responsible person" className="rounded-xl border bg-white px-3 py-2.5" />
-                                  <input name="responsibleEmail" type="email" defaultValue={item.responsibleEmail} placeholder="Responsible email" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  <label className="text-xs font-medium">Preferred vendor<input name="vendor" defaultValue={item.vendor} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                  <label className="text-xs font-medium">Purchase URL<input name="purchaseUrl" type="url" defaultValue={item.purchaseUrl} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                  <label className="text-xs font-medium">Typical unit cost<input name="unitCost" type="number" min="0" step="0.01" defaultValue={item.unitCost ?? ""} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                  <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue={item.responsiblePerson} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                  <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue={item.responsibleEmail} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                                   <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" defaultChecked={item.trackLotExpiration} /> Track lot / expiration</label>
                                   <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked /> Active</label>
-                                  <textarea name="notes" rows={2} defaultValue={item.notes} placeholder="Notes" className="rounded-xl border bg-white px-3 py-2.5 sm:col-span-2" />
+                                  <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} defaultValue={item.notes} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                                   <button className="w-fit rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary sm:col-span-2">Save item changes</button>
                                 </form>
                               </details>
