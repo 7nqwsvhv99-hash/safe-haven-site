@@ -12,8 +12,14 @@ function field(f:FormData,n:string){ return String(f.get(n)||"").trim() }
 function optionalNumber(f:FormData,n:string){ const v=field(f,n); if(!v)return undefined; const x=Number(v); return Number.isFinite(x)?x:undefined }
 function Pill({children}:{children:ReactNode}){return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children}</span>}
 
-export default async function ShelterInventoryPage(){
+export default async function ShelterInventoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ attention?: string }>;
+}){
   const context=await requirePortalRole("Staff");
+  const query=await searchParams;
+  const attentionOnly=query.attention==="1";
   const [items,transactions]=await Promise.all([
     airtableList(TABLES.inventory,[
       "Item Name","Area","Category","Unit of Measure","Reorder Point","Target Quantity",
@@ -29,8 +35,12 @@ export default async function ShelterInventoryPage(){
   ]);
   const shelterItems=items.filter(r=>asText(r.fields.Area)==="Shelter"&&Boolean(r.fields.Active));
   const itemById=new Map(items.map(r=>[r.id,r]));
-  const attention=shelterItems.filter(r=>["Low Stock","Out of Stock"].includes(asText(r.fields["Inventory Status"])));
+  const attention=shelterItems.filter(r=>
+    ["Low Stock","Out of Stock"].includes(asText(r.fields["Inventory Status"])) ||
+    ["Requested","Ordered"].includes(asText(r.fields["Reorder Request Status"]))
+  );
   const active=shelterItems.filter(r=>Boolean(r.fields.Active));
+  const visibleItems=attentionOnly?attention:shelterItems;
 
   async function addItem(formData:FormData){
     "use server";
@@ -172,7 +182,7 @@ export default async function ShelterInventoryPage(){
 
   return <main className="min-h-screen bg-slate-50"><div className="container-custom py-10 md:py-12">
     <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft className="h-4 w-4"/> Staff Portal</Link>
-    <header className="mb-8"><p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Shelter Operations</p><h1 className="text-4xl font-bold tracking-tight md:text-5xl">Shelter Inventory</h1><p className="mt-4 max-w-3xl text-muted-foreground">Manage shelter supplies through transaction history, reorder thresholds, vendors, and low-stock alerts. Clinic inventory remains separate.</p></header>
+    <header className="mb-8"><p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Shelter Operations</p><h1 className="text-4xl font-bold tracking-tight md:text-5xl">Shelter Inventory</h1><p className="mt-4 max-w-3xl text-muted-foreground">{attentionOnly ? "Showing only supplies that currently need reorder attention." : "Manage shelter supplies through transaction history, reorder thresholds, vendors, and low-stock alerts. Clinic inventory remains separate."}</p>{attentionOnly&&<Link href="/portal/staff/inventory" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">Show all inventory</Link>}</header>
 
     <section className="mb-8 grid gap-4 sm:grid-cols-3">
       {[
@@ -189,7 +199,7 @@ export default async function ShelterInventoryPage(){
         <h2 className="text-2xl font-bold">Inventory Items</h2>
         <p className="mt-2 text-sm text-muted-foreground">Update counts, request reorders, and maintain supply details. Low-stock items are highlighted automatically.</p>
         <div className="mt-5 space-y-4">
-          {shelterItems.map(r=>{
+          {visibleItems.map(r=>{
             const status=asText(r.fields["Inventory Status"]);
             const reorderStatus=asText(r.fields["Reorder Request Status"]);
             const low=["Low Stock","Out of Stock"].includes(status);
