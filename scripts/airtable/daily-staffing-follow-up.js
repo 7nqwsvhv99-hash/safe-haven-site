@@ -26,7 +26,15 @@ for(const clinic of dateRecords) {
   const vets=attending.filter(r=>r.getCellValueAsString('Team Member Role')==='Veterinarian');
   const techs=attending.filter(r=>r.getCellValueAsString('Team Member Role')==='Vet Tech');
   const volunteers=attending.filter(r=>r.getCellValueAsString('Team Member Role')==='Clinic Volunteer');
-  const covered=new Set(volunteers.map(r=>r.getCellValueAsString('Clinic Assignment')));
+  const covered=new Set();
+  for(const volunteer of volunteers) {
+    const assignments=volunteer.getCellValue('Clinic Assignments')||[];
+    if(assignments.length) assignments.forEach(x=>covered.add(x.name||String(x)));
+    else {
+      const legacy=volunteer.getCellValueAsString('Clinic Assignment');
+      if(legacy) covered.add(legacy);
+    }
+  }
   const missing=['Front Room System','Back Room System','Autoclave'].filter(x=>!covered.has(x));
   const eligibleRoles=new Set(['Veterinarian',...(vets.length?['Vet Tech']:[]),...(vets.length&&techs.length?['Clinic Volunteer']:[])]);
   const existing=new Set(rows.flatMap(r=>(r.getCellValue('Team Member')||[]).map(x=>x.id)));
