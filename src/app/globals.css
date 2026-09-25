@@ -269,3 +269,33 @@
     box-shadow: 0 0 0 2px rgba(247, 127, 39, 0.28);
   }
 }
+
+
+/* Staff Portal command cards: signature orange glow on hover/focus */
+.staff-command-card {
+  transition:
+    transform 180ms ease,
+    box-shadow 220ms ease,
+    border-color 220ms ease;
+}
+
+.staff-command-card:hover,
+.staff-command-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(247, 127, 39, 0.58);
+  box-shadow:
+    0 10px 24px rgba(247, 127, 39, 0.12),
+    0 0 0 1px rgba(247, 127, 39, 0.18),
+    0 0 18px 4px rgba(247, 127, 39, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .staff-command-card {
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .staff-command-card:hover,
+  .staff-command-card:focus-visible {
+    transform: none;
+  }
+}
