@@ -189,6 +189,7 @@ export default async function ClinicPortalPage() {
       "Reorder Requested At": new Date().toISOString(),
       "Reorder Requested By": current.displayName || current.email,
       "Reorder Reason": `Manual reorder request from Clinic Team Portal. Current count: ${item.current ?? "not counted"} ${item.unit || ""}. Reorder point: ${item.reorderPoint ?? "not set"}. Suggested reorder: ${item.suggestedReorder ?? "not set"}.`,
+      "Reorder Notification Sent": false,
     });
 
     revalidatePath("/portal/clinic");
