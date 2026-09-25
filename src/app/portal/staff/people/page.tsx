@@ -33,7 +33,7 @@ export default async function PeoplePage({searchParams}:{searchParams:Promise<{q
 
   async function reconcile(formData:FormData){
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     void formData;
     const [existing,volunteers,adoptionApps,fosterApps,surrenders,donors,subscribers]=await Promise.all([
       airtableList(TABLES.people,[
@@ -109,7 +109,7 @@ export default async function PeoplePage({searchParams}:{searchParams:Promise<{q
 
   async function addPerson(formData:FormData){
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const email=normalizeEmail(field(formData,"email"));
     const first=field(formData,"firstName"),last=field(formData,"lastName"),org=field(formData,"organization");
     if(!email&&!first&&!last&&!org)return;

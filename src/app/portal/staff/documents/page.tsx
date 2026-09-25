@@ -83,7 +83,7 @@ export default async function DocumentsManagementPage() {
 
   async function createDocument(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
 
     const documentType = value(formData, "documentType");
     if (!documentType) return;
@@ -119,7 +119,7 @@ export default async function DocumentsManagementPage() {
 
   async function updateDocument(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const documentId = value(formData, "documentId");
     const latest = await airtableList(TABLES.documents, ["Status"]);
     if (!latest.some((r) => r.id === documentId)) return;

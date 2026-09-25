@@ -108,7 +108,7 @@ export default async function IntakeManagementPage({
 
   async function saveRequest(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const requestId = value(formData, "requestId");
     const latest = await airtableList(TABLES.surrenderRequests, ["Status"]);
     if (!latest.some((r) => r.id === requestId)) return;
@@ -127,7 +127,7 @@ export default async function IntakeManagementPage({
 
   async function acceptSurrender(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const requestId = value(formData, "requestId");
     const latest = await airtableList(TABLES.surrenderRequests, [
       "Status","Owner First Name","Owner Last Name","Email","Phone","Animal Name","Species","Sex",
@@ -209,7 +209,7 @@ export default async function IntakeManagementPage({
 
   async function directIntake(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     let animalId = value(formData, "existingAnimalId");
     const initialPlacement = value(formData, "initialPlacement") || "In Shelter";
     const fosterApplicationId = value(formData, "fosterApplicationId");

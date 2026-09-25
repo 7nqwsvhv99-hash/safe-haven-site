@@ -217,7 +217,7 @@ export default async function FosterManagementPage({
 
   async function updateApplication(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const applicationId = field(formData, "applicationId");
     const latest = await airtableList(TABLES.fosterApplications, ["Status"]);
     if (!latest.some((record) => record.id === applicationId)) return;
@@ -240,7 +240,7 @@ export default async function FosterManagementPage({
 
   async function createPlacement(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const applicationId = field(formData, "applicationId");
     const animalIds = formData.getAll("animalIds").map(String).filter(Boolean);
     if (!applicationId || !animalIds.length) return;
@@ -294,7 +294,7 @@ export default async function FosterManagementPage({
 
   async function updatePlacement(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const placementId = field(formData, "placementId");
     const latest = await airtableList(TABLES.fosterPlacements, ["Placement Status"]);
     if (!latest.some((record) => record.id === placementId)) return;
@@ -314,7 +314,7 @@ export default async function FosterManagementPage({
 
   async function endPlacement(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const placementId = field(formData, "placementId");
     const outcome = field(formData, "outcome");
     if (!placementId || !outcome || outcome === "Adopted") return;
@@ -353,7 +353,7 @@ export default async function FosterManagementPage({
 
   async function transferPlacement(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff");
+    await requirePortalRole("Staff", "write");
     const placementId = field(formData, "placementId");
     const destinationApplicationId = field(formData, "destinationApplicationId");
     if (!placementId || !destinationApplicationId) return;
@@ -404,7 +404,7 @@ export default async function FosterManagementPage({
 
   async function addStaffCheckIn(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Staff");
+    const current = await requirePortalRole("Staff", "write");
     const placementId = field(formData, "placementId");
     const latestPlacements = await airtableList(TABLES.fosterPlacements, ["Animal", "Placement Status"]);
     const placement = latestPlacements.find((record) => record.id === placementId);
@@ -452,7 +452,7 @@ export default async function FosterManagementPage({
 
   async function resolveUpdate(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Staff");
+    const current = await requirePortalRole("Staff", "write");
     const updateId = field(formData, "updateId");
     const resolutionStatus = field(formData, "resolutionStatus");
     const latestUpdates = await airtableList(TABLES.fosterUpdates, ["Foster Placement"]);
