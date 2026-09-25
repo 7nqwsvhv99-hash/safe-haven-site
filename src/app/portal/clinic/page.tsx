@@ -23,7 +23,7 @@ export default async function ClinicPortalPage() {
 
   async function submitVeterinarianPreference(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Clinic Team");
+    const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
     if (!latest.member || latest.member.role !== "Veterinarian") return;
 
@@ -57,7 +57,7 @@ export default async function ClinicPortalPage() {
 
   async function saveAvailability(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Clinic Team");
+    const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
     const responseId = String(formData.get("responseId") || "");
     const value = String(formData.get("availability") || "");
@@ -98,7 +98,7 @@ export default async function ClinicPortalPage() {
 
   async function saveReconfirmation(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Clinic Team");
+    const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
     const responseId = String(formData.get("responseId") || "");
     const value = String(formData.get("reconfirmation") || "");
@@ -136,7 +136,7 @@ export default async function ClinicPortalPage() {
             </p>
           </div>
 
-          {!data.member ? (
+          {!data.member && !context.isBoard ? (
             <div className="rounded-3xl border bg-white p-8 shadow-sm">
               <h2 className="text-2xl font-bold">We could not match this sign-in to an active clinic team record.</h2>
               <p className="mt-3 text-muted-foreground">
@@ -145,7 +145,8 @@ export default async function ClinicPortalPage() {
             </div>
           ) : (
             <div className="space-y-8">
-              {data.member.role === "Veterinarian" && (
+              {context.isBoard && !data.member && <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm"><strong>Board View:</strong> This account is not linked to a clinic-team profile. Team staffing, inventory, announcements, and the clinic interface are available below. Personalized availability and attendance responses appear only for clinic-team members.</div>}
+              {data.member?.role === "Veterinarian" && (
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
                     <CalendarPlus className="h-6 w-6 text-primary" />
@@ -236,13 +237,13 @@ export default async function ClinicPortalPage() {
                             <form action={saveAvailability} className="rounded-xl border bg-white p-4">
                               <input type="hidden" name="responseId" value={item.responseId} />
                               <p className="mb-2 text-sm font-semibold">My availability</p>
-                              {data.member.role === "Clinic Volunteer" && (
+                              {data.member?.role === "Clinic Volunteer" && (
                                 <select name="assignment" defaultValue={item.assignment} className="mb-3 w-full rounded-lg border bg-white px-3 py-2 text-sm">
                                   <option value="" disabled>Select your clinic role</option>
-                                  {data.member.skills.includes("Front Room System") && <option>Front Room System</option>}
-                                  {data.member.skills.includes("Back Room System") && <option>Back Room System</option>}
-                                  {data.member.skills.includes("Autoclave") && <option>Autoclave</option>}
-                                  {data.member.skills.includes("General Support") && <option value="Front Room Support">General Volunteer</option>}
+                                  {data.member?.skills.includes("Front Room System") && <option>Front Room System</option>}
+                                  {data.member?.skills.includes("Back Room System") && <option>Back Room System</option>}
+                                  {data.member?.skills.includes("Autoclave") && <option>Autoclave</option>}
+                                  {data.member?.skills.includes("General Support") && <option value="Front Room Support">General Volunteer</option>}
                                 </select>
                               )}
                               <div className="flex gap-2">
