@@ -292,18 +292,20 @@ export default async function ClinicPortalPage() {
                               )}
                             </div>
 
-                            <form action={saveReconfirmation} className={`rounded-xl border bg-white p-4 ${(daysUntilClinic(item.clinic?.date || "") <= 7 && item.initialResponse === "Yes" && (!item.reconfirmation || item.reconfirmation === "Awaiting Response")) ? "portal-action-glow" : ""}`}>
-                              <fieldset disabled={item.initialResponse !== "Yes" || daysUntilClinic(item.clinic?.date || "") > 7 || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))} className="disabled:opacity-50">
-                              <input type="hidden" name="responseId" value={item.responseId} />
-                              <p className="mb-2 text-sm font-semibold">Reconfirm attendance</p>
-                              <div className="flex flex-wrap gap-2">
-                                <button name="reconfirmation" value="Yes, still attending" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Still attending</button>
-                                <button name="reconfirmation" value="No, can no longer attend" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Can’t attend</button>
-                              </div>
-                              <p className={`mt-2 text-xs ${item.reconfirmation && item.reconfirmation !== "Awaiting Response" ? "font-semibold text-green-700" : "text-muted-foreground"}`}>Current: {item.reconfirmation || "Awaiting response"}</p>
-                              {daysUntilClinic(item.clinic?.date || "") > 7 && item.initialResponse === "Yes" && <p className="mt-2 text-xs text-muted-foreground">Reconfirmation opens one week before the clinic.</p>}
-                              </fieldset>
-                            </form>
+                            {item.initialResponse !== "No" && (
+                              <form action={saveReconfirmation} className={`rounded-xl border bg-white p-4 ${(daysUntilClinic(item.clinic?.date || "") <= 7 && item.initialResponse === "Yes" && (!item.reconfirmation || item.reconfirmation === "Awaiting Response")) ? "portal-action-glow" : ""}`}>
+                                <fieldset disabled={item.initialResponse !== "Yes" || daysUntilClinic(item.clinic?.date || "") > 7 || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))} className="disabled:opacity-50">
+                                  <input type="hidden" name="responseId" value={item.responseId} />
+                                  <p className="mb-2 text-sm font-semibold">Reconfirm attendance</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    <button name="reconfirmation" value="Yes, still attending" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Still attending</button>
+                                    <button name="reconfirmation" value="No, can no longer attend" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Can’t attend</button>
+                                  </div>
+                                  <p className={`mt-2 text-xs ${item.reconfirmation && item.reconfirmation !== "Awaiting Response" ? "font-semibold text-green-700" : "text-muted-foreground"}`}>Current: {item.reconfirmation || "Awaiting response"}</p>
+                                  {daysUntilClinic(item.clinic?.date || "") > 7 && item.initialResponse === "Yes" && <p className="mt-2 text-xs text-muted-foreground">Reconfirmation opens one week before the clinic.</p>}
+                                </fieldset>
+                              </form>
+                            )}
                           </div>
                         </div>
                       </div>
