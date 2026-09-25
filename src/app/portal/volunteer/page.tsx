@@ -29,6 +29,7 @@ function formatDate(value: string) {
 export default async function VolunteerPortalPage() {
   const context = await requirePortalRole("Volunteer");
   const data = await getVolunteerPortalData(context.email);
+  const canWriteVolunteer = context.isAdministrator || context.roles.includes("Volunteer");
 
   async function logHours(formData: FormData) {
     "use server";
@@ -199,7 +200,7 @@ export default async function VolunteerPortalPage() {
                 </section>
               </div>
 
-              {data.volunteer && !context.isBoard && (
+              {data.volunteer && canWriteVolunteer && (
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
                     <HeartHandshake className="h-6 w-6 text-primary" />
