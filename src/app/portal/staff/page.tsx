@@ -47,7 +47,7 @@ export default async function StaffPortalPage() {
   const context = await getPortalContext();
   if (!context.canStaff) redirect(context.canOnboard ? "/portal/staff/onboarding" : "/portal");
   const data = await getStaffPortalData();
-  const canWriteStaff = context.isAdministrator || context.roles.includes("Staff") || context.roles.includes("Staff Manager");
+  const canWriteStaff = context.isAdministrator || context.roles.includes("Staff") || context.roles.includes("Shelter Manager");
 
   async function addShelterInventoryItem(formData: FormData) {
     "use server";
