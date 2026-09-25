@@ -852,8 +852,13 @@ export async function getStaffPortalData() {
   const activeInventory = inventory.filter((record) => Boolean(record.fields.Active));
   const inventoryAttention = activeInventory.filter((record) => {
     const status = asText(record.fields["Inventory Status"]).toLowerCase();
-    return status && !["ok", "in stock", "good"].includes(status);
+    const reorderStatus = asText(record.fields["Reorder Request Status"]).toLowerCase();
+    return ["low stock", "out of stock"].includes(status) || ["requested", "ordered"].includes(reorderStatus);
   });
+  const inventoryNotCountedCount = activeInventory.filter(
+    (record) => asText(record.fields["Inventory Status"]).toLowerCase() === "not counted"
+  ).length;
+  const highPriorityNeedsCount = needs.filter((need) => ["High", "Urgent"].includes(need.priority)).length;
 
   const upcomingEvents = events
     .filter((record) => {
@@ -930,6 +935,8 @@ export async function getStaffPortalData() {
       reorderReason: asText(record.fields["Reorder Reason"]),
     })),
     inventoryAttentionCount: inventoryAttention.length,
+    inventoryNotCountedCount,
+    highPriorityNeedsCount,
     upcomingEvents,
     fosterAlerts,
     fosterAlertCount: fosterAlerts.length,
@@ -940,12 +947,7 @@ export async function getStaffPortalData() {
       animals: medical.animals,
     },
     volunteerFollowUpCount: volunteerFollowUps.length,
-    actionRequiredCount:
-      needs.filter((need) => ["High", "Urgent"].includes(need.priority)).length +
-      inventoryAttention.length +
-      fosterAlerts.length +
-      volunteerFollowUps.length +
-      medical.pendingReview.length,
+    actionRequiredCount: highPriorityNeedsCount,
   };
 }
 
