@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { MapPin, Phone, Mail, Facebook, Instagram } from "lucide-react"
+import { MapPin, Phone, Mail, Facebook } from "lucide-react"
 import { NewsletterSignup } from "@/components/newsletter-signup"
 
 export function Footer() {
@@ -88,9 +88,6 @@ export function Footer() {
             <div className="flex gap-3 mt-4">
               <a href="https://www.facebook.com/safehavenelizabethil" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors" aria-label="Facebook">
                 <Facebook className="h-4 w-4" />
-              </a>
-              <a href="https://www.instagram.com/safehaven.animalshelter" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors" aria-label="Instagram">
-                <Instagram className="h-4 w-4" />
               </a>
             </div>
           </div>
