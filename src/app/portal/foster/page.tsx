@@ -36,7 +36,7 @@ export default async function FosterPortalPage() {
   async function submitUpdate(formData: FormData) {
     "use server";
 
-    const current = await requirePortalRole("Foster");
+    const current = await requirePortalRole("Foster", "write");
     const latest = await getFosterPortalData(current.email);
     const placementId = String(formData.get("placementId") || "");
     const placement = latest.placements.find((item) => item.id === placementId);

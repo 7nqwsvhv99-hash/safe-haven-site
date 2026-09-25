@@ -59,7 +59,7 @@ export default async function MedicalPortalPage() {
 
   async function addMedicalEntry(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Medical");
+    const current = await requirePortalRole("Medical", "write");
     const latest = await getMedicalPortalData();
     const animalId = String(formData.get("animalId") || "");
     const recordType = String(formData.get("recordType") || "Other");
@@ -97,7 +97,7 @@ export default async function MedicalPortalPage() {
 
   async function updateReviewStatus(formData: FormData) {
     "use server";
-    await requirePortalRole("Medical");
+    await requirePortalRole("Medical", "write");
     const latest = await getMedicalPortalData();
     const recordId = String(formData.get("recordId") || "");
     const status = String(formData.get("status") || "");
