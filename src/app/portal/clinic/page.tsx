@@ -17,6 +17,17 @@ function formatDate(value: string) {
   }).format(date);
 }
 
+function formText(formData: FormData, name: string) {
+  return String(formData.get(name) || "").trim();
+}
+
+function optionalNumber(formData: FormData, name: string) {
+  const value = formText(formData, name);
+  if (!value) return undefined;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : undefined;
+}
+
 function daysUntilClinic(value: string) {
   if (!value) return Number.POSITIVE_INFINITY;
   const clinic = new Date(`${value.slice(0, 10)}T12:00:00-05:00`);
@@ -146,6 +157,63 @@ export default async function ClinicPortalPage() {
     revalidatePath("/portal/clinic");
   }
 
+
+  async function addClinicInventoryItem(formData: FormData) {
+    "use server";
+    await requirePortalRole("Clinic Team", "write");
+
+    const itemName = formText(formData, "itemName");
+    if (!itemName) return;
+
+    await airtableCreate(TABLES.inventory, {
+      "Item Name": itemName,
+      Area: "Clinic",
+      Category: formText(formData, "category") || "Medical / Clinic Supply",
+      "Unit of Measure": formText(formData, "unit"),
+      ...(optionalNumber(formData, "reorderPoint") !== undefined ? { "Reorder Point": optionalNumber(formData, "reorderPoint") } : {}),
+      ...(optionalNumber(formData, "targetQuantity") !== undefined ? { "Target Quantity": optionalNumber(formData, "targetQuantity") } : {}),
+      "Preferred Vendor": formText(formData, "vendor"),
+      "Purchase URL": formText(formData, "purchaseUrl"),
+      ...(optionalNumber(formData, "unitCost") !== undefined ? { "Typical Unit Cost": optionalNumber(formData, "unitCost") } : {}),
+      "Responsible Person": formText(formData, "responsiblePerson"),
+      "Responsible Email": formText(formData, "responsibleEmail"),
+      "Track Lot / Expiration": formData.get("trackLot") === "on",
+      Notes: formText(formData, "notes"),
+      Active: true,
+    }, true);
+
+    revalidatePath("/portal/clinic");
+  }
+
+  async function updateClinicInventoryItem(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Clinic Team", "write");
+    const latest = await getClinicPortalData(current.email);
+    const itemId = formText(formData, "itemId");
+    const item = latest.inventory.find((entry) => entry.id === itemId);
+    if (!item) return;
+
+    const itemName = formText(formData, "itemName");
+    if (!itemName) return;
+
+    await airtableUpdate(TABLES.inventory, itemId, {
+      "Item Name": itemName,
+      Category: formText(formData, "category") || "Medical / Clinic Supply",
+      "Unit of Measure": formText(formData, "unit"),
+      "Reorder Point": optionalNumber(formData, "reorderPoint") ?? null,
+      "Target Quantity": optionalNumber(formData, "targetQuantity") ?? null,
+      "Preferred Vendor": formText(formData, "vendor"),
+      "Purchase URL": formText(formData, "purchaseUrl"),
+      "Typical Unit Cost": optionalNumber(formData, "unitCost") ?? null,
+      "Responsible Person": formText(formData, "responsiblePerson"),
+      "Responsible Email": formText(formData, "responsibleEmail"),
+      "Track Lot / Expiration": formData.get("trackLot") === "on",
+      Notes: formText(formData, "notes"),
+      Active: formData.get("active") === "on",
+    }, true);
+
+    revalidatePath("/portal/clinic");
+  }
 
   async function saveInventoryCount(formData: FormData) {
     "use server";
@@ -408,7 +476,32 @@ export default async function ClinicPortalPage() {
                     <Boxes className="h-6 w-6 text-primary" />
                     <h2 className="text-2xl font-bold">Clinic Inventory</h2>
                   </div>
-                  <p className="mb-5 text-sm text-muted-foreground">Update physical counts here. Low-stock items are flagged automatically, and a reorder can also be requested manually.</p>
+                  <p className="mb-5 text-sm text-muted-foreground">Update physical counts, add supplies, edit item details, and request reorders from the clinic portal.</p>
+
+                  {!context.isBoard && (
+                    <details className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                      <summary className="cursor-pointer font-semibold text-primary">+ Add a supply</summary>
+                      <form action={addClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
+                        <input name="itemName" required placeholder="Supply name" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <select name="category" defaultValue="Medical / Clinic Supply" className="rounded-xl border bg-white px-3 py-2.5">
+                          {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
+                        </select>
+                        <input name="unit" placeholder="Unit of measure, e.g. box, dose, each" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <div className="grid grid-cols-2 gap-3">
+                          <input name="reorderPoint" type="number" min="0" step="0.01" placeholder="Reorder point" className="rounded-xl border bg-white px-3 py-2.5" />
+                          <input name="targetQuantity" type="number" min="0" step="0.01" placeholder="Target quantity" className="rounded-xl border bg-white px-3 py-2.5" />
+                        </div>
+                        <input name="vendor" placeholder="Preferred vendor" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <input name="purchaseUrl" type="url" placeholder="Purchase URL" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <input name="unitCost" type="number" min="0" step="0.01" placeholder="Typical unit cost" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <input name="responsiblePerson" placeholder="Responsible person" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <input name="responsibleEmail" type="email" placeholder="Responsible email" className="rounded-xl border bg-white px-3 py-2.5" />
+                        <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" /> Track lot / expiration</label>
+                        <textarea name="notes" rows={2} placeholder="Notes" className="rounded-xl border bg-white px-3 py-2.5 sm:col-span-2" />
+                        <button className="w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white sm:col-span-2">Add supply</button>
+                      </form>
+                    </details>
+                  )}
                   {data.inventory.length ? (
                     <div className="space-y-3">
                       {data.inventory.map((item) => {
@@ -447,6 +540,33 @@ export default async function ClinicPortalPage() {
                               </form>
                             </div>
                             {lowStock && !reorderActive && <p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
+
+                            {!context.isBoard && (
+                              <details className="mt-4 border-t pt-4">
+                                <summary className="cursor-pointer text-sm font-semibold text-primary">Modify item</summary>
+                                <form action={updateClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
+                                  <input type="hidden" name="itemId" value={item.id} />
+                                  <input name="itemName" required defaultValue={item.name} placeholder="Supply name" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  <select name="category" defaultValue={item.category || "Medical / Clinic Supply"} className="rounded-xl border bg-white px-3 py-2.5">
+                                    {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
+                                  </select>
+                                  <input name="unit" defaultValue={item.unit} placeholder="Unit of measure" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <input name="reorderPoint" type="number" min="0" step="0.01" defaultValue={item.reorderPoint ?? ""} placeholder="Reorder point" className="rounded-xl border bg-white px-3 py-2.5" />
+                                    <input name="targetQuantity" type="number" min="0" step="0.01" defaultValue={item.target ?? ""} placeholder="Target quantity" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  </div>
+                                  <input name="vendor" defaultValue={item.vendor} placeholder="Preferred vendor" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  <input name="purchaseUrl" type="url" defaultValue={item.purchaseUrl} placeholder="Purchase URL" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  <input name="unitCost" type="number" min="0" step="0.01" defaultValue={item.unitCost ?? ""} placeholder="Typical unit cost" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  <input name="responsiblePerson" defaultValue={item.responsiblePerson} placeholder="Responsible person" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  <input name="responsibleEmail" type="email" defaultValue={item.responsibleEmail} placeholder="Responsible email" className="rounded-xl border bg-white px-3 py-2.5" />
+                                  <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" defaultChecked={item.trackLotExpiration} /> Track lot / expiration</label>
+                                  <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked /> Active</label>
+                                  <textarea name="notes" rows={2} defaultValue={item.notes} placeholder="Notes" className="rounded-xl border bg-white px-3 py-2.5 sm:col-span-2" />
+                                  <button className="w-fit rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary sm:col-span-2">Save item changes</button>
+                                </form>
+                              </details>
+                            )}
                           </div>
                         );
                       })}
