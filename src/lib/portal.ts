@@ -629,8 +629,13 @@ export async function getClinicPortalData(email: string) {
       "Unit of Measure",
       "Reorder Point",
       "Target Quantity",
+      "Suggested Reorder Quantity",
       "Current Quantity",
       "Inventory Status",
+      "Reorder Request Status",
+      "Reorder Requested At",
+      "Reorder Requested By",
+      "Reorder Reason",
       "Active",
     ]),
     airtableList(
@@ -756,7 +761,12 @@ export async function getClinicPortalData(email: string) {
         current: asNumber(record.fields["Current Quantity"]),
         reorderPoint: asNumber(record.fields["Reorder Point"]),
         target: asNumber(record.fields["Target Quantity"]),
+        suggestedReorder: asNumber(record.fields["Suggested Reorder Quantity"]),
         status: asText(record.fields["Inventory Status"]),
+        reorderStatus: asText(record.fields["Reorder Request Status"]),
+        reorderRequestedAt: safeDate(record.fields["Reorder Requested At"]),
+        reorderRequestedBy: asText(record.fields["Reorder Requested By"]),
+        reorderReason: asText(record.fields["Reorder Reason"]),
       })),
   };
 }
