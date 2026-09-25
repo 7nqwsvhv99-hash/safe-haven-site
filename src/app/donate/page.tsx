@@ -329,21 +329,21 @@ export default function DonatePage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="p-7 space-y-4">
+            <Card className="home-involvement-glow-card p-7 space-y-4">
               <Building2 className="h-10 w-10 text-primary" />
               <h3 className="font-bold text-xl">Employer Matching</h3>
               <p className="text-sm text-muted-foreground">
                 Your employer may match charitable gifts, which can increase the impact of your donation. Check with your employer's benefits or giving program.
               </p>
             </Card>
-            <Card className="p-7 space-y-4">
+            <Card className="home-involvement-glow-card p-7 space-y-4">
               <Landmark className="h-10 w-10 text-primary" />
               <h3 className="font-bold text-xl">Appreciated Securities</h3>
               <p className="text-sm text-muted-foreground">
                 Gifts of appreciated securities may be an option for some donors. Contact Safe Haven before initiating a transfer, and consult your financial or tax advisor about your situation.
               </p>
             </Card>
-            <Card className="p-7 space-y-4">
+            <Card className="home-involvement-glow-card p-7 space-y-4">
               <FileHeart className="h-10 w-10 text-primary" />
               <h3 className="font-bold text-xl">Planned & Estate Gifts</h3>
               <p className="text-sm text-muted-foreground">
