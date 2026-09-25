@@ -630,7 +630,7 @@ export default async function FosterManagementPage({
               </form>
             </section>
 
-            <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+            <section id="foster-attention" className="scroll-mt-36 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
               <div className="mb-5"><h2 className="text-2xl font-bold">Foster Updates Requiring Attention</h2><p className="mt-2 text-sm text-muted-foreground">Health, behavior, supply, or placement concerns submitted by fosters or staff.</p></div>
               <div className="space-y-4">
                 {unresolvedUpdates.map((update)=>{
