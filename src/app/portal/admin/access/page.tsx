@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, UserCog } from "lucide-react";
+import { ensureClerkInvitation } from "@/lib/onboarding";
 import {
   requireAdministrator,
   requireAdministratorOrBoard,
@@ -34,6 +35,14 @@ export default async function PortalAccessPage() {
       Active: true,
     }, true);
 
+    if (roles.includes("Board")) {
+      try {
+        await ensureClerkInvitation(email);
+      } catch (error) {
+        console.error("Could not send Board portal invitation", error);
+      }
+    }
+
     revalidatePath("/portal/admin/access");
   }
 
@@ -46,10 +55,21 @@ export default async function PortalAccessPage() {
     const active = formData.get("active") === "on";
     if (!recordId || roles.length === 0) return;
 
-    await airtableUpdate(TABLES.portalAccess, recordId, {
+    const updated = await airtableUpdate(TABLES.portalAccess, recordId, {
       Roles: roles,
       Active: active,
     }, true);
+
+    if (active && roles.includes("Board")) {
+      const email = String(updated?.fields?.Email || "");
+      if (email) {
+        try {
+          await ensureClerkInvitation(email);
+        } catch (error) {
+          console.error("Could not send Board portal invitation", error);
+        }
+      }
+    }
 
     revalidatePath("/portal/admin/access");
   }
