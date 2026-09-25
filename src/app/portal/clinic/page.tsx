@@ -146,6 +146,54 @@ export default async function ClinicPortalPage() {
     revalidatePath("/portal/clinic");
   }
 
+
+  async function saveInventoryCount(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Clinic Team", "write");
+    const latest = await getClinicPortalData(current.email);
+    const itemId = String(formData.get("itemId") || "");
+    const countRaw = String(formData.get("count") || "").trim();
+    const item = latest.inventory.find((entry) => entry.id === itemId);
+    if (!item || !countRaw) return;
+
+    const newCount = Number(countRaw);
+    if (!Number.isFinite(newCount) || newCount < 0) return;
+
+    const existingCount = item.current ?? 0;
+    const delta = newCount - existingCount;
+    if (delta !== 0 || item.status === "Not Counted") {
+      await airtableCreate(TABLES.inventoryTransactions, {
+        Item: [itemId],
+        "Date / Time": new Date().toISOString(),
+        "Transaction Type": delta >= 0 ? "Adjustment +" : "Adjustment -",
+        "Quantity Change": Math.abs(delta),
+        "Entered By": current.displayName || current.email,
+        Notes: item.status === "Not Counted" ? "Opening physical count entered from Clinic Team Portal." : "Physical count adjustment entered from Clinic Team Portal.",
+      });
+    }
+
+    revalidatePath("/portal/clinic");
+  }
+
+  async function requestInventoryReorder(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Clinic Team", "write");
+    const latest = await getClinicPortalData(current.email);
+    const itemId = String(formData.get("itemId") || "");
+    const item = latest.inventory.find((entry) => entry.id === itemId);
+    if (!item) return;
+    if (item.reorderStatus === "Requested" || item.reorderStatus === "Ordered") return;
+
+    await airtableUpdate(TABLES.inventory, itemId, {
+      "Reorder Request Status": "Requested",
+      "Reorder Requested At": new Date().toISOString(),
+      "Reorder Requested By": current.displayName || current.email,
+      "Reorder Reason": `Manual reorder request from Clinic Team Portal. Current count: ${item.current ?? "not counted"} ${item.unit || ""}. Reorder point: ${item.reorderPoint ?? "not set"}. Suggested reorder: ${item.suggestedReorder ?? "not set"}.`,
+    });
+
+    revalidatePath("/portal/clinic");
+  }
+
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-50">
       <section className="container-custom py-10 md:py-12">
@@ -355,24 +403,52 @@ export default async function ClinicPortalPage() {
                 </section>
 
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
-                  <div className="mb-5 flex items-center gap-3">
+                  <div className="mb-2 flex items-center gap-3">
                     <Boxes className="h-6 w-6 text-primary" />
                     <h2 className="text-2xl font-bold">Clinic Inventory</h2>
                   </div>
+                  <p className="mb-5 text-sm text-muted-foreground">Update physical counts here. Low-stock items are flagged automatically, and a reorder can also be requested manually.</p>
                   {data.inventory.length ? (
                     <div className="space-y-3">
-                      {data.inventory.map((item) => (
-                        <div key={item.id} className="flex items-center justify-between gap-4 rounded-2xl bg-slate-50 p-4">
-                          <div>
-                            <p className="font-semibold">{item.name}</p>
-                            <p className="text-xs text-muted-foreground">{item.category}{item.unit ? ` · ${item.unit}` : ""}</p>
+                      {data.inventory.map((item) => {
+                        const lowStock = ["Low Stock", "Out of Stock"].includes(item.status);
+                        const reorderActive = ["Requested", "Ordered"].includes(item.reorderStatus);
+                        return (
+                          <div key={item.id} className={`rounded-2xl border p-4 ${lowStock || reorderActive ? "border-orange-300 bg-orange-50/60" : "border-transparent bg-slate-50"}`}>
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                              <div>
+                                <p className="font-semibold">{item.name}</p>
+                                <p className="text-xs text-muted-foreground">{item.category}{item.unit ? ` · ${item.unit}` : ""}</p>
+                                <p className={`mt-1 text-xs font-semibold ${lowStock || reorderActive ? "text-primary" : "text-muted-foreground"}`}>
+                                  {reorderActive ? `Reorder ${item.reorderStatus.toLowerCase()}` : (item.status || "No status")}
+                                </p>
+                                {item.reorderReason && reorderActive && <p className="mt-1 text-xs text-muted-foreground">{item.reorderReason}</p>}
+                              </div>
+                              <div className="text-left sm:text-right">
+                                <p className="text-lg font-bold">{item.current ?? "—"}</p>
+                                <p className="text-xs text-muted-foreground">Reorder at {item.reorderPoint ?? "—"} · Target {item.target ?? "—"}</p>
+                              </div>
+                            </div>
+                            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+                              <form action={saveInventoryCount} className="flex flex-wrap items-end gap-2">
+                                <input type="hidden" name="itemId" value={item.id} />
+                                <label className="text-xs font-medium">
+                                  Current count
+                                  <input name="count" type="number" min="0" step="1" defaultValue={item.current ?? ""} placeholder="Enter count" className="mt-1 w-28 rounded-lg border bg-white px-3 py-2 text-sm" />
+                                </label>
+                                <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save count</button>
+                              </form>
+                              <form action={requestInventoryReorder} className="flex items-end">
+                                <input type="hidden" name="itemId" value={item.id} />
+                                <button disabled={reorderActive} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
+                                  {reorderActive ? (item.reorderStatus === "Ordered" ? "Order in progress" : "Reorder requested") : "Request reorder"}
+                                </button>
+                              </form>
+                            </div>
+                            {lowStock && !reorderActive && <p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
                           </div>
-                          <div className="text-right">
-                            <p className="font-semibold">{item.current ?? "—"}</p>
-                            <p className="text-xs text-muted-foreground">{item.status || "No status"}</p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   ) : (
                     <p className="text-muted-foreground">No active clinic inventory items are available yet.</p>
