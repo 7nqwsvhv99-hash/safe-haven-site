@@ -85,19 +85,23 @@ export function ReviewForm({
    I verified the professional credentials for the {role==='Veterinarian'?'veterinarian':'veterinary technician'} role.
   </label>}
 
-  <fieldset>
-   <legend className="text-sm font-semibold">Trained and approved clinic assignments</legend>
-   <p className="mt-1 text-xs text-muted-foreground">Select only skills the volunteer is ready to perform. General Support is appropriate for a volunteer who is not yet trained in a specialist position.</p>
-   <div className="mt-3 grid gap-3 sm:grid-cols-2">
-    {availableSkills.map(skill=><label key={skill} className="flex gap-2 text-sm">
-     <input type="checkbox" name="skill" value={skill} checked={approvedSkills.includes(skill)} onChange={()=>toggleSkill(skill)}/>{skill}
-    </label>)}
-   </div>
-  </fieldset>
+  {!professional&&<>
+   <fieldset>
+    <legend className="text-sm font-semibold">Trained and approved clinic assignments</legend>
+    <p className="mt-1 text-xs text-muted-foreground">Select only skills the volunteer is ready to perform. General Support is appropriate for a volunteer who is not yet trained in a specialist position.</p>
+    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+     {availableSkills.map(skill=><label key={skill} className="flex gap-2 text-sm">
+      <input type="checkbox" name="skill" value={skill} checked={approvedSkills.includes(skill)} onChange={()=>toggleSkill(skill)}/>{skill}
+     </label>)}
+    </div>
+   </fieldset>
 
-  <label className="block text-sm font-medium">Review notes
-   <textarea name="notes" rows={4} value={notes} onChange={event=>setNotes(event.target.value)} className={control} placeholder="Orientation details, credential check, scheduling notes, or record-matching notes"/>
-  </label>
+   <label className="block text-sm font-medium">Review notes
+    <textarea name="notes" rows={4} value={notes} onChange={event=>setNotes(event.target.value)} className={control} placeholder="Orientation details, credential check, scheduling notes, or record-matching notes"/>
+   </label>
+  </>}
+  {professional&&<input type="hidden" name="notes" value={notes}/>}
+  {professional&&approvedSkills.map(skill=><input key={skill} type="hidden" name="skill" value={skill}/>)} 
 
   {state.message&&!state.ok&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm">{state.message}</p>}
   {saved&&<p role="status" className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm">Review saved.</p>}
