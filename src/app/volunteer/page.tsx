@@ -97,7 +97,7 @@ export default function VolunteerPage() {
                 Tell us where you would like to help and when you are available.
               </p>
               <div className="mt-8">
-                <Button asChild size="lg" className="w-full">
+                <Button asChild size="lg">
                   <Link href="/volunteer-application">Complete the Volunteer Application</Link>
                 </Button>
               </div>
