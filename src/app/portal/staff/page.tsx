@@ -154,6 +154,12 @@ export default async function StaffPortalPage() {
       href: "/portal/staff/needs",
       icon: ClipboardList,
     },
+    {
+      title: "Website & Content",
+      description: "Manage events and website content.",
+      href: "/portal/staff/content",
+      icon: Globe2,
+    },
   ];
 
   const admin = [
@@ -162,12 +168,6 @@ export default async function StaffPortalPage() {
       description: "See each person's complete relationship with Safe Haven.",
       href: "/portal/staff/people",
       icon: UsersRound,
-    },
-    {
-      title: "Website & Content",
-      description: "Manage events and website content.",
-      href: "/portal/staff/content",
-      icon: Globe2,
     },
     {
       title: "Documents & Agreements",
