@@ -154,12 +154,6 @@ export default async function StaffPortalPage() {
       href: "/portal/staff/needs",
       icon: ClipboardList,
     },
-    {
-      title: "Upcoming Events",
-      description: `${data.upcomingEvents.length} upcoming event${data.upcomingEvents.length === 1 ? "" : "s"} currently scheduled`,
-      href: "/portal/staff/content",
-      icon: CalendarDays,
-    },
   ];
 
   const admin = [
@@ -186,18 +180,6 @@ export default async function StaffPortalPage() {
       description: "Open shelter reporting and operational dashboards.",
       href: "/portal/staff/reports",
       icon: BarChart3,
-    },
-    {
-      title: "Review Resources",
-      description: "Open the public pet-owner resources page.",
-      href: "/resources",
-      icon: Globe2,
-    },
-    {
-      title: "Review Clinic Page",
-      description: "Review the public spay/neuter clinic experience.",
-      href: "/clinic",
-      icon: Activity,
     },
   ];
 
