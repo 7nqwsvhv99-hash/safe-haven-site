@@ -20,8 +20,8 @@ export async function staffContext(manager = false, write = false) {
   return { ...context, manager: managerAccess || (context.isBoard && !write) };
 }
 export async function staffRoster() {
-  return (await airtableList(TABLES.portalAccess, ["Email", "Display Name", "Roles", "Active"]))
-    .filter(r => r.fields.Active && isStaff(asStrings(r.fields.Roles)))
+  return (await airtableList(TABLES.portalAccess, ["Email", "Display Name", "Roles", "Active", "Staff Onboarding Required"]))
+    .filter(r => r.fields.Active && Boolean(r.fields["Staff Onboarding Required"]))
     .map(r => ({ id: r.id, email: normalizeEmail(asText(r.fields.Email)), name: asText(r.fields["Display Name"]) || asText(r.fields.Email) }));
 }
 export async function staffData(kind: "training" | "schedule") {
