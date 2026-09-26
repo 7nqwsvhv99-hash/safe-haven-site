@@ -114,6 +114,12 @@ export default async function StaffPortalPage() {
 
   const peopleOperations = [
     {
+      title: "Staff Scheduling",
+      description: "Shift assignments, confirmations, and staffing coverage.",
+      href: "/portal/staff/schedule",
+      icon: CalendarDays,
+    },
+    {
       title: "Volunteer Opportunity Requests",
       description: "Review requests from current volunteers who want to help in another area.",
       href: "/portal/staff/volunteer-opportunities",
@@ -124,12 +130,6 @@ export default async function StaffPortalPage() {
       description: "Training materials, assigned onboarding tasks, and completion reviews.",
       href: "/portal/staff/training",
       icon: Users,
-    },
-    {
-      title: "Staff Scheduling",
-      description: "Shift assignments, confirmations, and staffing coverage.",
-      href: "/portal/staff/schedule",
-      icon: CalendarDays,
     },
     ...(context.canViewOnboarding
       ? [{
@@ -290,7 +290,7 @@ export default async function StaffPortalPage() {
             <div className="mb-4">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Staff & Volunteer Operations</p>
             </div>
-            <div className="mb-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mb-10 grid gap-4 md:grid-cols-2">
               {peopleOperations.map(({ title, description, href, icon }) => (
                 <Link key={title} href={href} className={cardClass}>
                   <div className="flex items-start gap-4">
