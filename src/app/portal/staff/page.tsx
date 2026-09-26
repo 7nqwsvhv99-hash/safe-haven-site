@@ -114,12 +114,6 @@ export default async function StaffPortalPage() {
 
   const peopleOperations = [
     {
-      title: "People & Contacts",
-      description: "See each person's complete relationship with Safe Haven.",
-      href: "/portal/staff/people",
-      icon: UsersRound,
-    },
-    {
       title: "Volunteer Opportunity Requests",
       description: "Review requests from current volunteers who want to help in another area.",
       href: "/portal/staff/volunteer-opportunities",
@@ -170,6 +164,12 @@ export default async function StaffPortalPage() {
 
   const admin = [
     {
+      title: "People & Contacts",
+      description: "See each person's complete relationship with Safe Haven.",
+      href: "/portal/staff/people",
+      icon: UsersRound,
+    },
+    {
       title: "Website & Content",
       description: "Manage events and website content.",
       href: "/portal/staff/content",
@@ -192,12 +192,6 @@ export default async function StaffPortalPage() {
       description: "Open the public pet-owner resources page.",
       href: "/resources",
       icon: Globe2,
-    },
-    {
-      title: "Review Volunteer Page",
-      description: "Review the public volunteer experience.",
-      href: "/volunteer",
-      icon: Users,
     },
     {
       title: "Review Clinic Page",
@@ -223,20 +217,39 @@ export default async function StaffPortalPage() {
             </p>
           </header>
 
-          <nav className="sticky top-20 z-20 mb-8 flex gap-2 overflow-x-auto rounded-2xl border bg-white/95 p-2 shadow-sm backdrop-blur" aria-label="Staff Navigation">
-            {[
-              ["Animal Care", "#animal-care"],
-              ["People & Volunteers", "#people-volunteers"],
-              ["Medical", "/portal/medical"],
-              ["Inventory", "/portal/staff/inventory"],
-              ["Operations", "#operations"],
-              ["Reports", "/portal/staff/reports"],
-            ].map(([label, href]) => (
-              <Link key={href} href={href} className="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-primary/10 hover:text-primary">
-                {label}
-              </Link>
-            ))}
-          </nav>
+          {data.announcements.length > 0 && (
+            <section className="mb-6 rounded-2xl border bg-white p-5 shadow-sm">
+              <div className="mb-3 flex items-center gap-3">
+                <Megaphone className="h-5 w-5 text-primary" />
+                <h2 className="text-lg font-bold">Staff Announcements</h2>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                {data.announcements.slice(0, 4).map((item) => (
+                  <div key={item.id} className="rounded-xl bg-slate-50 p-4">
+                    <p className="font-semibold">{item.title}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{item.message}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <div className="sticky top-20 z-20 mb-8 -mx-1 bg-slate-50/95 px-1 py-2 backdrop-blur">
+            <nav className="flex flex-wrap gap-2" aria-label="Staff Navigation">
+              {[
+                ["Animal Care", "#animal-care"],
+                ["Staff & Volunteers", "#people-volunteers"],
+                ["Medical", "/portal/medical"],
+                ["Inventory", "/portal/staff/inventory"],
+                ["Operations", "#operations"],
+                ["Reports", "/portal/staff/reports"],
+              ].map(([label, href]) => (
+                <Link key={href} href={href} className="whitespace-nowrap rounded-full border bg-white px-4 py-2 text-sm font-semibold text-muted-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary">
+                  {label}
+                </Link>
+              ))}
+            </nav>
+          </div>
 
           <section id="attention" className="scroll-mt-36">
             <div className="mb-4">
@@ -275,7 +288,7 @@ export default async function StaffPortalPage() {
 
           <section id="people-volunteers" className="scroll-mt-36">
             <div className="mb-4">
-              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">People & Volunteer Operations</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Staff & Volunteer Operations</p>
             </div>
             <div className="mb-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {peopleOperations.map(({ title, description, href, icon }) => (
@@ -310,24 +323,6 @@ export default async function StaffPortalPage() {
               ))}
             </div>
 
-            <div className="mb-10 rounded-2xl border bg-white p-5 shadow-sm">
-              <div className="mb-3 flex items-center gap-3">
-                <Megaphone className="h-5 w-5 text-primary" />
-                <h2 className="text-lg font-bold">Staff Announcements</h2>
-              </div>
-              {data.announcements.length ? (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {data.announcements.slice(0, 4).map((item) => (
-                    <div key={item.id} className="rounded-xl bg-slate-50 p-4">
-                      <p className="font-semibold">{item.title}</p>
-                      <p className="mt-1 text-sm text-muted-foreground">{item.message}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No current staff announcements.</p>
-              )}
-            </div>
           </section>
 
           <section id="administration" className="scroll-mt-36">
