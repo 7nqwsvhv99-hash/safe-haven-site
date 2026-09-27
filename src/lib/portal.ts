@@ -424,9 +424,11 @@ export async function getFosterPortalData(email: string) {
 
   if (!application) {
     const resources = await resourcesPromise;
+    const announcements = await getPortalAnnouncements(["Foster"]);
     return {
       foster: null,
       placements: [],
+      announcements,
       resources: resources
         .filter((record) => Boolean(record.fields.Active))
         .map((record) => ({
@@ -440,7 +442,7 @@ export async function getFosterPortalData(email: string) {
     };
   }
 
-  const [placements, animals, resources, fosterUpdates] = await Promise.all([
+  const [placements, animals, resources, fosterUpdates, announcements] = await Promise.all([
     airtableList(
       TABLES.fosterPlacements,
       [
@@ -493,6 +495,7 @@ export async function getFosterPortalData(email: string) {
       ],
       { sort: [{ field: "Submitted At", direction: "desc" }] }
     ),
+    getPortalAnnouncements(["Foster"]),
   ]);
 
   const animalById = new Map(animals.map((record) => [record.id, record]));
@@ -576,6 +579,7 @@ export async function getFosterPortalData(email: string) {
       preferredContact: asText(application.fields["Preferred Contact"]),
     },
     placements: fosterPlacements,
+    announcements,
     resources: resources
       .filter((record) => Boolean(record.fields.Active))
       .map((record) => ({
