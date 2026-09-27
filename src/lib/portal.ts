@@ -143,21 +143,23 @@ export async function getPortalContext() {
   const assignedRoles = asStrings(access?.fields.Roles) as PortalRole[];
 
   const [volunteers, clinicMembers, fosterApplications] = await Promise.all([
-    airtableList(TABLES.volunteers, ["Email", "Status"]),
-    airtableList(TABLES.clinicMembers, ["Email", "Active"]),
+    airtableList(TABLES.volunteers, ["Volunteer Name", "Email", "Status"]),
+    airtableList(TABLES.clinicMembers, ["Team Member Name", "Email", "Active"]),
     airtableList(TABLES.fosterApplications, ["Email", "Status"]),
   ]);
 
-  const matchedVolunteer = volunteers.some(
+  const matchedVolunteerRecord = volunteers.find(
     (record) =>
       normalizeEmail(asText(record.fields.Email)) === primaryEmail &&
       asText(record.fields.Status) === "Active"
   );
-  const matchedClinicMember = clinicMembers.some(
+  const matchedClinicMemberRecord = clinicMembers.find(
     (record) =>
       normalizeEmail(asText(record.fields.Email)) === primaryEmail &&
       Boolean(record.fields.Active)
   );
+  const matchedVolunteer = Boolean(matchedVolunteerRecord);
+  const matchedClinicMember = Boolean(matchedClinicMemberRecord);
   const matchedFoster = fosterApplications.some(
     (record) =>
       normalizeEmail(asText(record.fields.Email)) === primaryEmail &&
@@ -179,6 +181,8 @@ export async function getPortalContext() {
     email: primaryEmail,
     displayName:
       asText(access?.fields["Display Name"]) ||
+      asText(matchedClinicMemberRecord?.fields["Team Member Name"]) ||
+      asText(matchedVolunteerRecord?.fields["Volunteer Name"]) ||
       [user.firstName, user.lastName].filter(Boolean).join(" ") ||
       primaryEmail,
     roles,
