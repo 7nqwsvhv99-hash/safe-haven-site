@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone } from "lucide-react";
+import { VeterinarianDateForm } from "./veterinarian-date-form";
 import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, airtableList, airtableDelete, TABLES } from "@/lib/portal";
 
 
@@ -62,6 +63,7 @@ export default async function ClinicPortalPage() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     if (Number.isNaN(date.getTime()) || date < today || ![3, 6].includes(date.getDay())) return;
+    if (date.getDay() === 3 && preferredClinicType !== "Half Day") return;
 
     const duplicate = latest.vetPreferences.some(
       (item) => item.preferredDate === preferredDate && item.status !== "Withdrawn"
@@ -376,41 +378,7 @@ export default async function ClinicPortalPage() {
                     Full-day clinics are typically 8:00 AM–6:00 PM. Half-day clinics are typically 12:00–4:00 PM. Wednesdays are always half days. Saturdays may be scheduled as either full or half days, and a Saturday may also be shared by two veterinarians with separate morning and afternoon half-day coverage.
                   </p>
 
-                  <form action={submitVeterinarianPreference} className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-[220px_180px_1fr_auto] md:items-end">
-                    <label className="text-sm font-medium">
-                      Preferred clinic date
-                      <input
-                        type="date"
-                        name="preferredDate"
-                        required
-                        className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
-                      />
-                    </label>
-                    <label className="text-sm font-medium">
-                      Clinic type
-                      <select
-                        name="preferredClinicType"
-                        required
-                        defaultValue="Full Day"
-                        className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
-                      >
-                        <option>Full Day</option>
-                        <option>Half Day</option>
-                      </select>
-                    </label>
-                    <label className="text-sm font-medium">
-                      Notes <span className="font-normal text-muted-foreground">(optional)</span>
-                      <input
-                        type="text"
-                        name="notes"
-                        placeholder="Anything the clinic team should know"
-                        className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
-                      />
-                    </label>
-                    <button type="submit" className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">
-                      Add Date
-                    </button>
-                  </form>
+                  <VeterinarianDateForm action={submitVeterinarianPreference} />
 
                   {data.vetPreferences.length > 0 && (
                     <div className="mt-5">
