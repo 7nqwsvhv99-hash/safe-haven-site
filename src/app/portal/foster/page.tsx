@@ -144,6 +144,27 @@ export default async function FosterPortalPage() {
           </div>
 
           <div className="space-y-8">
+            {data.announcements?.length > 0 && (
+              <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <Megaphone className="h-6 w-6 text-primary" />
+                  <h2 className="text-2xl font-bold">Foster Announcements</h2>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {data.announcements.map((item) => (
+                    <div key={item.id} className="rounded-2xl bg-slate-50 p-4">
+                      <h3 className="font-semibold">{item.title}</h3>
+                      <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{item.message}</p>
+                      {item.ctaUrl && (
+                        <a href={item.ctaUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+                          {item.ctaLabel || "Open resource"}
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
             {!data.foster && (
               <div className="rounded-3xl border border-primary/15 bg-primary/5 p-6">
                 <p className="font-semibold">
