@@ -137,7 +137,7 @@ export async function getPortalContext() {
 
   const access = accessRecords.find((record) => {
     const email = normalizeEmail(asText(record.fields.Email));
-    return email && emails.includes(email) && Boolean(record.fields.Active);
+    return email && email === primaryEmail && Boolean(record.fields.Active);
   });
 
   const assignedRoles = asStrings(access?.fields.Roles) as PortalRole[];
@@ -150,17 +150,17 @@ export async function getPortalContext() {
 
   const matchedVolunteer = volunteers.some(
     (record) =>
-      emails.includes(normalizeEmail(asText(record.fields.Email))) &&
+      normalizeEmail(asText(record.fields.Email)) === primaryEmail &&
       asText(record.fields.Status) === "Active"
   );
   const matchedClinicMember = clinicMembers.some(
     (record) =>
-      emails.includes(normalizeEmail(asText(record.fields.Email))) &&
+      normalizeEmail(asText(record.fields.Email)) === primaryEmail &&
       Boolean(record.fields.Active)
   );
   const matchedFoster = fosterApplications.some(
     (record) =>
-      emails.includes(normalizeEmail(asText(record.fields.Email))) &&
+      normalizeEmail(asText(record.fields.Email)) === primaryEmail &&
       asText(record.fields.Status) === "Approved"
   );
 
