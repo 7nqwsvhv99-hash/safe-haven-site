@@ -9,6 +9,8 @@ export function VeterinarianDateForm({
 }) {
   const [date, setDate] = useState("");
   const [clinicType, setClinicType] = useState("Full Day");
+  const [startTime, setStartTime] = useState("08:00");
+  const [endTime, setEndTime] = useState("18:00");
   const [error, setError] = useState("");
 
   function validateDate(value: string) {
@@ -27,7 +29,11 @@ export function VeterinarianDateForm({
     setDate(value);
     setError("");
     const day = new Date(`${value}T12:00:00`).getDay();
-    if (day === 3) setClinicType("Half Day");
+    if (day === 3) {
+      setClinicType("Half Day");
+      setStartTime("12:00");
+      setEndTime("16:00");
+    }
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -39,11 +45,22 @@ export function VeterinarianDateForm({
 
   const isWednesday = date ? new Date(`${date}T12:00:00`).getDay() === 3 : false;
 
+  function handleClinicTypeChange(value: string) {
+    setClinicType(value);
+    if (value === "Full Day") {
+      setStartTime("08:00");
+      setEndTime("18:00");
+    } else {
+      setStartTime("12:00");
+      setEndTime("16:00");
+    }
+  }
+
   return (
     <form
       action={action}
       onSubmit={handleSubmit}
-      className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-[220px_180px_1fr_auto] md:items-end"
+      className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-[210px_160px_140px_140px_1fr_auto] md:items-end"
     >
       <label className="text-sm font-medium">
         Preferred clinic date
@@ -63,7 +80,7 @@ export function VeterinarianDateForm({
           name="preferredClinicType"
           required
           value={clinicType}
-          onChange={(event) => setClinicType(event.target.value)}
+          onChange={(event) => handleClinicTypeChange(event.target.value)}
           disabled={isWednesday}
           className="mt-1 w-full rounded-xl border bg-white px-3 py-2 disabled:bg-slate-100"
         >
@@ -76,6 +93,28 @@ export function VeterinarianDateForm({
             <span className="mt-2 block text-xs text-muted-foreground">Wednesdays are always half-day clinics.</span>
           </>
         )}
+      </label>
+      <label className="text-sm font-medium">
+        Start time
+        <input
+          type="time"
+          name="startTime"
+          required
+          value={startTime}
+          onChange={(event) => setStartTime(event.target.value)}
+          className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
+        />
+      </label>
+      <label className="text-sm font-medium">
+        End time
+        <input
+          type="time"
+          name="endTime"
+          required
+          value={endTime}
+          onChange={(event) => setEndTime(event.target.value)}
+          className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
+        />
       </label>
       <label className="text-sm font-medium">
         Notes <span className="font-normal text-muted-foreground">(optional)</span>
