@@ -659,7 +659,7 @@ export async function getClinicPortalData(email: string) {
     ]),
     airtableList(
       TABLES.vetClinicPreferences,
-      ["Veterinarian", "Preferred Clinic Date", "Preferred Clinic Type", "Preference Status", "Notes", "Submitted At", "Clinic Staffing Date"],
+      ["Veterinarian", "Preferred Clinic Date", "Preferred Clinic Type", "Preferred Start Time", "Preferred End Time", "Preference Status", "Notes", "Submitted At", "Clinic Staffing Date"],
       { sort: [{ field: "Preferred Clinic Date", direction: "asc" }] }
     ),
   ]);
@@ -757,6 +757,8 @@ export async function getClinicPortalData(email: string) {
             id: record.id,
             preferredDate: safeDate(record.fields["Preferred Clinic Date"]),
             clinicType: asText(record.fields["Preferred Clinic Type"]) || "Full Day",
+            startTime: asText(record.fields["Preferred Start Time"]),
+            endTime: asText(record.fields["Preferred End Time"]),
             status: asText(record.fields["Preference Status"]) || "Submitted",
             notes: asText(record.fields.Notes),
             submittedAt: safeDate(record.fields["Submitted At"]),
