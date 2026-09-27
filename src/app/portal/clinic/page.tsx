@@ -159,6 +159,19 @@ export default async function ClinicPortalPage() {
   }
 
 
+  async function saveClinicNote(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Clinic Team", "write");
+    const latest = await getClinicPortalData(current.email);
+    const responseId = formText(formData, "responseId");
+    if (!latest.dates.some((item) => item.responseId === responseId)) return;
+
+    const note = formText(formData, "note");
+    if (note.length > 1000) return;
+    await airtableUpdate(TABLES.clinicResponses, responseId, { Notes: note });
+    revalidatePath("/portal/clinic");
+  }
+
   async function addClinicInventoryItem(formData: FormData) {
     "use server";
     await requirePortalRole("Clinic Team", "write");
@@ -435,6 +448,14 @@ export default async function ClinicPortalPage() {
                                   {item.assignments.length > 0 && <p className="mt-2 text-xs font-semibold text-green-700">Current role: {item.assignments.join(", ")}</p>}
                                 </form>
                               )}
+
+                              <form action={saveClinicNote} className="mt-4 border-t pt-4">
+                                <input type="hidden" name="responseId" value={item.responseId} />
+                                <label htmlFor={`clinic-note-${item.responseId}`} className="block text-sm font-semibold">My schedule note</label>
+                                <p className="mt-1 text-xs text-muted-foreground">Share timing or coverage details, such as needing to leave early. Your note appears on this clinic day’s staffing card.</p>
+                                <textarea id={`clinic-note-${item.responseId}`} name="note" rows={2} maxLength={1000} defaultValue={item.notes} className="mt-2 w-full rounded-xl border px-3 py-2 text-sm" placeholder="Example: I need to leave by 2:00 p.m." />
+                                <button type="submit" className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save note</button>
+                              </form>
                             </div>
 
                             {item.initialResponse !== "No" && (
@@ -485,11 +506,24 @@ export default async function ClinicPortalPage() {
                             {(["Front Room System", "Back Room System", "Autoclave"] as const).map((role) => (
                               <div key={role}><span className="block whitespace-nowrap text-xs text-muted-foreground">{role}</span><strong>{date.volunteerAssignments[role]?.join(", ") || "Unfilled"}</strong></div>
                             ))}
-                            <div className="sm:col-span-3"><span className="block text-xs text-muted-foreground">General Volunteers</span><strong>{[
-                              ...(date.volunteerAssignments["Front Room Support"] || []),
-                              ...(date.volunteerAssignments["Surgery/Recovery Floater"] || []),
-                              ...(date.volunteerAssignments["General Volunteer"] || []),
-                            ].join(", ") || "None confirmed"}</strong></div>
+                            <div className="sm:col-span-3">
+                              <span className="block text-xs text-muted-foreground">General Volunteers</span>
+                              <strong>{[
+                                ...(date.volunteerAssignments["Front Room Support"] || []),
+                                ...(date.volunteerAssignments["Surgery/Recovery Floater"] || []),
+                                ...(date.volunteerAssignments["General Volunteer"] || []),
+                              ].join(", ") || "None confirmed"}</strong>
+                              {date.notes.length > 0 && (
+                                <div className="mt-3 rounded-xl border bg-white p-3">
+                                  <p className="text-xs font-semibold text-muted-foreground">Notes for this clinic day</p>
+                                  <ul className="mt-2 space-y-2">
+                                    {date.notes.map((note, index) => (
+                                      <li key={`${note.name}-${index}`} className="whitespace-pre-wrap break-words text-sm"><span className="font-semibold">{note.name}:</span> {note.text}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
