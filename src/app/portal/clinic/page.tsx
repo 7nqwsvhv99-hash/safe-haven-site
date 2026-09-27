@@ -163,6 +163,7 @@ export default async function ClinicPortalPage() {
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
+    if (latest.member?.role !== "Clinic Volunteer") return;
     const responseId = formText(formData, "responseId");
     if (!latest.dates.some((item) => item.responseId === responseId)) return;
 
@@ -449,13 +450,15 @@ export default async function ClinicPortalPage() {
                                 </form>
                               )}
 
-                              <form action={saveClinicNote} className="mt-4 border-t pt-4">
-                                <input type="hidden" name="responseId" value={item.responseId} />
-                                <label htmlFor={`clinic-note-${item.responseId}`} className="block text-sm font-semibold">My schedule note</label>
-                                <p className="mt-1 text-xs text-muted-foreground">Share timing or coverage details, such as needing to leave early. Your note appears on this clinic day’s staffing card.</p>
-                                <textarea id={`clinic-note-${item.responseId}`} name="note" rows={2} maxLength={1000} defaultValue={item.notes} className="mt-2 w-full rounded-xl border px-3 py-2 text-sm" placeholder="Example: I need to leave by 2:00 p.m." />
-                                <button type="submit" className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save note</button>
-                              </form>
+                              {data.member?.role === "Clinic Volunteer" && (
+                                <form action={saveClinicNote} className="mt-4 border-t pt-4">
+                                  <input type="hidden" name="responseId" value={item.responseId} />
+                                  <label htmlFor={`clinic-note-${item.responseId}`} className="block text-sm font-semibold">My shift note</label>
+                                  <p className="mt-1 text-xs text-muted-foreground">Share timing or coverage details, such as needing to leave early. Your note appears on this clinic day’s staffing card.</p>
+                                  <textarea id={`clinic-note-${item.responseId}`} name="note" rows={2} maxLength={1000} defaultValue={item.notes} className="mt-2 w-full rounded-xl border px-3 py-2 text-sm" placeholder="Example: I need to leave by 2:00 p.m." />
+                                  <button type="submit" className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save note</button>
+                                </form>
+                              )}
                             </div>
 
                             {item.initialResponse !== "No" && (
