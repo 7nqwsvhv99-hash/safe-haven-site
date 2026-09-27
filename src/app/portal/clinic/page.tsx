@@ -351,6 +351,9 @@ export default async function ClinicPortalPage() {
                   <p className="max-w-3xl text-sm text-muted-foreground">
                     Add the Wednesday or Saturday dates you are available to serve as the veterinarian. Submit dates as far ahead as your schedule allows. Once a date is submitted, the Vet Tech signup round begins.
                   </p>
+                  <p className="mt-3 max-w-3xl text-sm text-muted-foreground">
+                    Full-day clinics are typically 8:00 AM–6:00 PM. Half-day clinics are typically 12:00–4:00 PM. Wednesdays are always half days. Saturdays may be scheduled as either full or half days, and a Saturday may also be shared by two veterinarians with separate morning and afternoon half-day coverage.
+                  </p>
 
                   <form action={submitVeterinarianPreference} className="mt-5 grid gap-4 rounded-2xl bg-slate-50 p-5 md:grid-cols-[220px_180px_1fr_auto] md:items-end">
                     <label className="text-sm font-medium">
