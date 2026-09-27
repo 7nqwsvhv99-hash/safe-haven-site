@@ -56,8 +56,11 @@ export default async function ClinicPortalPage() {
 
     const preferredDate = String(formData.get("preferredDate") || "").trim();
     const preferredClinicType = String(formData.get("preferredClinicType") || "Full Day");
+    const startTime = String(formData.get("startTime") || "").trim();
+    const endTime = String(formData.get("endTime") || "").trim();
     const notes = String(formData.get("notes") || "").trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(preferredDate) || !["Full Day", "Half Day"].includes(preferredClinicType)) return;
+    if (!/^\d{2}:\d{2}$/.test(startTime) || !/^\d{2}:\d{2}$/.test(endTime) || startTime >= endTime) return;
 
     const date = new Date(`${preferredDate}T12:00:00`);
     const today = new Date();
@@ -74,6 +77,8 @@ export default async function ClinicPortalPage() {
       Veterinarian: [latest.member.id],
       "Preferred Clinic Date": preferredDate,
       "Preferred Clinic Type": preferredClinicType,
+      "Preferred Start Time": startTime,
+      "Preferred End Time": endTime,
       "Preference Status": "Submitted",
       Notes: notes,
       "Submitted At": new Date().toISOString(),
