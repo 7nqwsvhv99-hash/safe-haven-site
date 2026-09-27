@@ -675,11 +675,18 @@ export async function getClinicPortalData(email: string) {
     vetTechs: string[];
     assignments: Record<string, string[]>;
   }>();
+  const notesByDate = new Map<string, { name: string; text: string }[]>();
   responses.forEach((response) => {
     const names = asStrings(response.fields["Team Member Name"]);
     if (!names.length) return;
 
     asStrings(response.fields["Clinic Date"]).forEach((dateId) => {
+      const note = asText(response.fields.Notes).trim();
+      if (note) {
+        const existingNotes = notesByDate.get(dateId) || [];
+        existingNotes.push({ name: names.join(", "), text: note });
+        notesByDate.set(dateId, existingNotes);
+      }
       const confirmed = confirmedNamesByDate.get(dateId) || { veterinarians: [], vetTechs: [], assignments: {} };
       if ((asNumber(response.fields["Confirmed Vet Score"]) || 0) > 0) {
         confirmed.veterinarians.push(...names);
@@ -757,6 +764,7 @@ export async function getClinicPortalData(email: string) {
         veterinarianNames: confirmedNamesByDate.get(record.id)?.veterinarians || [],
         vetTechNames: confirmedNamesByDate.get(record.id)?.vetTechs || [],
         volunteerAssignments: confirmedNamesByDate.get(record.id)?.assignments || {},
+        notes: (notesByDate.get(record.id) || []).sort((a, b) => a.name.localeCompare(b.name)),
         volunteers: asNumber(record.fields["Confirmed Clinic Volunteers"]),
         volunteerTarget: asNumber(record.fields["Volunteer Target"]),
         alert: asText(record.fields["Staffing Alert"]),
