@@ -394,7 +394,10 @@ export default async function ClinicPortalPage() {
                             <div className="flex items-start justify-between gap-3">
                               <div>
                                 <p className="font-semibold">{formatDate(preference.preferredDate)}</p>
-                                <p className="mt-1 text-sm text-muted-foreground">{preference.clinicType || "Full Day"}</p>
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {preference.clinicType || "Full Day"}
+                                  {preference.startTime && preference.endTime ? ` · ${preference.startTime}–${preference.endTime}` : ""}
+                                </p>
                                 {preference.notes && <p className="mt-1 text-sm text-muted-foreground">{preference.notes}</p>}
                               </div>
                               <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
