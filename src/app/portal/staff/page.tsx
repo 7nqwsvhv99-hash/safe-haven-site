@@ -155,6 +155,12 @@ export default async function StaffPortalPage() {
       icon: ClipboardList,
     },
     {
+      title: "Announcements",
+      description: "Create, publish, expire, and target portal announcements.",
+      href: "/portal/staff/announcements",
+      icon: Megaphone,
+    },
+    {
       title: "Website & Content",
       description: "Manage events and website content.",
       href: "/portal/staff/content",
