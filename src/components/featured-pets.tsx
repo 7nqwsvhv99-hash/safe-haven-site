@@ -50,41 +50,48 @@ export function FeaturedPets() {
       .filter((animal) => animal.status === "Available" && Boolean(animal.primaryPhoto))
       .sort((a, b) => a.id.localeCompare(b.id))
 
-    // Use the UTC calendar day so everyone sees the same featured group for that day.
-    // The starting point advances daily, while the display remains Cat, Dog, Cat, Dog, Cat, Dog.
-    const daySeed = Math.floor(Date.now() / 86_400_000)
+    // Rotate on Safe Haven's local calendar day rather than UTC, so the set changes at
+    // midnight Central Time instead of during the evening.
+    const centralDateParts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Chicago",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    }).formatToParts(new Date())
 
-    function pickDaily(pool: Animal[], count: number, offsetSeed: number) {
+    const year = Number(centralDateParts.find((part) => part.type === "year")?.value)
+    const month = Number(centralDateParts.find((part) => part.type === "month")?.value)
+    const day = Number(centralDateParts.find((part) => part.type === "day")?.value)
+    const daySeed = Math.floor(Date.UTC(year, month - 1, day) / 86_400_000)
+
+    // Advance by a full group of three each day. With at least six adoptable animals
+    // in a species, today's three never overlap yesterday's three.
+    function pickDailyGroup(pool: Animal[], count: number) {
       if (!pool.length) return []
-      const start = offsetSeed % pool.length
-      return Array.from({ length: Math.min(count, pool.length) }, (_, index) => pool[(start + index) % pool.length])
+      const start = (daySeed * count) % pool.length
+      return Array.from(
+        { length: Math.min(count, pool.length) },
+        (_, index) => pool[(start + index) % pool.length]
+      )
     }
 
-    const cats = pickDaily(
+    const cats = pickDailyGroup(
       available.filter((animal) => animal.species === "Cat"),
-      3,
-      daySeed
+      3
     )
-    const dogs = pickDaily(
+    const dogs = pickDailyGroup(
       available.filter((animal) => animal.species === "Dog"),
-      3,
-      daySeed * 2 + 1
+      3
     )
 
+    // Always preserve the homepage order: Cat, Dog, Cat, Dog, Cat, Dog.
     const selected: Animal[] = []
     for (let index = 0; index < 3; index += 1) {
       if (cats[index]) selected.push(cats[index])
       if (dogs[index]) selected.push(dogs[index])
     }
 
-    // Fallback only if fewer than three available animals exist for one species.
-    if (selected.length < 6) {
-      const selectedIds = new Set(selected.map((animal) => animal.id))
-      const remaining = available.filter((animal) => !selectedIds.has(animal.id))
-      selected.push(...remaining.slice(0, 6 - selected.length))
-    }
-
-    return selected.slice(0, 6)
+    return selected
   }, [animals])
 
   if (isLoading) {
