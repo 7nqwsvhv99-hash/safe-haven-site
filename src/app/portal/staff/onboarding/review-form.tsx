@@ -2,7 +2,7 @@
 
 import {FormEvent,useState} from 'react';
 import {useRouter} from 'next/navigation';
-import {saveReview,type OnboardingActionState} from './actions';
+import {deleteApplication,saveReview,type OnboardingActionState} from './actions';
 
 const control='mt-2 w-full rounded-xl border border-slate-300 bg-white p-3 text-sm';
 
@@ -17,6 +17,7 @@ export function ReviewForm({
 }){
  const router=useRouter();
  const [pending,setPending]=useState(false);
+ const [deleting,setDeleting]=useState(false);
  const [state,setState]=useState<OnboardingActionState>({ok:false,message:''});
  const [saved,setSaved]=useState(initialSaved);
  const [status,setStatus]=useState(initialStatus);
@@ -33,7 +34,7 @@ export function ReviewForm({
 
  async function submit(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
-  if(pending)return;
+  if(pending||deleting)return;
   setPending(true);
   setState({ok:false,message:''});
   try{
@@ -50,12 +51,34 @@ export function ReviewForm({
   }
  }
 
+ async function removeApplication(){
+  if(pending||deleting)return;
+  if(!window.confirm('Delete this volunteer application permanently? This cannot be undone.'))return;
+  setDeleting(true);
+  setState({ok:false,message:''});
+  try{
+   const data=new FormData();
+   data.set('applicationId',applicationId);
+   const result=await deleteApplication({ok:false,message:''},data);
+   if(!result.ok){
+    setState(result);
+    return;
+   }
+   router.push('/portal/staff/onboarding');
+   router.refresh();
+  }catch{
+   setState({ok:false,message:'Could not delete the application. Please retry.'});
+  }finally{
+   setDeleting(false);
+  }
+ }
+
  const statusOptions=[
   {value:'New',label:'New'},
   {value:'In Review',label:'In Review'},
   {value:'Contacted',label:'Contacted'},
   ...(initialStatus==='Approved'?[{value:'Approved',label:'Approved / Onboarding Complete'}]:[]),
-  {value:'Closed',label:'Closed / Not Moving Forward'},
+  ...(initialStatus==='Closed'?[{value:'Closed',label:'Closed / Not Moving Forward (legacy)'}]:[]),
  ];
 
  return <form onSubmit={submit} className="mt-5 space-y-5">
@@ -105,8 +128,15 @@ export function ReviewForm({
 
   {state.message&&!state.ok&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm">{state.message}</p>}
   {saved&&<p role="status" className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm">Review saved.</p>}
-  <button disabled={pending} className="rounded-full bg-primary px-5 py-3 font-semibold text-white disabled:cursor-wait disabled:opacity-60">
-   {pending?'Saving review…':saved?'Update review':'Save review'}
-  </button>
+  <div className="flex flex-wrap items-center gap-3">
+   <button disabled={pending||deleting} className="rounded-full bg-primary px-5 py-3 font-semibold text-white disabled:cursor-wait disabled:opacity-60">
+    {pending?'Saving review…':saved?'Update review':'Save review'}
+   </button>
+   {initialStatus!=='Approved'&&
+    <button type="button" onClick={removeApplication} disabled={pending||deleting} className="rounded-full border border-red-300 bg-white px-5 py-3 font-semibold text-red-700 hover:bg-red-50 disabled:cursor-wait disabled:opacity-60">
+     {deleting?'Deleting…':'Delete application'}
+    </button>
+   }
+  </div>
  </form>;
 }
