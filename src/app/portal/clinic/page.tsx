@@ -67,6 +67,13 @@ export default async function ClinicPortalPage() {
     today.setHours(0, 0, 0, 0);
     if (Number.isNaN(date.getTime()) || date < today || ![3, 6].includes(date.getDay())) return;
     if (date.getDay() === 3 && preferredClinicType !== "Half Day") return;
+    if (date.getDay() === 3) {
+      const toMinutes = (value: string) => {
+        const [hours, minutes] = value.split(":").map(Number);
+        return hours * 60 + minutes;
+      };
+      if (toMinutes(endTime) - toMinutes(startTime) !== 300) return;
+    }
 
     const duplicate = latest.vetPreferences.some(
       (item) => item.preferredDate === preferredDate && item.status !== "Withdrawn"
