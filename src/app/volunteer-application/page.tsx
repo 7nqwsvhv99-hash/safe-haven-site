@@ -43,6 +43,7 @@ export default function VolunteerApplicationPage() {
   const clinicInterest = interests.some((interest) => interest.startsWith("Clinic Team"))
   const [isAdult, setIsAdult] = useState("")
   const [communityService, setCommunityService] = useState("")
+  const [previousRescueVolunteer, setPreviousRescueVolunteer] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; message: string; id?: string } | null>(null)
 
@@ -174,9 +175,23 @@ export default function VolunteerApplicationPage() {
         </Section>
 
         <Section title="Animal & Volunteer Experience">
-          <Field label="Have You Volunteered With an Animal Rescue Before? *"><select name="previousRescueVolunteer" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Yes</option><option>No</option></select></Field>
-          <Field label="Previous Organization(s)"><Input name="previousOrganizations" /></Field>
-          <Field label="Previous Volunteer Duties"><Textarea name="previousDuties" /></Field>
+          <Field label="Have You Volunteered With an Animal Rescue Before? *">
+            <select
+              name="previousRescueVolunteer"
+              className={selectClass}
+              required
+              value={previousRescueVolunteer}
+              onChange={(event) => setPreviousRescueVolunteer(event.target.value)}
+            >
+              <option value="" disabled>Select one</option><option>Yes</option><option>No</option>
+            </select>
+          </Field>
+          {previousRescueVolunteer === "Yes" && (
+            <>
+              <Field label="Previous Organization(s)"><Input name="previousOrganizations" /></Field>
+              <Field label="Previous Volunteer Duties"><Textarea name="previousDuties" /></Field>
+            </>
+          )}
           <Field
             label="Tell Us About Any Experience You Have Working With or Handling Animals"
             note="No previous animal experience is required for many volunteer opportunities."
