@@ -45,6 +45,7 @@ export default async function ClinicPortalPage() {
   const context = await requirePortalRole("Clinic Team");
   const data = await getClinicPortalData(context.email);
   const canWriteClinic = context.isAdministrator || context.roles.includes("Clinic Team");
+  const showClinicInventory = data.member?.role !== "Veterinarian";
 
   async function submitVeterinarianPreference(formData: FormData) {
     "use server";
@@ -175,7 +176,9 @@ export default async function ClinicPortalPage() {
 
   async function addClinicInventoryItem(formData: FormData) {
     "use server";
-    await requirePortalRole("Clinic Team", "write");
+    const current = await requirePortalRole("Clinic Team", "write");
+    const latest = await getClinicPortalData(current.email);
+    if (latest.member?.role === "Veterinarian") return;
 
     const itemName = formText(formData, "itemName");
     if (!itemName) return;
@@ -204,6 +207,7 @@ export default async function ClinicPortalPage() {
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
+    if (latest.member?.role === "Veterinarian") return;
     const itemId = formText(formData, "itemId");
     const item = latest.inventory.find((entry) => entry.id === itemId);
     if (!item) return;
@@ -234,6 +238,7 @@ export default async function ClinicPortalPage() {
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
+    if (latest.member?.role === "Veterinarian") return;
     const itemId = formText(formData, "itemId");
     if (!itemId || formData.get("confirmDelete") !== "on") return;
     const item = latest.inventory.find((entry) => entry.id === itemId);
@@ -261,6 +266,7 @@ export default async function ClinicPortalPage() {
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
+    if (latest.member?.role === "Veterinarian") return;
     const itemId = String(formData.get("itemId") || "");
     const countRaw = String(formData.get("count") || "").trim();
     const item = latest.inventory.find((entry) => entry.id === itemId);
@@ -289,6 +295,7 @@ export default async function ClinicPortalPage() {
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
+    if (latest.member?.role === "Veterinarian") return;
     const itemId = String(formData.get("itemId") || "");
     const item = latest.inventory.find((entry) => entry.id === itemId);
     if (!item) return;
@@ -319,7 +326,9 @@ export default async function ClinicPortalPage() {
               {data.member ? `Welcome, ${data.member.name || context.displayName}` : "Clinic Team Portal"}
             </h1>
             <p className="mt-4 max-w-3xl text-muted-foreground">
-              Your clinic dates, availability, attendance confirmations, team staffing, inventory, and clinic resources.
+              {data.member?.role === "Veterinarian"
+                ? "Your clinic dates, availability, attendance confirmations, team staffing, and clinic resources."
+                : "Your clinic dates, availability, attendance confirmations, team staffing, inventory, and clinic resources."}
             </p>
           </div>
 
@@ -485,7 +494,7 @@ export default async function ClinicPortalPage() {
                 )}
               </section>
 
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div className={`grid grid-cols-1 gap-6 ${showClinicInventory ? "lg:grid-cols-2" : ""}`}>
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
                     <ClipboardCheck className="h-6 w-6 text-primary" />
@@ -536,7 +545,7 @@ export default async function ClinicPortalPage() {
                   )}
                 </section>
 
-                <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                {showClinicInventory && <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-2 flex items-center gap-3">
                     <Boxes className="h-6 w-6 text-primary" />
                     <h2 className="text-2xl font-bold">Clinic Inventory</h2>
@@ -646,7 +655,7 @@ export default async function ClinicPortalPage() {
                   ) : (
                     <p className="text-muted-foreground">No active clinic inventory items are available yet.</p>
                   )}
-                </section>
+                </section>}
               </div>
 
               <section className="rounded-3xl border bg-white p-7 shadow-sm">
