@@ -20,6 +20,13 @@ export function VeterinarianDateForm({
     return day === 3 || day === 6;
   }
 
+  function addHours(value: string, hours: number) {
+    const [h, m] = value.split(":").map(Number);
+    const total = h * 60 + m + hours * 60;
+    const wrapped = ((total % 1440) + 1440) % 1440;
+    return `${String(Math.floor(wrapped / 60)).padStart(2, "0")}:${String(wrapped % 60).padStart(2, "0")}`;
+  }
+
   function handleDateChange(value: string) {
     if (!validateDate(value)) {
       setDate("");
@@ -31,8 +38,8 @@ export function VeterinarianDateForm({
     const day = new Date(`${value}T12:00:00`).getDay();
     if (day === 3) {
       setClinicType("Half Day");
-      setStartTime("12:00");
-      setEndTime("16:00");
+      setStartTime("09:00");
+      setEndTime("14:00");
     }
   }
 
@@ -51,9 +58,19 @@ export function VeterinarianDateForm({
       setStartTime("08:00");
       setEndTime("18:00");
     } else {
-      setStartTime("12:00");
-      setEndTime("16:00");
+      setStartTime("09:00");
+      setEndTime("14:00");
     }
+  }
+
+  function handleStartTimeChange(value: string) {
+    setStartTime(value);
+    if (isWednesday) setEndTime(addHours(value, 5));
+  }
+
+  function handleEndTimeChange(value: string) {
+    setEndTime(value);
+    if (isWednesday) setStartTime(addHours(value, -5));
   }
 
   return (
@@ -101,7 +118,7 @@ export function VeterinarianDateForm({
           name="startTime"
           required
           value={startTime}
-          onChange={(event) => setStartTime(event.target.value)}
+          onChange={(event) => handleStartTimeChange(event.target.value)}
           className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
         />
       </label>
@@ -112,7 +129,7 @@ export function VeterinarianDateForm({
           name="endTime"
           required
           value={endTime}
-          onChange={(event) => setEndTime(event.target.value)}
+          onChange={(event) => handleEndTimeChange(event.target.value)}
           className="mt-1 w-full rounded-xl border bg-white px-3 py-2"
         />
       </label>
