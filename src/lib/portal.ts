@@ -676,13 +676,16 @@ export async function getClinicPortalData(email: string) {
     assignments: Record<string, string[]>;
   }>();
   const notesByDate = new Map<string, { name: string; text: string }[]>();
+  const volunteerMemberIds = new Set(members
+    .filter((record) => asText(record.fields.Role) === "Clinic Volunteer")
+    .map((record) => record.id));
   responses.forEach((response) => {
     const names = asStrings(response.fields["Team Member Name"]);
     if (!names.length) return;
 
     asStrings(response.fields["Clinic Date"]).forEach((dateId) => {
       const note = asText(response.fields.Notes).trim();
-      if (note) {
+      if (note && asStrings(response.fields["Team Member"]).some((id) => volunteerMemberIds.has(id))) {
         const existingNotes = notesByDate.get(dateId) || [];
         existingNotes.push({ name: names.join(", "), text: note });
         notesByDate.set(dateId, existingNotes);
