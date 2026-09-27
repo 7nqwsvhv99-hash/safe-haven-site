@@ -161,6 +161,12 @@ export default async function StaffPortalPage() {
       icon: Megaphone,
     },
     {
+      title: "Internal Safe Haven Clinic Application",
+      description: "Open the internal clinic application form.",
+      href: "https://airtable.com/app3AcoD2G64aMsEz/pagX1oaNR64Qt8mqC/form",
+      icon: ClipboardPlus,
+    },
+    {
       title: "Website & Content",
       description: "Manage events and website content.",
       href: "/portal/staff/content",
@@ -245,7 +251,7 @@ export default async function StaffPortalPage() {
             </div>
             <div className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
               {attention.map(({ title, value, detail, href, icon: Icon }) => (
-                <Link key={title} href={href} className={cardClass}>
+                <Link key={title} href={href} target={href.startsWith("http") ? "_blank" : undefined} rel={href.startsWith("http") ? "noopener noreferrer" : undefined} className={cardClass}>
                   <Icon className="mb-3 h-5 w-5 text-primary" />
                   <p className="text-3xl font-bold">{value}</p>
                   <p className="mt-1 font-semibold">{title}</p>
