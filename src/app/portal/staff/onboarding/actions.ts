@@ -2,7 +2,7 @@
 import {onboardingAccess} from '@/lib/onboarding-policy';
 import {revalidatePath} from 'next/cache';
 import {requireOnboarding,getOnboardingData,readiness,skills,clinicRoles,needsGeneralOrientation,resolveProfileMatches,hasLikelyEmailTypo} from '@/lib/onboarding';
-import {airtableUpdate,airtableCreate,airtableUploadAttachment,TABLES,asText,asStrings,normalizeEmail} from '@/lib/portal';
+import {airtableUpdate,airtableCreate,airtableDelete,airtableUploadAttachment,TABLES,asText,asStrings,normalizeEmail} from '@/lib/portal';
 const path='/portal/staff/onboarding';
 export type OnboardingActionState={ok:boolean;message:string};
 async function execute(form:FormData,action:(data:Awaited<ReturnType<typeof getOnboardingData>>,app:Awaited<ReturnType<typeof getOnboardingData>>['applications'][number],email:string)=>Promise<string>):Promise<OnboardingActionState> {
@@ -19,6 +19,16 @@ async function execute(form:FormData,action:(data:Awaited<ReturnType<typeof getO
     return {ok:false,message:error instanceof Error?error.message:'Could not save. Please retry.'};
   }
 }
+export async function deleteApplication(_previous:OnboardingActionState,form:FormData):Promise<OnboardingActionState> {
+ return execute(form,async(_data,app)=>{
+  if(Boolean(app.fields['Onboarding Complete'])||asText(app.fields.Status)==='Approved'){
+   throw Error('Completed volunteer applications cannot be deleted here. This protects the volunteer and clinic records created during onboarding.');
+  }
+  await airtableDelete(TABLES.volunteerApplications,app.id);
+  return 'Volunteer application deleted.';
+ });
+}
+
 export async function saveReview(_previous:OnboardingActionState,form:FormData):Promise<OnboardingActionState> {
  return execute(form,async(data,app,email)=>{
   const role=String(form.get('clinicRole')||'');
