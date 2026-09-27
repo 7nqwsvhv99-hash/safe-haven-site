@@ -342,6 +342,27 @@ export default async function ClinicPortalPage() {
           ) : (
             <div className="space-y-8">
               {context.isBoard && !data.member && <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm"><strong>Board View:</strong> This account is not linked to a clinic-team profile. Team staffing, inventory, announcements, and the clinic interface are available below. Personalized availability and attendance responses appear only for clinic-team members.</div>}
+              {data.announcements.length > 0 && (
+                <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                  <div className="mb-5 flex items-center gap-3">
+                    <Megaphone className="h-6 w-6 text-primary" />
+                    <h2 className="text-2xl font-bold">Clinic Announcements</h2>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {data.announcements.map((item) => (
+                      <div key={item.id} className="rounded-2xl bg-slate-50 p-4">
+                        <h3 className="font-semibold">{item.title}</h3>
+                        <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{item.message}</p>
+                        {item.ctaUrl && (
+                          <a href={item.ctaUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+                            {item.ctaLabel || "Open resource"}
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
               {data.member?.role === "Veterinarian" && (
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
@@ -661,29 +682,7 @@ export default async function ClinicPortalPage() {
                 </section>}
               </div>
 
-              <section className="rounded-3xl border bg-white p-7 shadow-sm">
-                <div className="mb-5 flex items-center gap-3">
-                  <Megaphone className="h-6 w-6 text-primary" />
-                  <h2 className="text-2xl font-bold">Clinic Announcements & Resources</h2>
-                </div>
-                {data.announcements.length ? (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {data.announcements.map((item) => (
-                      <div key={item.id} className="rounded-2xl bg-slate-50 p-4">
-                        <h3 className="font-semibold">{item.title}</h3>
-                        <p className="mt-2 whitespace-pre-line text-sm text-muted-foreground">{item.message}</p>
-                        {item.ctaUrl && (
-                          <a href={item.ctaUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
-                            {item.ctaLabel || "Open resource"}
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No current clinic announcements.</p>
-                )}
-              </section>
+
             </div>
           )}
         </div>
