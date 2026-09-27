@@ -267,7 +267,7 @@ export default async function StaffPortalPage() {
             </div>
             <div className="mb-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {animalCare.map(({ title, description, href, icon }) => (
-                <Link key={title} href={href} className={cardClass}>
+                <Link key={title} href={href} target={href.startsWith("http") ? "_blank" : undefined} rel={href.startsWith("http") ? "noopener noreferrer" : undefined} className={cardClass}>
                   <div className="flex items-start gap-4">
                     <IconTile icon={icon} />
                     <div>
