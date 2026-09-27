@@ -785,7 +785,8 @@ export async function getClinicPortalData(email: string) {
         reorderRequestedAt: safeDate(record.fields["Reorder Requested At"]),
         reorderRequestedBy: asText(record.fields["Reorder Requested By"]),
         reorderReason: asText(record.fields["Reorder Reason"]),
-      })),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base", numeric: true })),
   };
 }
 
@@ -935,7 +936,7 @@ export async function getStaffPortalData() {
       reorderRequestedAt: safeDate(record.fields["Reorder Requested At"]),
       reorderRequestedBy: asText(record.fields["Reorder Requested By"]),
       reorderReason: asText(record.fields["Reorder Reason"]),
-    })),
+    })).sort((a, b) => a.name.localeCompare(b.name, "en", { sensitivity: "base", numeric: true })),
     inventoryAttentionCount: inventoryAttention.length,
     inventoryNotCountedCount,
     highPriorityNeedsCount,
