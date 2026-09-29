@@ -504,7 +504,7 @@ export default async function ClinicPortalPage() {
                 )}
               </section>
 
-              <div className={`grid grid-cols-1 gap-6 ${showClinicInventory ? "lg:grid-cols-2" : ""}`}>
+              <div className="flex flex-col gap-6">
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
                     <ClipboardCheck className="h-6 w-6 text-primary" />
@@ -555,12 +555,13 @@ export default async function ClinicPortalPage() {
                   )}
                 </section>
 
-                {showClinicInventory && <section className="rounded-3xl border bg-white p-7 shadow-sm">
-                  <div className="mb-2 flex items-center gap-3">
-                    <Boxes className="h-6 w-6 text-primary" />
-                    <h2 className="text-2xl font-bold">Clinic Inventory</h2>
-                  </div>
-                  <p className="mb-5 text-sm text-muted-foreground">Update physical counts, add supplies, edit item details, and request reorders from the clinic portal.</p>
+                {showClinicInventory && <details className="order-first">
+                  <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
+                    <Boxes className="h-5 w-5" />
+                    Clinic Inventory
+                  </summary>
+                  <section className="mt-4 rounded-3xl border bg-white p-7 shadow-sm">
+                    <p className="mb-5 text-sm text-muted-foreground">Update physical counts, add supplies, edit item details, and request reorders from the clinic portal.</p>
 
                   {canWriteClinic && (
                     <details className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
@@ -665,7 +666,8 @@ export default async function ClinicPortalPage() {
                   ) : (
                     <p className="text-muted-foreground">No active clinic inventory items are available yet.</p>
                   )}
-                </section>}
+                  </section>
+                </details>}
               </div>
 
 
