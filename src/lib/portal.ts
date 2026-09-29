@@ -41,6 +41,7 @@ const TABLES = {
   donors: "tblxDbmdxcZHSsMob",
   people: "tbluYFu1bFiztV7e4",
   contactLog: "tblh32yxPhDQTM4L0",
+  publishedTrainingMaterial: "tbl9qYIUNfMS2d3IE",
 } as const;
 
 export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Volunteer Coordinator" | "Shelter Manager" | "Board" | "Administrator";
@@ -608,10 +609,10 @@ export async function getClinicPortalData(email: string) {
   );
 
   if (!member) {
-    return { member: null, dates: [], vetPreferences: [], teamDates: [], announcements: [], inventory: [] };
+    return { member: null, dates: [], vetPreferences: [], teamDates: [], announcements: [], inventory: [], trainingResources: [] };
   }
 
-  const [dates, responses, announcements, inventory, vetPreferences] = await Promise.all([
+  const [dates, responses, announcements, inventory, vetPreferences, trainingResources] = await Promise.all([
     airtableList(
       TABLES.clinicDates,
       ["Clinic Date", "Clinic Type", "ClinicDay Session Type", "Scheduling Stage", "Volunteer Target", "Confirmed Veterinarians", "Confirmed Vet Techs", "Confirmed Clinic Volunteers", "Staffing Alert"],
@@ -661,6 +662,11 @@ export async function getClinicPortalData(email: string) {
       TABLES.vetClinicPreferences,
       ["Veterinarian", "Preferred Clinic Date", "Preferred Clinic Type", "Preferred Start Time", "Preferred End Time", "Preference Status", "Notes", "Submitted At", "Clinic Staffing Date"],
       { sort: [{ field: "Preferred Clinic Date", direction: "asc" }] }
+    ),
+    airtableList(
+      TABLES.publishedTrainingMaterial,
+      ["Title", "Resource Type", "Clinic Role/Category", "Description", "Video or Document URL", "Display Order", "Published"],
+      { sort: [{ field: "Display Order", direction: "asc" }] }
     ),
   ]);
 
@@ -783,6 +789,18 @@ export async function getClinicPortalData(email: string) {
         alert: asText(record.fields["Staffing Alert"]),
       })),
     announcements,
+    trainingResources: trainingResources
+      .filter((record) => Boolean(record.fields.Published))
+      .map((record) => ({
+        id: record.id,
+        title: asText(record.fields.Title),
+        resourceType: asText(record.fields["Resource Type"]),
+        categories: asStrings(record.fields["Clinic Role/Category"]),
+        description: asText(record.fields.Description),
+        url: asText(record.fields["Video or Document URL"]),
+        displayOrder: asNumber(record.fields["Display Order"]) ?? 999,
+      }))
+      .sort((a, b) => a.displayOrder - b.displayOrder || a.title.localeCompare(b.title)),
     inventory: inventory
       .filter((record) => asText(record.fields.Area) === "Clinic" && Boolean(record.fields.Active))
       .map((record) => ({
