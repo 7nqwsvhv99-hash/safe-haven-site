@@ -108,9 +108,14 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     if (!responseId || !["Yes", "No"].includes(value) || !latest.dates.some((item) => item.responseId === responseId)) return;
 
     let assignment = "";
+    let assignments: string[] | undefined;
     if (value === "Yes") {
       if (latest.member?.role === "Veterinarian") assignment = "Veterinarian";
       else if (["Vet Tech", "Veterinary Technician"].includes(latest.member?.role || "")) assignment = "Veterinary Technician";
+      else if (latest.member?.role === "Clinic Volunteer") {
+        assignment = "Front Room Support";
+        assignments = ["General Volunteer"];
+      }
     }
 
     const matchedResponse = latest.dates.find((item) => item.responseId === responseId);
@@ -122,6 +127,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
       "Initial Response Date": new Date().toISOString(),
       "Final Attendance Plan": value === "Yes" ? "Attending" : "Not Attending",
       ...(assignment ? { "Clinic Assignment": assignment } : {}),
+      ...(assignments ? { "Clinic Assignments": assignments } : {}),
       ...(value === "No" && latest.member?.role === "Clinic Volunteer" ? { "Clinic Assignment": null, "Clinic Assignments": [] } : {}),
     });
 
@@ -144,8 +150,8 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
       if (skill === "General Support") allowed.add("General Volunteer");
     });
 
-    const assignments = formData.getAll("assignments").map(String).filter((value) => allowed.has(value));
-    if (!assignments.length) return;
+    const selectedAssignments = formData.getAll("assignments").map(String).filter((value) => allowed.has(value));
+    const assignments = selectedAssignments.length ? selectedAssignments : ["General Volunteer"];
 
     const legacyAssignment = assignments[0] === "General Volunteer" ? "Front Room Support" : assignments[0];
     await airtableUpdate(TABLES.clinicResponses, responseId, {
