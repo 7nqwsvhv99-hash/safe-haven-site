@@ -344,6 +344,119 @@ export default async function ClinicPortalPage() {
                 ? "Your clinic dates, availability, attendance confirmations, team staffing, and clinic resources."
                 : "Your clinic dates, availability, attendance confirmations, team staffing, inventory, and clinic resources."}
             </p>
+            {showClinicInventory && <details className="mt-5">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
+                <Boxes className="h-5 w-5" />
+                Clinic Inventory
+              </summary>
+              <section className="mt-4 rounded-3xl border bg-white p-7 shadow-sm">
+                <p className="mb-5 text-sm text-muted-foreground">Update physical counts, add supplies, edit item details, and request reorders from the clinic portal.</p>
+            
+              {canWriteClinic && (
+                <details className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                  <summary className="cursor-pointer font-semibold text-primary">+ Add a supply</summary>
+                  <form action={addClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <label className="text-xs font-medium">Supply name<input name="itemName" required placeholder="e.g. Sterile gauze sponges" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <label className="text-xs font-medium">Category<select name="category" defaultValue="Medical / Clinic Supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
+                      {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
+                    </select></label>
+                    <label className="text-xs font-medium">Unit of measure<input name="unit" placeholder="e.g. box, dose, each" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                      <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    </div>
+                    <label className="text-xs font-medium">Preferred vendor<input name="vendor" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <label className="text-xs font-medium">Purchase URL<input name="purchaseUrl" type="url" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <label className="text-xs font-medium">Typical unit cost<input name="unitCost" type="number" min="0" step="0.01" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue="Sam Smith" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue="sa7smith@msn.com" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" /> Track lot / expiration</label>
+                    <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <button className="w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white sm:col-span-2">Add supply</button>
+                  </form>
+                </details>
+              )}
+              {data.inventory.length ? (
+                <div className="space-y-3">
+                  {data.inventory.map((item) => {
+                    const lowStock = ["Low Stock", "Out of Stock"].includes(item.status);
+                    const reorderActive = ["Requested", "Ordered"].includes(item.reorderStatus);
+                    return (
+                      <div key={item.id} className={`rounded-2xl border p-4 ${lowStock || reorderActive ? "border-orange-300 bg-orange-50/60" : "border-transparent bg-slate-50"}`}>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="font-semibold">{item.name}</p>
+                            {item.unit && <p className="text-xs text-muted-foreground">Unit: {item.unit}</p>}
+                            <p className={`mt-1 text-xs font-semibold ${lowStock || reorderActive ? "text-primary" : "text-muted-foreground"}`}>
+                              {reorderActive ? `Reorder ${item.reorderStatus.toLowerCase()}` : (item.status || "No status")}
+                            </p>
+                            {item.reorderReason && reorderActive && <p className="mt-1 text-xs text-muted-foreground">{item.reorderReason}</p>}
+                          </div>
+                          <div className="text-left sm:text-right">
+                            <p className="text-lg font-bold">{item.current ?? "—"}</p>
+                            <p className="text-xs text-muted-foreground">Reorder at {item.reorderPoint ?? "—"} · Target {item.target ?? "—"}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+                          <form action={saveInventoryCount} className="flex flex-wrap items-end gap-2">
+                            <input type="hidden" name="itemId" value={item.id} />
+                            <label className="text-xs font-medium">
+                              Current count
+                              <input name="count" type="number" min="0" step="1" defaultValue={item.current ?? ""} placeholder="Enter count" className="mt-1 w-28 rounded-lg border bg-white px-3 py-2 text-sm" />
+                            </label>
+                            <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save count</button>
+                          </form>
+                          <form action={requestInventoryReorder} className="flex items-end">
+                            <input type="hidden" name="itemId" value={item.id} />
+                            <button disabled={reorderActive} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
+                              {reorderActive ? (item.reorderStatus === "Ordered" ? "Order in progress" : "Reorder requested") : "Request reorder"}
+                            </button>
+                          </form>
+                        </div>
+                        {lowStock && !reorderActive && <p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
+            
+                        {canWriteClinic && (
+                          <details className="mt-4 border-t pt-4">
+                            <summary className="cursor-pointer text-sm font-semibold text-primary">Modify item</summary>
+                            <form action={updateClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
+                              <input type="hidden" name="itemId" value={item.id} />
+                              <label className="text-xs font-medium">Supply name<input name="itemName" required defaultValue={item.name} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                              <label className="text-xs font-medium">Category<select name="category" defaultValue={item.category || "Medical / Clinic Supply"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
+                                {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
+                              </select></label>
+                              <label className="text-xs font-medium">Unit of measure<input name="unit" defaultValue={item.unit} placeholder="e.g. box, dose, each" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                              <div className="grid grid-cols-2 gap-3">
+                                <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" defaultValue={item.reorderPoint ?? ""} placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                                <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" defaultValue={item.target ?? ""} placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                              </div>
+                              <label className="text-xs font-medium">Preferred vendor<input name="vendor" defaultValue={item.vendor} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                              <label className="text-xs font-medium">Purchase URL<input name="purchaseUrl" type="url" defaultValue={item.purchaseUrl} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                              <label className="text-xs font-medium">Typical unit cost<input name="unitCost" type="number" min="0" step="0.01" defaultValue={item.unitCost ?? ""} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                              <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue={item.responsiblePerson} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                              <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue={item.responsibleEmail} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                              <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" defaultChecked={item.trackLotExpiration} /> Track lot / expiration</label>
+                              <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked /> Active</label>
+                              <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} defaultValue={item.notes} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                              <button className="w-fit rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary sm:col-span-2">Save item changes</button>
+                            </form>
+                            <form action={deleteClinicInventoryItem} className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
+                              <input type="hidden" name="itemId" value={item.id} />
+                              <p className="text-sm font-semibold text-red-800">Delete item</p>
+                              <p className="mt-1 text-xs text-red-700">If this item has transaction history, it will be archived instead of permanently removed so inventory history remains intact.</p>
+                              <label className="mt-3 flex items-start gap-2 text-xs text-red-800"><input required name="confirmDelete" type="checkbox" className="mt-0.5" /> I confirm that I want to remove this item from active inventory.</label>
+                              <button className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-700">Delete item</button>
+                            </form>
+                          </details>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No active clinic inventory items are available yet.</p>
+              )}
+              </section>
+            </details>}
           </div>
 
           {!data.member && !context.isBoard ? (
@@ -555,119 +668,7 @@ export default async function ClinicPortalPage() {
                   )}
                 </section>
 
-                {showClinicInventory && <details className="order-first">
-                  <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
-                    <Boxes className="h-5 w-5" />
-                    Clinic Inventory
-                  </summary>
-                  <section className="mt-4 rounded-3xl border bg-white p-7 shadow-sm">
-                    <p className="mb-5 text-sm text-muted-foreground">Update physical counts, add supplies, edit item details, and request reorders from the clinic portal.</p>
 
-                  {canWriteClinic && (
-                    <details className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
-                      <summary className="cursor-pointer font-semibold text-primary">+ Add a supply</summary>
-                      <form action={addClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
-                        <label className="text-xs font-medium">Supply name<input name="itemName" required placeholder="e.g. Sterile gauze sponges" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                        <label className="text-xs font-medium">Category<select name="category" defaultValue="Medical / Clinic Supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
-                          {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
-                        </select></label>
-                        <label className="text-xs font-medium">Unit of measure<input name="unit" placeholder="e.g. box, dose, each" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                        <div className="grid grid-cols-2 gap-3">
-                          <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                          <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                        </div>
-                        <label className="text-xs font-medium">Preferred vendor<input name="vendor" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                        <label className="text-xs font-medium">Purchase URL<input name="purchaseUrl" type="url" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                        <label className="text-xs font-medium">Typical unit cost<input name="unitCost" type="number" min="0" step="0.01" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                        <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue="Sam Smith" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                        <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue="sa7smith@msn.com" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                        <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" /> Track lot / expiration</label>
-                        <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                        <button className="w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white sm:col-span-2">Add supply</button>
-                      </form>
-                    </details>
-                  )}
-                  {data.inventory.length ? (
-                    <div className="space-y-3">
-                      {data.inventory.map((item) => {
-                        const lowStock = ["Low Stock", "Out of Stock"].includes(item.status);
-                        const reorderActive = ["Requested", "Ordered"].includes(item.reorderStatus);
-                        return (
-                          <div key={item.id} className={`rounded-2xl border p-4 ${lowStock || reorderActive ? "border-orange-300 bg-orange-50/60" : "border-transparent bg-slate-50"}`}>
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                              <div>
-                                <p className="font-semibold">{item.name}</p>
-                                {item.unit && <p className="text-xs text-muted-foreground">Unit: {item.unit}</p>}
-                                <p className={`mt-1 text-xs font-semibold ${lowStock || reorderActive ? "text-primary" : "text-muted-foreground"}`}>
-                                  {reorderActive ? `Reorder ${item.reorderStatus.toLowerCase()}` : (item.status || "No status")}
-                                </p>
-                                {item.reorderReason && reorderActive && <p className="mt-1 text-xs text-muted-foreground">{item.reorderReason}</p>}
-                              </div>
-                              <div className="text-left sm:text-right">
-                                <p className="text-lg font-bold">{item.current ?? "—"}</p>
-                                <p className="text-xs text-muted-foreground">Reorder at {item.reorderPoint ?? "—"} · Target {item.target ?? "—"}</p>
-                              </div>
-                            </div>
-                            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
-                              <form action={saveInventoryCount} className="flex flex-wrap items-end gap-2">
-                                <input type="hidden" name="itemId" value={item.id} />
-                                <label className="text-xs font-medium">
-                                  Current count
-                                  <input name="count" type="number" min="0" step="1" defaultValue={item.current ?? ""} placeholder="Enter count" className="mt-1 w-28 rounded-lg border bg-white px-3 py-2 text-sm" />
-                                </label>
-                                <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save count</button>
-                              </form>
-                              <form action={requestInventoryReorder} className="flex items-end">
-                                <input type="hidden" name="itemId" value={item.id} />
-                                <button disabled={reorderActive} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
-                                  {reorderActive ? (item.reorderStatus === "Ordered" ? "Order in progress" : "Reorder requested") : "Request reorder"}
-                                </button>
-                              </form>
-                            </div>
-                            {lowStock && !reorderActive && <p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
-
-                            {canWriteClinic && (
-                              <details className="mt-4 border-t pt-4">
-                                <summary className="cursor-pointer text-sm font-semibold text-primary">Modify item</summary>
-                                <form action={updateClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
-                                  <input type="hidden" name="itemId" value={item.id} />
-                                  <label className="text-xs font-medium">Supply name<input name="itemName" required defaultValue={item.name} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                  <label className="text-xs font-medium">Category<select name="category" defaultValue={item.category || "Medical / Clinic Supply"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
-                                    {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
-                                  </select></label>
-                                  <label className="text-xs font-medium">Unit of measure<input name="unit" defaultValue={item.unit} placeholder="e.g. box, dose, each" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <label className="text-xs font-medium">Reorder point<input name="reorderPoint" type="number" min="0" step="0.01" defaultValue={item.reorderPoint ?? ""} placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                    <label className="text-xs font-medium">Target quantity<input name="targetQuantity" type="number" min="0" step="0.01" defaultValue={item.target ?? ""} placeholder="0" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                  </div>
-                                  <label className="text-xs font-medium">Preferred vendor<input name="vendor" defaultValue={item.vendor} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                  <label className="text-xs font-medium">Purchase URL<input name="purchaseUrl" type="url" defaultValue={item.purchaseUrl} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                  <label className="text-xs font-medium">Typical unit cost<input name="unitCost" type="number" min="0" step="0.01" defaultValue={item.unitCost ?? ""} placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                  <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue={item.responsiblePerson} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                  <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue={item.responsibleEmail} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                  <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" defaultChecked={item.trackLotExpiration} /> Track lot / expiration</label>
-                                  <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked /> Active</label>
-                                  <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} defaultValue={item.notes} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                                  <button className="w-fit rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary sm:col-span-2">Save item changes</button>
-                                </form>
-                                <form action={deleteClinicInventoryItem} className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
-                                  <input type="hidden" name="itemId" value={item.id} />
-                                  <p className="text-sm font-semibold text-red-800">Delete item</p>
-                                  <p className="mt-1 text-xs text-red-700">If this item has transaction history, it will be archived instead of permanently removed so inventory history remains intact.</p>
-                                  <label className="mt-3 flex items-start gap-2 text-xs text-red-800"><input required name="confirmDelete" type="checkbox" className="mt-0.5" /> I confirm that I want to remove this item from active inventory.</label>
-                                  <button className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-700">Delete item</button>
-                                </form>
-                              </details>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No active clinic inventory items are available yet.</p>
-                  )}
-                  </section>
-                </details>}
               </div>
 
 
