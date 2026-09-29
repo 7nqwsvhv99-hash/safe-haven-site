@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone } from "lucide-react";
+import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone, BookOpen, ExternalLink } from "lucide-react";
 import { VeterinarianDateForm } from "./veterinarian-date-form";
 import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, airtableList, airtableDelete, TABLES } from "@/lib/portal";
 
@@ -344,7 +344,8 @@ export default async function ClinicPortalPage() {
                 ? "Your clinic dates, availability, attendance confirmations, team staffing, and clinic resources."
                 : "Your clinic dates, availability, attendance confirmations, team staffing, inventory, and clinic resources."}
             </p>
-            {showClinicInventory && <details className="mt-5">
+            <div className="mt-5 flex flex-wrap gap-3">
+            {showClinicInventory && <details className="basis-full sm:basis-auto [&[open]]:basis-full">
               <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
                 <Boxes className="h-5 w-5" />
                 Clinic Inventory
@@ -457,6 +458,63 @@ export default async function ClinicPortalPage() {
               )}
               </section>
             </details>}
+
+            <details className="basis-full sm:basis-auto [&[open]]:basis-full">
+              <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
+                <BookOpen className="h-5 w-5" />
+                Training Resources
+              </summary>
+              <section className="mt-4 rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold">Clinic Training Resources</h2>
+                  <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
+                    Use these resources for clinic orientation, position-specific training, and general education. Published materials are managed in Airtable so new videos and documents can be added without changing the portal.
+                  </p>
+                </div>
+
+                <div className="space-y-7">
+                  {[
+                    "General Clinic Education",
+                    "Front Room System",
+                    "Back Room Documentation",
+                    "Instrument Sterilization",
+                    "Veterinary Technician",
+                    "Veterinarian",
+                    "General Volunteer",
+                  ].map((category) => {
+                    const resources = data.trainingResources.filter((resource) => resource.categories.includes(category));
+                    return (
+                      <div key={category}>
+                        <h3 className="text-lg font-bold">{category}</h3>
+                        {resources.length ? (
+                          <div className="mt-3 grid gap-3 md:grid-cols-2">
+                            {resources.map((resource) => (
+                              <article key={resource.id} className="rounded-2xl border bg-slate-50 p-4">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="font-semibold">{resource.title}</p>
+                                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">{resource.resourceType}</p>
+                                  </div>
+                                </div>
+                                {resource.description && <p className="mt-3 text-sm text-muted-foreground">{resource.description}</p>}
+                                {resource.url && (
+                                  <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+                                    Open resource <ExternalLink className="h-3.5 w-3.5" />
+                                  </a>
+                                )}
+                              </article>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="mt-2 text-sm text-muted-foreground">No published resources in this section yet.</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            </details>
+            </div>
           </div>
 
           {!data.member && !context.isBoard ? (
