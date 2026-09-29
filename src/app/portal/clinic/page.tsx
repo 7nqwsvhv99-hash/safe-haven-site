@@ -42,11 +42,16 @@ function daysUntilClinic(value: string) {
   return Math.round((clinic.getTime() - today.getTime()) / 86400000);
 }
 
-export default async function ClinicPortalPage() {
+export default async function ClinicPortalPage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
   const context = await requirePortalRole("Clinic Team");
   const data = await getClinicPortalData(context.email);
   const canWriteClinic = context.isAdministrator || context.roles.includes("Clinic Team");
   const showClinicInventory = data.member?.role !== "Veterinarian";
+  const requestedSection = (await searchParams).section || "dates";
+  const allowedSections = new Set(["dates", "staffing", "inventory", "training"]);
+  const section = !allowedSections.has(requestedSection) || (requestedSection === "inventory" && !showClinicInventory)
+    ? "dates"
+    : requestedSection;
 
   async function submitVeterinarianPreference(formData: FormData) {
     "use server";
@@ -345,11 +350,33 @@ export default async function ClinicPortalPage() {
                 : "Your clinic dates, availability, attendance confirmations, team staffing, inventory, and clinic resources."}
             </p>
             <div className="mt-5 flex flex-wrap gap-3">
-            {showClinicInventory && <details className="basis-full sm:basis-auto [&[open]]:basis-full">
-              <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
-                <Boxes className="h-5 w-5" />
-                Clinic Inventory
-              </summary>
+              {section !== "dates" && (
+                <Link href="/portal/clinic?section=dates" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
+                  <CalendarCheck className="h-5 w-5" />
+                  My Clinic Dates
+                </Link>
+              )}
+              {section !== "staffing" && (
+                <Link href="/portal/clinic?section=staffing" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
+                  <ClipboardCheck className="h-5 w-5" />
+                  Team Staffing Calendar
+                </Link>
+              )}
+              {showClinicInventory && section !== "inventory" && (
+                <Link href="/portal/clinic?section=inventory" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
+                  <Boxes className="h-5 w-5" />
+                  Clinic Inventory
+                </Link>
+              )}
+              {section !== "training" && (
+                <Link href="/portal/clinic?section=training" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
+                  <BookOpen className="h-5 w-5" />
+                  Training Resources
+                </Link>
+              )}
+            </div>
+
+            {section === "inventory" && showClinicInventory && (
               <section className="mt-4 rounded-3xl border bg-white p-7 shadow-sm">
                 <p className="mb-5 text-sm text-muted-foreground">Update physical counts, add supplies, edit item details, and request reorders from the clinic portal.</p>
             
@@ -457,13 +484,9 @@ export default async function ClinicPortalPage() {
                 <p className="text-muted-foreground">No active clinic inventory items are available yet.</p>
               )}
               </section>
-            </details>}
+            )}
 
-            <details className="basis-full sm:basis-auto [&[open]]:basis-full">
-              <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90 [&::-webkit-details-marker]:hidden">
-                <BookOpen className="h-5 w-5" />
-                Training Resources
-              </summary>
+            {section === "training" && (
               <section className="mt-4 rounded-3xl border bg-white p-7 shadow-sm">
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold">Clinic Training Resources</h2>
@@ -513,8 +536,7 @@ export default async function ClinicPortalPage() {
                   })}
                 </div>
               </section>
-            </details>
-            </div>
+            )}
           </div>
 
           {!data.member && !context.isBoard ? (
@@ -548,173 +570,124 @@ export default async function ClinicPortalPage() {
                   </div>
                 </section>
               )}
-              {data.member?.role === "Veterinarian" && (
-                <section className="rounded-3xl border bg-white p-7 shadow-sm">
-                  <div className="mb-5 flex items-center gap-3">
-                    <CalendarPlus className="h-6 w-6 text-primary" />
-                    <h2 className="text-2xl font-bold">Choose Clinic Dates</h2>
-                  </div>
-                  <p className="max-w-3xl text-sm text-muted-foreground">
-                    Add the Wednesday or Saturday dates you are available to serve as the veterinarian. Submit dates as far ahead as your schedule allows. Once a date is submitted, the Vet Tech signup round begins.
-                  </p>
-                  <div className="mt-3 max-w-3xl space-y-1 text-sm text-muted-foreground">
-                    <p><span className="font-semibold text-foreground">Full-day clinics:</span> Check-in starts at 8:00 AM. The clinic day ends at approximately 6:00 PM.</p>
-                    <p><span className="font-semibold text-foreground">Half-day clinics:</span> 5 hours from check-in to check out, typically 9:00 AM–2:00 PM.</p>
-                    <p>Wednesdays are always half days.</p>
-                    <p>Saturdays may be scheduled as either full or half days, and a Saturday may also be shared by two veterinarians with separate morning (7:00 AM–11:00 AM) and afternoon (11:00 AM–5:00 PM) half-day coverage.</p>
-                  </div>
-
-                  <VeterinarianDateForm action={submitVeterinarianPreference} />
-
-                  {data.vetPreferences.length > 0 && (
-                    <div className="mt-5">
-                      <h3 className="text-sm font-semibold">My submitted dates</h3>
-                      <div className="mt-3 grid gap-3 md:grid-cols-2">
-                        {data.vetPreferences.map((preference) => (
-                          <div key={preference.id} className="rounded-2xl border bg-white p-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div>
-                                <p className="font-semibold">{formatDate(preference.preferredDate)}</p>
-                                <p className="mt-1 text-sm text-muted-foreground">
-                                  {preference.clinicType || "Full Day"}
-                                  {preference.startTime && preference.endTime ? ` · ${preference.startTime}–${preference.endTime}` : ""}
-                                </p>
-                                {preference.notes && <p className="mt-1 text-sm text-muted-foreground">{preference.notes}</p>}
-                              </div>
-                              <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                                {preference.status}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+              {section === "dates" && (
+                <>
+                {data.member?.role === "Veterinarian" && (
+                  <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                    <div className="mb-5 flex items-center gap-3">
+                      <CalendarPlus className="h-6 w-6 text-primary" />
+                      <h2 className="text-2xl font-bold">Choose Clinic Dates</h2>
                     </div>
-                  )}
-                </section>
-              )}
-
-              <section className="rounded-3xl border bg-white p-7 shadow-sm">
-                <div className="mb-5 flex items-center gap-3">
-                  <CalendarCheck className="h-6 w-6 text-primary" />
-                  <h2 className="text-2xl font-bold">My Clinic Dates</h2>
-                </div>
-                {data.dates.length ? (
-                  <div className="space-y-4">
-                    {data.dates.map((item) => (
-                      <div key={item.responseId} className="rounded-2xl bg-slate-50 p-5">
-                        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
-                          <div>
-                            <p className="text-lg font-semibold">{formatDate(item.clinic?.date || "")}</p>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {item.clinic?.type || "Clinic"} · {item.clinic?.stage || "Scheduling"}
-                            </p>
-                            {item.clinic?.alert && <p className="mt-2 text-sm font-medium text-primary">{item.clinic.alert}</p>}
-                          </div>
-                          <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[520px]">
-                            <div className={`rounded-xl border bg-white p-4 ${(!item.initialResponse || item.initialResponse === "No Response" || (data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && item.assignments.length === 0) || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))) ? "portal-action-glow" : ""}`}>
-                              <form action={saveAvailability}>
-                                <input type="hidden" name="responseId" value={item.responseId} />
-                                <p className="mb-2 text-sm font-semibold">My availability</p>
-                                <div className="flex gap-2">
-                                  <button name="availability" value="Yes" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Yes</button>
-                                  <button name="availability" value="No" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">No</button>
+                    <p className="max-w-3xl text-sm text-muted-foreground">
+                      Add the Wednesday or Saturday dates you are available to serve as the veterinarian. Submit dates as far ahead as your schedule allows. Once a date is submitted, the Vet Tech signup round begins.
+                    </p>
+                    <div className="mt-3 max-w-3xl space-y-1 text-sm text-muted-foreground">
+                      <p><span className="font-semibold text-foreground">Full-day clinics:</span> Check-in starts at 8:00 AM. The clinic day ends at approximately 6:00 PM.</p>
+                      <p><span className="font-semibold text-foreground">Half-day clinics:</span> 5 hours from check-in to check out, typically 9:00 AM–2:00 PM.</p>
+                      <p>Wednesdays are always half days.</p>
+                      <p>Saturdays may be scheduled as either full or half days, and a Saturday may also be shared by two veterinarians with separate morning (7:00 AM–11:00 AM) and afternoon (11:00 AM–5:00 PM) half-day coverage.</p>
+                    </div>
+  
+                    <VeterinarianDateForm action={submitVeterinarianPreference} />
+  
+                    {data.vetPreferences.length > 0 && (
+                      <div className="mt-5">
+                        <h3 className="text-sm font-semibold">My submitted dates</h3>
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                          {data.vetPreferences.map((preference) => (
+                            <div key={preference.id} className="rounded-2xl border bg-white p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="font-semibold">{formatDate(preference.preferredDate)}</p>
+                                  <p className="mt-1 text-sm text-muted-foreground">
+                                    {preference.clinicType || "Full Day"}
+                                    {preference.startTime && preference.endTime ? ` · ${preference.startTime}–${preference.endTime}` : ""}
+                                  </p>
+                                  {preference.notes && <p className="mt-1 text-sm text-muted-foreground">{preference.notes}</p>}
                                 </div>
-                                <p className={`mt-2 text-xs ${item.initialResponse && item.initialResponse !== "No Response" ? "font-semibold text-green-700" : "text-muted-foreground"}`}>
-                                  Current: {item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10) ? "Date changed. Please respond again." : item.initialResponse || "No response"}
-                                </p>
-                              </form>
-
-                              {data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && (
-                                <form action={saveClinicAssignments} className="mt-4 border-t pt-4">
-                                  <input type="hidden" name="responseId" value={item.responseId} />
-                                  <p className="mb-1 text-sm font-semibold">Select your clinic role</p>
-                                  <p className="mb-3 text-xs text-muted-foreground">Choose one specialized role when possible. Select more than one only when additional coverage is needed.</p>
-                                  <div className="space-y-2 text-sm">
-                                    {data.member.skills.includes("Front Room System") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Front Room System" defaultChecked={item.assignments.includes("Front Room System")} className="mt-0.5" /><span>Front Room System{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Front Room System"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Front Room System"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
-                                    {data.member.skills.includes("Back Room System") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Back Room System" defaultChecked={item.assignments.includes("Back Room System")} className="mt-0.5" /><span>Back Room System{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Back Room System"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Back Room System"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
-                                    {data.member.skills.includes("Autoclave") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Autoclave" defaultChecked={item.assignments.includes("Autoclave")} className="mt-0.5" /><span>Autoclave{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
-                                    {data.member.skills.includes("General Support") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="General Volunteer" defaultChecked={item.assignments.includes("General Volunteer")} /> General Volunteer</label>}
-                                  </div>
-                                  <button type="submit" className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save role</button>
-                                  {item.assignments.length > 0 && <p className="mt-2 text-xs font-semibold text-green-700">Current role: {item.assignments.join(", ")}</p>}
-                                </form>
-                              )}
-
-                              {data.member?.role === "Clinic Volunteer" && (
-                                <form action={saveClinicNote} className="mt-4 border-t pt-4">
-                                  <input type="hidden" name="responseId" value={item.responseId} />
-                                  <label htmlFor={`clinic-note-${item.responseId}`} className="block text-sm font-semibold">My shift note</label>
-                                  <p className="mt-1 text-xs text-muted-foreground">Share timing or coverage details, such as needing to leave early. Your note appears on this clinic day’s staffing card.</p>
-                                  <textarea id={`clinic-note-${item.responseId}`} name="note" rows={2} maxLength={1000} defaultValue={item.notes} className="mt-2 w-full rounded-xl border px-3 py-2 text-sm" placeholder="Example: I need to leave by 2:00 p.m." />
-                                  <button type="submit" className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save note</button>
-                                </form>
-                              )}
+                                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                  {preference.status}
+                                </span>
+                              </div>
                             </div>
-
-                            {item.initialResponse !== "No" && (
-                              <form action={saveReconfirmation} className={`rounded-xl border bg-white p-4 ${(daysUntilClinic(item.clinic?.date || "") <= 7 && item.initialResponse === "Yes" && (!item.reconfirmation || item.reconfirmation === "Awaiting Response")) ? "portal-action-glow" : ""}`}>
-                                <fieldset disabled={item.initialResponse !== "Yes" || daysUntilClinic(item.clinic?.date || "") > 7 || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))} className="disabled:opacity-50">
-                                  <input type="hidden" name="responseId" value={item.responseId} />
-                                  <p className="mb-2 text-sm font-semibold">Reconfirm attendance</p>
-                                  <div className="flex flex-wrap gap-2">
-                                    <button name="reconfirmation" value="Yes, still attending" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Still attending</button>
-                                    <button name="reconfirmation" value="No, can no longer attend" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Can’t attend</button>
-                                  </div>
-                                  <p className={`mt-2 text-xs ${item.reconfirmation && item.reconfirmation !== "Awaiting Response" ? "font-semibold text-green-700" : "text-muted-foreground"}`}>Current: {item.reconfirmation || "Awaiting response"}</p>
-                                  {daysUntilClinic(item.clinic?.date || "") > 7 && item.initialResponse === "Yes" && <p className="mt-2 text-xs text-muted-foreground">Reconfirmation opens one week before the clinic.</p>}
-                                </fieldset>
-                              </form>
-                            )}
-                          </div>
+                          ))}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">No upcoming clinic dates are currently assigned to you.</p>
+                    )}
+                  </section>
                 )}
-              </section>
-
-              <div className="flex flex-col gap-6">
+  
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
-                    <ClipboardCheck className="h-6 w-6 text-primary" />
-                    <h2 className="text-2xl font-bold">Team Staffing Calendar</h2>
+                    <CalendarCheck className="h-6 w-6 text-primary" />
+                    <h2 className="text-2xl font-bold">My Clinic Dates</h2>
                   </div>
-                  {data.teamDates.length ? (
-                    <div className="space-y-3">
-                      {data.teamDates.map((date) => (
-                        <div key={date.id} className="rounded-2xl bg-slate-50 p-4">
-                          <div className="flex items-start justify-between gap-4">
+                  {data.dates.length ? (
+                    <div className="space-y-4">
+                      {data.dates.map((item) => (
+                        <div key={item.responseId} className="rounded-2xl bg-slate-50 p-5">
+                          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                             <div>
-                              <p className="font-semibold">{formatDate(date.date)}</p>
-                              <p className="text-sm text-muted-foreground">{date.type || "Clinic"} · {date.stage || "Scheduling"}</p>
+                              <p className="text-lg font-semibold">{formatDate(item.clinic?.date || "")}</p>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {item.clinic?.type || "Clinic"} · {item.clinic?.stage || "Scheduling"}
+                              </p>
+                              {item.clinic?.alert && <p className="mt-2 text-sm font-medium text-primary">{item.clinic.alert}</p>}
                             </div>
-                            {date.alert && <span className="text-xs font-semibold text-primary">{date.alert}</span>}
-                          </div>
-                          <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
-                            <div><span className="block text-xs text-muted-foreground">Veterinarian</span><strong>{date.veterinarianNames.length ? date.veterinarianNames.join(", ") : "Unfilled"}</strong></div>
-                            <div><span className="block text-xs text-muted-foreground">Vet Tech</span><strong>{date.vetTechNames.length ? date.vetTechNames.join(", ") : "Unfilled"}</strong></div>
-                            <div className="hidden sm:block" aria-hidden="true" />
-                            {(["Front Room System", "Back Room System", "Autoclave"] as const).map((role) => (
-                              <div key={role}><span className="block whitespace-nowrap text-xs text-muted-foreground">{role}</span><strong>{date.volunteerAssignments[role]?.join(", ") || "Unfilled"}</strong></div>
-                            ))}
-                            <div className="sm:col-span-3">
-                              <span className="block text-xs text-muted-foreground">General Volunteers</span>
-                              <strong>{[
-                                ...(date.volunteerAssignments["Front Room Support"] || []),
-                                ...(date.volunteerAssignments["Surgery/Recovery Floater"] || []),
-                                ...(date.volunteerAssignments["General Volunteer"] || []),
-                              ].join(", ") || "None confirmed"}</strong>
-                              {date.notes.length > 0 && (
-                                <div className="mt-3 rounded-xl border bg-white p-3">
-                                  <p className="text-xs font-semibold text-muted-foreground">Notes for this clinic day</p>
-                                  <ul className="mt-2 space-y-2">
-                                    {date.notes.map((note, index) => (
-                                      <li key={`${note.name}-${index}`} className="whitespace-pre-wrap break-words text-sm"><span className="font-semibold">{note.name}:</span> {note.text}</li>
-                                    ))}
-                                  </ul>
-                                </div>
+                            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[520px]">
+                              <div className={`rounded-xl border bg-white p-4 ${(!item.initialResponse || item.initialResponse === "No Response" || (data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && item.assignments.length === 0) || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))) ? "portal-action-glow" : ""}`}>
+                                <form action={saveAvailability}>
+                                  <input type="hidden" name="responseId" value={item.responseId} />
+                                  <p className="mb-2 text-sm font-semibold">My availability</p>
+                                  <div className="flex gap-2">
+                                    <button name="availability" value="Yes" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Yes</button>
+                                    <button name="availability" value="No" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">No</button>
+                                  </div>
+                                  <p className={`mt-2 text-xs ${item.initialResponse && item.initialResponse !== "No Response" ? "font-semibold text-green-700" : "text-muted-foreground"}`}>
+                                    Current: {item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10) ? "Date changed. Please respond again." : item.initialResponse || "No response"}
+                                  </p>
+                                </form>
+  
+                                {data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && (
+                                  <form action={saveClinicAssignments} className="mt-4 border-t pt-4">
+                                    <input type="hidden" name="responseId" value={item.responseId} />
+                                    <p className="mb-1 text-sm font-semibold">Select your clinic role</p>
+                                    <p className="mb-3 text-xs text-muted-foreground">Choose one specialized role when possible. Select more than one only when additional coverage is needed.</p>
+                                    <div className="space-y-2 text-sm">
+                                      {data.member.skills.includes("Front Room System") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Front Room System" defaultChecked={item.assignments.includes("Front Room System")} className="mt-0.5" /><span>Front Room System{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Front Room System"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Front Room System"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
+                                      {data.member.skills.includes("Back Room System") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Back Room System" defaultChecked={item.assignments.includes("Back Room System")} className="mt-0.5" /><span>Back Room System{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Back Room System"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Back Room System"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
+                                      {data.member.skills.includes("Autoclave") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Autoclave" defaultChecked={item.assignments.includes("Autoclave")} className="mt-0.5" /><span>Autoclave{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
+                                      {data.member.skills.includes("General Support") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="General Volunteer" defaultChecked={item.assignments.includes("General Volunteer")} /> General Volunteer</label>}
+                                    </div>
+                                    <button type="submit" className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save role</button>
+                                    {item.assignments.length > 0 && <p className="mt-2 text-xs font-semibold text-green-700">Current role: {item.assignments.join(", ")}</p>}
+                                  </form>
+                                )}
+  
+                                {data.member?.role === "Clinic Volunteer" && (
+                                  <form action={saveClinicNote} className="mt-4 border-t pt-4">
+                                    <input type="hidden" name="responseId" value={item.responseId} />
+                                    <label htmlFor={`clinic-note-${item.responseId}`} className="block text-sm font-semibold">My shift note</label>
+                                    <p className="mt-1 text-xs text-muted-foreground">Share timing or coverage details, such as needing to leave early. Your note appears on this clinic day’s staffing card.</p>
+                                    <textarea id={`clinic-note-${item.responseId}`} name="note" rows={2} maxLength={1000} defaultValue={item.notes} className="mt-2 w-full rounded-xl border px-3 py-2 text-sm" placeholder="Example: I need to leave by 2:00 p.m." />
+                                    <button type="submit" className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save note</button>
+                                  </form>
+                                )}
+                              </div>
+  
+                              {item.initialResponse !== "No" && (
+                                <form action={saveReconfirmation} className={`rounded-xl border bg-white p-4 ${(daysUntilClinic(item.clinic?.date || "") <= 7 && item.initialResponse === "Yes" && (!item.reconfirmation || item.reconfirmation === "Awaiting Response")) ? "portal-action-glow" : ""}`}>
+                                  <fieldset disabled={item.initialResponse !== "Yes" || daysUntilClinic(item.clinic?.date || "") > 7 || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))} className="disabled:opacity-50">
+                                    <input type="hidden" name="responseId" value={item.responseId} />
+                                    <p className="mb-2 text-sm font-semibold">Reconfirm attendance</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      <button name="reconfirmation" value="Yes, still attending" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Still attending</button>
+                                      <button name="reconfirmation" value="No, can no longer attend" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Can’t attend</button>
+                                    </div>
+                                    <p className={`mt-2 text-xs ${item.reconfirmation && item.reconfirmation !== "Awaiting Response" ? "font-semibold text-green-700" : "text-muted-foreground"}`}>Current: {item.reconfirmation || "Awaiting response"}</p>
+                                    {daysUntilClinic(item.clinic?.date || "") > 7 && item.initialResponse === "Yes" && <p className="mt-2 text-xs text-muted-foreground">Reconfirmation opens one week before the clinic.</p>}
+                                  </fieldset>
+                                </form>
                               )}
                             </div>
                           </div>
@@ -722,9 +695,64 @@ export default async function ClinicPortalPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-muted-foreground">No upcoming clinic dates are currently posted.</p>
+                    <p className="text-muted-foreground">No upcoming clinic dates are currently assigned to you.</p>
                   )}
                 </section>
+                </>
+              )}
+
+              <div className="flex flex-col gap-6">
+                {section === "staffing" && (
+                  <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                    <div className="mb-5 flex items-center gap-3">
+                      <ClipboardCheck className="h-6 w-6 text-primary" />
+                      <h2 className="text-2xl font-bold">Team Staffing Calendar</h2>
+                    </div>
+                    {data.teamDates.length ? (
+                      <div className="space-y-3">
+                        {data.teamDates.map((date) => (
+                          <div key={date.id} className="rounded-2xl bg-slate-50 p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <p className="font-semibold">{formatDate(date.date)}</p>
+                                <p className="text-sm text-muted-foreground">{date.type || "Clinic"} · {date.stage || "Scheduling"}</p>
+                              </div>
+                              {date.alert && <span className="text-xs font-semibold text-primary">{date.alert}</span>}
+                            </div>
+                            <div className="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+                              <div><span className="block text-xs text-muted-foreground">Veterinarian</span><strong>{date.veterinarianNames.length ? date.veterinarianNames.join(", ") : "Unfilled"}</strong></div>
+                              <div><span className="block text-xs text-muted-foreground">Vet Tech</span><strong>{date.vetTechNames.length ? date.vetTechNames.join(", ") : "Unfilled"}</strong></div>
+                              <div className="hidden sm:block" aria-hidden="true" />
+                              {(["Front Room System", "Back Room System", "Autoclave"] as const).map((role) => (
+                                <div key={role}><span className="block whitespace-nowrap text-xs text-muted-foreground">{role}</span><strong>{date.volunteerAssignments[role]?.join(", ") || "Unfilled"}</strong></div>
+                              ))}
+                              <div className="sm:col-span-3">
+                                <span className="block text-xs text-muted-foreground">General Volunteers</span>
+                                <strong>{[
+                                  ...(date.volunteerAssignments["Front Room Support"] || []),
+                                  ...(date.volunteerAssignments["Surgery/Recovery Floater"] || []),
+                                  ...(date.volunteerAssignments["General Volunteer"] || []),
+                                ].join(", ") || "None confirmed"}</strong>
+                                {date.notes.length > 0 && (
+                                  <div className="mt-3 rounded-xl border bg-white p-3">
+                                    <p className="text-xs font-semibold text-muted-foreground">Notes for this clinic day</p>
+                                    <ul className="mt-2 space-y-2">
+                                      {date.notes.map((note, index) => (
+                                        <li key={`${note.name}-${index}`} className="whitespace-pre-wrap break-words text-sm"><span className="font-semibold">{note.name}:</span> {note.text}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground">No upcoming clinic dates are currently posted.</p>
+                    )}
+                  </section>
+                )}
 
 
               </div>
