@@ -20,6 +20,8 @@ const TABLES = {
   vetClinicPreferences: "tblZ9DrQNMTKgvDbw",
   inventory: "tblTFVIVoeyafVC4b",
   events: "tbl1wjnnJXBI5a3fy",
+  eventTicketOptions: "tblVvPwgFWUhjQolD",
+  eventReservations: "tblaAz2TlR1JASNLM",
   volunteerApplications: "tblonEhsjg3vWumoj",
   fosterApplications: "tblFWPjyZMi9DjpBj",
   fosterPlacements: "tbln4l1GQcJrVmmLj",
