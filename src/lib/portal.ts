@@ -1233,5 +1233,6 @@ export {
   airtableDelete,
   normalizeEmail,
   asText,
+  asNumber,
   asStrings,
 };
