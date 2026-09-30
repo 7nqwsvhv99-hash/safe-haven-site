@@ -520,31 +520,28 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                     "General Volunteer",
                   ].map((category) => {
                     const resources = data.trainingResources.filter((resource) => resource.categories.includes(category));
+                    if (!resources.length) return null;
                     return (
                       <div key={category}>
                         <h3 className="text-lg font-bold">{category}</h3>
-                        {resources.length ? (
-                          <div className="mt-3 grid gap-3 md:grid-cols-2">
-                            {resources.map((resource) => (
-                              <article key={resource.id} className="rounded-2xl border bg-slate-50 p-4">
-                                <div className="flex items-start justify-between gap-3">
-                                  <div>
-                                    <p className="font-semibold">{resource.title}</p>
-                                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">{resource.resourceType}</p>
-                                  </div>
+                        <div className="mt-3 grid gap-3 md:grid-cols-2">
+                          {resources.map((resource) => (
+                            <article key={resource.id} className="rounded-2xl border bg-slate-50 p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="font-semibold">{resource.title}</p>
+                                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">{resource.resourceType}</p>
                                 </div>
-                                {resource.description && <p className="mt-3 text-sm text-muted-foreground">{resource.description}</p>}
-                                {resource.url && (
-                                  <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
-                                    Open resource <ExternalLink className="h-3.5 w-3.5" />
-                                  </a>
-                                )}
-                              </article>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="mt-2 text-sm text-muted-foreground">No published resources in this section yet.</p>
-                        )}
+                              </div>
+                              {resource.description && <p className="mt-3 text-sm text-muted-foreground">{resource.description}</p>}
+                              {resource.url && (
+                                <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
+                                  Open resource <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              )}
+                            </article>
+                          ))}
+                        </div>
                       </div>
                     );
                   })}
