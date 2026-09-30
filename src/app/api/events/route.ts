@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 const AIRTABLE_BASE_ID = "app2vpch2JJVrP9pu"
 const EVENTS_TABLE_ID = "tbl1wjnnJXBI5a3fy"
+const EVENT_OPTIONS_TABLE_ID = "tblVvPwgFWUhjQolD"
 
 type AirtableAttachment = {
   url?: string
@@ -54,6 +55,7 @@ export async function GET(request: Request) {
       "Event Image",
       "CTA Label",
       "CTA URL",
+      "Registration / Ticket URL",
       "Publish on Website",
       "Featured on Homepage",
       "Display Order",
@@ -71,6 +73,34 @@ export async function GET(request: Request) {
       offset = result.offset
     } while (offset)
     const now = Date.now()
+
+    const optionParams = new URLSearchParams()
+    optionParams.set("pageSize", "100")
+    for (const field of ["Event", "Active", "Sales Start", "Sales End"]) optionParams.append("fields[]", field)
+    const optionResponse = await fetch(
+      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${EVENT_OPTIONS_TABLE_ID}?${optionParams}`,
+      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
+    )
+    const optionResult = await optionResponse.json()
+    if (!optionResponse.ok) throw new Error("Could not load event ticket options")
+    const today = new Date().toISOString().slice(0, 10)
+    const eventIdsWithActiveOptions = new Set<string>(
+      (optionResult.records || [])
+        .filter((record: AirtableRecord) => {
+          const fields = record.fields
+          if (!fields.Active) return false
+          const start = text(fields["Sales Start"])
+          const end = text(fields["Sales End"])
+          if (start && start > today) return false
+          if (end && end < today) return false
+          return true
+        })
+        .flatMap((record: AirtableRecord) =>
+          Array.isArray(record.fields.Event)
+            ? (record.fields.Event as string[])
+            : []
+        )
+    )
 
     const events = records
       .map((record) => {
@@ -98,6 +128,8 @@ export async function GET(request: Request) {
           image: attachments(fields["Event Image"])[0] || "",
           ctaLabel: text(fields["CTA Label"]),
           ctaUrl: text(fields["CTA URL"]),
+          registrationUrl: text(fields["Registration / Ticket URL"]),
+          hasPaidReservations: eventIdsWithActiveOptions.has(record.id),
           publish: Boolean(fields["Publish on Website"]),
           featured: Boolean(fields["Featured on Homepage"]),
           displayOrder:
