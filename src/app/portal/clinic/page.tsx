@@ -640,7 +640,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                     <div className="space-y-4">
                       {data.dates.map((item) => (
                         <div key={item.responseId} className="rounded-2xl bg-slate-50 p-5">
-                          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+                          <div className="grid gap-4 lg:grid-cols-[minmax(220px,0.8fr)_minmax(0,2.2fr)] lg:items-start">
                             <div>
                               <p className="text-lg font-semibold">{formatDate(item.clinic?.date || "")}</p>
                               <p className="mt-1 text-sm text-muted-foreground">
@@ -653,7 +653,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                               )}
                               {item.clinic?.alert && <p className="mt-2 text-sm font-medium text-primary">{item.clinic.alert}</p>}
                             </div>
-                            <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[520px]">
+                            <div className="grid gap-3 sm:grid-cols-[minmax(0,1.35fr)_minmax(240px,0.85fr)]">
                               <div className={`rounded-xl border bg-white p-4 ${(!item.initialResponse || item.initialResponse === "No Response" || (data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && item.assignments.length === 0) || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))) ? "portal-action-glow" : ""}`}>
                                 <form action={saveAvailability}>
                                   <input type="hidden" name="responseId" value={item.responseId} />
