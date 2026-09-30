@@ -5,6 +5,14 @@ import { VeterinarianDateForm } from "./veterinarian-date-form";
 import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, airtableList, airtableDelete, TABLES } from "@/lib/portal";
 
 
+function formatClinicTime(value: string) {
+  if (!value || !/^\d{2}:\d{2}$/.test(value)) return "";
+  const [hours, minutes] = value.split(":").map(Number);
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const hour = hours % 12 || 12;
+  return `${hour}:${String(minutes).padStart(2, "0")} ${suffix}`;
+}
+
 function formatDate(value: string) {
   if (!value) return "";
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value);
@@ -638,6 +646,11 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                               <p className="mt-1 text-sm text-muted-foreground">
                                 {item.clinic?.type || "Clinic"} · {item.clinic?.stage || "Scheduling"}
                               </p>
+                              {item.clinic?.startTime && item.clinic?.endTime && (
+                                <p className="mt-1 text-sm text-muted-foreground">
+                                  {formatClinicTime(item.clinic.startTime)} – approx. {formatClinicTime(item.clinic.endTime)}
+                                </p>
+                              )}
                               {item.clinic?.alert && <p className="mt-2 text-sm font-medium text-primary">{item.clinic.alert}</p>}
                             </div>
                             <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[520px]">
@@ -722,6 +735,11 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                               <div>
                                 <p className="font-semibold">{formatDate(date.date)}</p>
                                 <p className="text-sm text-muted-foreground">{date.type || "Clinic"} · {date.stage || "Scheduling"}</p>
+                                {date.startTime && date.endTime && (
+                                  <p className="mt-1 text-sm text-muted-foreground">
+                                    {formatClinicTime(date.startTime)} – approx. {formatClinicTime(date.endTime)}
+                                  </p>
+                                )}
                               </div>
                               {date.alert && <span className="text-xs font-semibold text-primary">{date.alert}</span>}
                             </div>
