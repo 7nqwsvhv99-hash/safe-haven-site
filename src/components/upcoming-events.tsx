@@ -21,6 +21,8 @@ type EventItem = {
   image: string
   ctaLabel: string
   ctaUrl: string
+  registrationUrl: string
+  hasPaidReservations: boolean
 }
 
 function formatDate(start: string, allDay: boolean) {
@@ -98,11 +100,17 @@ export function UpcomingEvents({ fullPage = false }: { fullPage?: boolean }) {
                       {event.description}
                     </p>
                   )}
-                  {event.ctaUrl && (
+                  {(event.hasPaidReservations || event.registrationUrl || event.ctaUrl) && (
                     <Button asChild variant="outline" className="mt-6 w-full">
-                      <a href={event.ctaUrl} target="_blank" rel="noopener noreferrer">
-                        {event.ctaLabel || "Event Details"}
-                      </a>
+                      {event.hasPaidReservations ? (
+                        <a href={`/events/${event.id}`}>
+                          {event.ctaLabel || "Reserve / Buy Tickets"}
+                        </a>
+                      ) : (
+                        <a href={event.registrationUrl || event.ctaUrl} target="_blank" rel="noopener noreferrer">
+                          {event.ctaLabel || (event.registrationUrl ? "Register / Buy Tickets" : "Event Details")}
+                        </a>
+                      )}
                     </Button>
                   )}
                 </div>
