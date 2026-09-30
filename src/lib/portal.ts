@@ -615,7 +615,7 @@ export async function getClinicPortalData(email: string) {
   const [dates, responses, announcements, inventory, vetPreferences, trainingResources] = await Promise.all([
     airtableList(
       TABLES.clinicDates,
-      ["Clinic Date", "Clinic Type", "ClinicDay Session Type", "Scheduling Stage", "Volunteer Target", "Confirmed Veterinarians", "Confirmed Vet Techs", "Confirmed Clinic Volunteers", "Staffing Alert"],
+      ["Clinic Date", "Clinic Type", "ClinicDay Session Type", "Scheduling Stage", "Volunteer Target", "Confirmed Veterinarians", "Confirmed Vet Techs", "Confirmed Clinic Volunteers", "Staffing Alert", "Veterinarian Preference"],
       { sort: [{ field: "Clinic Date", direction: "asc" }] }
     ),
     airtableList(TABLES.clinicResponses, [
@@ -670,17 +670,43 @@ export async function getClinicPortalData(email: string) {
     ),
   ]);
 
-  const dateById = new Map(
-    dates.map((record) => [
+  const vetPreferenceById = new Map(
+    vetPreferences.map((record) => [
       record.id,
       {
-        id: record.id,
-        date: safeDate(record.fields["Clinic Date"]),
-        type: asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]),
-        stage: asText(record.fields["Scheduling Stage"]),
-        alert: asText(record.fields["Staffing Alert"]),
+        startTime: asText(record.fields["Preferred Start Time"]),
+        endTime: asText(record.fields["Preferred End Time"]),
       },
     ])
+  );
+
+  function clinicTimes(record: AirtableRecord) {
+    const preferenceId = asStrings(record.fields["Veterinarian Preference"])[0];
+    const preference = preferenceId ? vetPreferenceById.get(preferenceId) : undefined;
+    if (preference?.startTime && preference?.endTime) return preference;
+
+    const type = asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]);
+    return type === "Full Day"
+      ? { startTime: "08:00", endTime: "18:00" }
+      : { startTime: "09:00", endTime: "14:00" };
+  }
+
+  const dateById = new Map(
+    dates.map((record) => {
+      const times = clinicTimes(record);
+      return [
+        record.id,
+        {
+          id: record.id,
+          date: safeDate(record.fields["Clinic Date"]),
+          type: asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]),
+          stage: asText(record.fields["Scheduling Stage"]),
+          alert: asText(record.fields["Staffing Alert"]),
+          startTime: times.startTime,
+          endTime: times.endTime,
+        },
+      ];
+    })
   );
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 
@@ -775,11 +801,15 @@ export async function getClinicPortalData(email: string) {
         const date = safeDate(record.fields["Clinic Date"]);
         return date && date.slice(0, 10) >= today && !["Cancelled", "Completed"].includes(asText(record.fields["Scheduling Stage"]));
       })
-      .map((record) => ({
+      .map((record) => {
+        const times = clinicTimes(record);
+        return {
         id: record.id,
         date: safeDate(record.fields["Clinic Date"]),
         type: asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]),
         stage: asText(record.fields["Scheduling Stage"]),
+        startTime: times.startTime,
+        endTime: times.endTime,
         veterinarianNames: confirmedNamesByDate.get(record.id)?.veterinarians || [],
         vetTechNames: confirmedNamesByDate.get(record.id)?.vetTechs || [],
         volunteerAssignments: confirmedNamesByDate.get(record.id)?.assignments || {},
@@ -787,7 +817,8 @@ export async function getClinicPortalData(email: string) {
         volunteers: asNumber(record.fields["Confirmed Clinic Volunteers"]),
         volunteerTarget: asNumber(record.fields["Volunteer Target"]),
         alert: asText(record.fields["Staffing Alert"]),
-      })),
+        };
+      }),
     announcements,
     trainingResources: trainingResources
       .filter((record) => Boolean(record.fields.Published))
