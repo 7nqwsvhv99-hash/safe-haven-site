@@ -678,19 +678,26 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                       {data.member.skills.includes("Autoclave") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Autoclave" defaultChecked={item.assignments.includes("Autoclave")} className="mt-0.5" /><span>Autoclave{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
                                       {data.member.skills.includes("General Support") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="General Volunteer" defaultChecked={item.assignments.includes("General Volunteer")} /> General Volunteer</label>}
                                     </div>
-                                    <button type="submit" className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save role</button>
+                                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                                      <button type="submit" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save role</button>
+                                    </div>
                                     {item.assignments.length > 0 && <p className="mt-2 text-xs font-semibold text-green-700">Current role: {item.assignments.join(", ")}</p>}
                                   </form>
                                 )}
   
                                 {data.member?.role === "Clinic Volunteer" && (
-                                  <form action={saveClinicNote} className="mt-4 border-t pt-4">
-                                    <input type="hidden" name="responseId" value={item.responseId} />
-                                    <label htmlFor={`clinic-note-${item.responseId}`} className="block text-sm font-semibold">My shift note</label>
-                                    <p className="mt-1 text-xs text-muted-foreground">Share timing or coverage details, such as needing to leave early. Your note appears on this clinic day’s staffing card.</p>
-                                    <textarea id={`clinic-note-${item.responseId}`} name="note" rows={2} maxLength={1000} defaultValue={item.notes} className="mt-2 w-full rounded-xl border px-3 py-2 text-sm" placeholder="Example: I need to leave by 2:00 p.m." />
-                                    <button type="submit" className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save note</button>
-                                  </form>
+                                  <details className="-mt-10 ml-[108px] w-fit">
+                                    <summary className="inline-flex cursor-pointer list-none items-center rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 [&::-webkit-details-marker]:hidden">
+                                      My shift note
+                                    </summary>
+                                    <form action={saveClinicNote} className="mt-3 rounded-2xl border bg-slate-50 p-4">
+                                      <input type="hidden" name="responseId" value={item.responseId} />
+                                      <label htmlFor={`clinic-note-${item.responseId}`} className="block text-sm font-semibold">My shift note</label>
+                                      <p className="mt-1 text-xs text-muted-foreground">Share timing or coverage details, such as needing to leave early. Your note appears on this clinic day’s staffing card.</p>
+                                      <textarea id={`clinic-note-${item.responseId}`} name="note" rows={2} maxLength={1000} defaultValue={item.notes} className="mt-2 w-full rounded-xl border bg-white px-3 py-2 text-sm" placeholder="Example: I need to leave by 2:00 p.m." />
+                                      <button type="submit" className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save note</button>
+                                    </form>
+                                  </details>
                                 )}
                               </div>
   
