@@ -668,7 +668,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                 </form>
   
                                 {data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && (
-                                  <form action={saveClinicAssignments} className="mt-4 border-t pt-4">
+                                  <form id={`clinic-role-${item.responseId}`} action={saveClinicAssignments} className="mt-4 border-t pt-4">
                                     <input type="hidden" name="responseId" value={item.responseId} />
                                     <p className="mb-1 text-sm font-semibold">Select your clinic role</p>
                                     <p className="mb-3 text-xs text-muted-foreground">Choose one specialized role when possible. Select more than one only when additional coverage is needed.</p>
@@ -678,15 +678,14 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                       {data.member.skills.includes("Autoclave") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Autoclave" defaultChecked={item.assignments.includes("Autoclave")} className="mt-0.5" /><span>Autoclave{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
                                       {data.member.skills.includes("General Support") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="General Volunteer" defaultChecked={item.assignments.includes("General Volunteer")} /> General Volunteer</label>}
                                     </div>
-                                    <div className="mt-3 flex flex-wrap items-center gap-2">
-                                      <button type="submit" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save role</button>
-                                    </div>
                                     {item.assignments.length > 0 && <p className="mt-2 text-xs font-semibold text-green-700">Current role: {item.assignments.join(", ")}</p>}
                                   </form>
                                 )}
-  
-                                {data.member?.role === "Clinic Volunteer" && (
-                                  <details className="-mt-10 ml-[108px] w-fit">
+
+                                {data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && (
+                                  <div className="mt-3 flex flex-wrap items-start gap-3">
+                                    <button form={`clinic-role-${item.responseId}`} type="submit" className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save role</button>
+                                    <details className="w-fit">
                                     <summary className="inline-flex cursor-pointer list-none items-center rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 [&::-webkit-details-marker]:hidden">
                                       My shift note
                                     </summary>
@@ -697,7 +696,8 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                       <textarea id={`clinic-note-${item.responseId}`} name="note" rows={2} maxLength={1000} defaultValue={item.notes} className="mt-2 w-full rounded-xl border bg-white px-3 py-2 text-sm" placeholder="Example: I need to leave by 2:00 p.m." />
                                       <button type="submit" className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save note</button>
                                     </form>
-                                  </details>
+                                    </details>
+                                  </div>
                                 )}
                               </div>
   
