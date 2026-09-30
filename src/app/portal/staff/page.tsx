@@ -161,6 +161,12 @@ export default async function StaffPortalPage() {
       icon: Megaphone,
     },
     {
+      title: "Paid Event Reservations",
+      description: "Manage tickets, packages, reservations, and event payments.",
+      href: "/portal/staff/event-reservations",
+      icon: CalendarDays,
+    },
+    {
       title: "Internal Safe Haven Clinic Application",
       description: "Open the internal clinic application form.",
       href: "https://airtable.com/app3AcoD2G64aMsEz/pagX1oaNR64Qt8mqC/form",
