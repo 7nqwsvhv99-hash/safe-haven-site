@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { ArrowLeft, CalendarTicket, CreditCard, PackagePlus } from "lucide-react";
+import { ArrowLeft, CalendarCheck, CreditCard, PackagePlus } from "lucide-react";
 import { airtableCreate, airtableList, airtableUpdate, asNumber, asStrings, asText, requirePortalRole, TABLES } from "@/lib/portal";
 
 function field(formData:FormData,name:string){return String(formData.get(name)||"").trim();}
@@ -84,7 +84,7 @@ export default async function EventReservationsPage(){
   </section>
 
   <section className="mb-8 rounded-3xl border bg-white p-6 shadow-sm">
-   <div className="mb-5 flex items-center gap-3"><CalendarTicket className="h-6 w-6 text-primary"/><h2 className="text-2xl font-bold">Ticket & Package Options</h2></div>
+   <div className="mb-5 flex items-center gap-3"><CalendarCheck className="h-6 w-6 text-primary"/><h2 className="text-2xl font-bold">Ticket & Package Options</h2></div>
    <div className="space-y-4">{options.length?options.map(option=>{
     const event=eventById.get(asStrings(option.fields.Event)[0]);
     return <details key={option.id} className="rounded-2xl border p-4"><summary className="cursor-pointer list-none"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="font-semibold">{asText(option.fields["Option Name"])}</p><p className="mt-1 text-sm text-muted-foreground">{asText(event?.fields["Event Name"])} · {fmtMoney(option.fields.Price)} · {option.fields.Active?"Active":"Inactive"}</p></div><span className="text-sm font-semibold text-primary">Edit</span></div></summary>
