@@ -51,6 +51,7 @@ export default async function EventReservationsPage(){
   const id=field(formData,"id");if(!id)return;
   const paymentStatus=field(formData,"paymentStatus"),reservationStatus=field(formData,"reservationStatus");
   const amountPaid=Number(field(formData,"amountPaid"))||0;
+  if(reservationStatus==="Confirmed"&&paymentStatus!=="Paid")return;
   const fields:Record<string,unknown>={
    "Payment Status":paymentStatus,"Reservation Status":reservationStatus,"Amount Paid":amountPaid,
    "Payment Reference":field(formData,"paymentReference"),"Internal Notes":field(formData,"internalNotes")
@@ -111,7 +112,7 @@ export default async function EventReservationsPage(){
     <div className="mt-4 grid gap-3 border-t pt-4 text-sm md:grid-cols-2"><p><strong>Email:</strong> {asText(res.fields["Purchaser Email"])}</p><p><strong>Phone:</strong> {asText(res.fields["Purchaser Phone"])||"—"}</p><p><strong>Submitted:</strong> {fmtDate(res.fields["Submitted At"])}</p><p><strong>Guests:</strong> {asText(res.fields["Guest Names"])||"Not provided"}</p>{asText(res.fields["Special Requests"])&&<p className="md:col-span-2"><strong>Special requests:</strong> {asText(res.fields["Special Requests"])}</p>}</div>
     <form action={saveReservation} className="mt-4 grid gap-3 rounded-2xl bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-4"><input type="hidden" name="id" value={res.id}/>
      <label className="text-sm font-medium">Payment status<select name="paymentStatus" defaultValue={asText(res.fields["Payment Status"])} className="mt-1 w-full rounded-xl border bg-white px-3 py-2">{["Pending Payment","Paid","Partially Paid","Refunded","Cancelled"].map(v=><option key={v}>{v}</option>)}</select></label>
-     <label className="text-sm font-medium">Reservation status<select name="reservationStatus" defaultValue={asText(res.fields["Reservation Status"])} className="mt-1 w-full rounded-xl border bg-white px-3 py-2">{["Pending","Confirmed","Waitlisted","Cancelled"].map(v=><option key={v}>{v}</option>)}</select></label>
+     <label className="text-sm font-medium">Reservation status<select name="reservationStatus" defaultValue={asText(res.fields["Reservation Status"])} className="mt-1 w-full rounded-xl border bg-white px-3 py-2">{["Pending","Confirmed","Waitlisted","Cancelled"].map(v=><option key={v}>{v}</option>)}</select><span className="mt-1 block text-xs text-muted-foreground">Payment must be marked Paid before a reservation can be confirmed.</span></label>
      <label className="text-sm font-medium">Amount paid<input name="amountPaid" type="number" min="0" step="0.01" defaultValue={asNumber(res.fields["Amount Paid"])??0} className="mt-1 w-full rounded-xl border px-3 py-2"/></label>
      <label className="text-sm font-medium">Payment reference<input name="paymentReference" defaultValue={asText(res.fields["Payment Reference"])} className="mt-1 w-full rounded-xl border px-3 py-2"/></label>
      <label className="text-sm font-medium md:col-span-2 xl:col-span-4">Internal notes<textarea name="internalNotes" rows={2} defaultValue={asText(res.fields["Internal Notes"])} className="mt-1 w-full rounded-xl border px-3 py-2"/></label>
