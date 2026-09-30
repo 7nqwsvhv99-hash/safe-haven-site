@@ -18,7 +18,7 @@ async function airtableGet(table:string,id:string,token:string){
 async function airtableList(table:string,fields:string[],token:string){
  const params=new URLSearchParams();params.set("pageSize","100");
  fields.forEach(f=>params.append("fields[]",f));
- const records:any[]=[];let offset:string|undefined;
+ const records:{id:string;fields:Record<string,unknown>}[]=[];let offset:string|undefined;
  do{
   if(offset)params.set("offset",offset);
   const response=await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${table}?${params}`,{headers:{Authorization:`Bearer ${token}`},cache:"no-store"});
