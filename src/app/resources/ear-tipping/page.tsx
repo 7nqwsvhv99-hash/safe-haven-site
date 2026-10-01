@@ -1,5 +1,23 @@
 import Link from "next/link";
 
+const steps = [
+  {
+    number: "1",
+    title: "Community cat is trapped",
+    text: "A community cat is brought to the clinic through a Trap-Neuter-Return program.",
+  },
+  {
+    number: "2",
+    title: "Spay/neuter + ear tip",
+    text: "While the cat is under anesthesia, the cat is spayed or neutered and about 1/4 inch is trimmed from the tip of the left ear.",
+  },
+  {
+    number: "3",
+    title: "Visible marker for the future",
+    text: "The ear tip shows that the cat has already been sterilized, helping avoid unnecessary repeat trapping or anesthesia.",
+  },
+];
+
 export default function EarTippingResourcePage() {
   return (
     <main className="min-h-screen bg-slate-50">
@@ -20,7 +38,7 @@ export default function EarTippingResourcePage() {
               Ear Tipping: What It Means and Why It Matters
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-              Ear tipping is a simple, widely recognized way to show that a community cat has already been spayed or neutered through a Trap-Neuter-Return program.
+              A quick guide to what ear tipping is, which cats receive it, and why it is an important part of TNR.
             </p>
           </header>
 
@@ -35,14 +53,29 @@ export default function EarTippingResourcePage() {
             <section>
               <h2 className="text-xl font-bold">Why is it done?</h2>
               <p className="mt-3 leading-7 text-muted-foreground">
-                It is the universal visual sign that a community cat, meaning a cat without an owner that lives outdoors, has already been spayed or neutered. This helps animal control, rescue groups, caregivers, and veterinary teams identify altered cats and helps prevent them from being trapped or anesthetized again unnecessarily.
+                An ear tip is the universal visual sign that a community cat has already been spayed or neutered. It helps animal control, rescue groups, caregivers, and veterinary teams quickly identify altered cats and avoid unnecessary repeat trapping or anesthesia.
               </p>
+            </section>
+
+            <section className="rounded-2xl border bg-slate-50 p-5 sm:p-6">
+              <h2 className="text-lg font-bold">TNR at a glance</h2>
+              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                {steps.map((step) => (
+                  <div key={step.number} className="rounded-2xl border bg-white p-4">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-bold text-white">
+                      {step.number}
+                    </div>
+                    <h3 className="mt-3 font-semibold">{step.title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{step.text}</p>
+                  </div>
+                ))}
+              </div>
             </section>
 
             <section>
               <h2 className="text-xl font-bold">Which cats receive an ear tip?</h2>
               <p className="mt-3 leading-7 text-muted-foreground">
-                Ear tipping is typically done only for community cats and TNR, or Trap-Neuter-Return, cats. It is usually not done for owned pets.
+                Ear tipping is typically done for <strong>community cats and TNR (Trap-Neuter-Return) cats</strong>. It is usually not done for owned pets.
               </p>
             </section>
 
@@ -56,16 +89,9 @@ export default function EarTippingResourcePage() {
             <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
               <h2 className="text-lg font-bold">Why this matters on clinic day</h2>
               <p className="mt-2 leading-7 text-muted-foreground">
-                Before surgery, confirm the ear-tip decision for community and TNR cats as part of the patient&apos;s clinic record. After surgery, the ear tip becomes a permanent visual marker that helps protect the cat from unnecessary repeat trapping and anesthesia.
+                Before surgery, confirm the <strong>Ear Tip Decision</strong> in the patient&apos;s ClinicDay record so the surgical team knows whether an ear tip should be performed.
               </p>
             </aside>
-
-            <section className="rounded-2xl bg-slate-50 p-5">
-              <h2 className="text-lg font-bold">Key takeaway</h2>
-              <p className="mt-2 leading-7 text-muted-foreground">
-                An ear tip is not an injury or an accidental change to the ear. It is an intentional identification method used in humane community-cat programs to show that the cat has already been sterilized.
-              </p>
-            </section>
           </div>
         </article>
       </div>
