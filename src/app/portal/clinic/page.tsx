@@ -2,6 +2,7 @@ import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone, BookOpen, ExternalLink } from "lucide-react";
 import { VeterinarianDateForm } from "./veterinarian-date-form";
+import { TrainingResourceSections } from "./training-resource-sections";
 import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, airtableList, airtableDelete, TABLES } from "@/lib/portal";
 
 
@@ -505,64 +506,11 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold">Clinic Training Resources</h2>
                   <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                    Choose the training area you need, then open the individual resource.
+                    Choose the training area you need. Tap a button to reveal that section.
                   </p>
                 </div>
 
-                <nav aria-label="Training resource sections" className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                  {[
-                    { label: "Clinic Education", target: "training-general-clinic-education" },
-                    { label: "Instrument Sterilization", target: "training-instrument-sterilization" },
-                    { label: "General Volunteer", target: "training-general-volunteer" },
-                  ].map((item) => (
-                    <a
-                      key={item.target}
-                      href={`#${item.target}`}
-                      className="flex min-h-12 items-center justify-center rounded-2xl border border-primary bg-white px-4 py-3 text-center text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/5"
-                    >
-                      {item.label}
-                    </a>
-                  ))}
-                </nav>
-
-                <div className="space-y-8">
-                  {[
-                    "General Clinic Education",
-                    "Instrument Sterilization",
-                    "General Volunteer",
-                    "Front Room System",
-                    "Back Room Documentation",
-                    "Veterinary Technician",
-                    "Veterinarian",
-                  ].map((category) => {
-                    const resources = data.trainingResources.filter((resource) => resource.categories.includes(category));
-                    if (!resources.length) return null;
-                    const sectionId = `training-${category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
-                    return (
-                      <div key={category} id={sectionId} className="scroll-mt-24">
-                        <h3 className="text-lg font-bold">{category === "General Clinic Education" ? "Clinic Education" : category}</h3>
-                        <div className="mt-3 grid gap-3 md:grid-cols-2">
-                          {resources.map((resource) => (
-                            <article key={resource.id} className="rounded-2xl border bg-slate-50 p-4">
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="font-semibold">{resource.title}</p>
-                                  <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">{resource.resourceType}</p>
-                                </div>
-                              </div>
-                              {resource.description && <p className="mt-3 text-sm text-muted-foreground">{resource.description}</p>}
-                              {resource.url && (
-                                <a href={resource.url} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline">
-                                  Open resource <ExternalLink className="h-3.5 w-3.5" />
-                                </a>
-                              )}
-                            </article>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <TrainingResourceSections resources={data.trainingResources} />
               </section>
             )}
           </div>
