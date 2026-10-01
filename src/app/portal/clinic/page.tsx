@@ -501,29 +501,46 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
             )}
 
             {section === "training" && (
-              <section className="mt-4 rounded-3xl border bg-white p-7 shadow-sm">
+              <section className="mt-4 rounded-3xl border bg-white p-5 shadow-sm sm:p-7">
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold">Clinic Training Resources</h2>
                   <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-                    Use these resources for clinic orientation, position-specific training, and general education. Published materials are managed in Airtable so new videos and documents can be added without changing the portal.
+                    Choose the training area you need, then open the individual resource.
                   </p>
                 </div>
 
-                <div className="space-y-7">
+                <nav aria-label="Training resource sections" className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {[
+                    { label: "Clinic Education", target: "training-general-clinic-education" },
+                    { label: "Instrument Sterilization", target: "training-instrument-sterilization" },
+                    { label: "General Volunteer", target: "training-general-volunteer" },
+                  ].map((item) => (
+                    <a
+                      key={item.target}
+                      href={`#${item.target}`}
+                      className="flex min-h-12 items-center justify-center rounded-2xl border border-primary bg-white px-4 py-3 text-center text-sm font-semibold text-primary shadow-sm transition hover:bg-primary/5"
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </nav>
+
+                <div className="space-y-8">
                   {[
                     "General Clinic Education",
+                    "Instrument Sterilization",
+                    "General Volunteer",
                     "Front Room System",
                     "Back Room Documentation",
-                    "Instrument Sterilization",
                     "Veterinary Technician",
                     "Veterinarian",
-                    "General Volunteer",
                   ].map((category) => {
                     const resources = data.trainingResources.filter((resource) => resource.categories.includes(category));
                     if (!resources.length) return null;
+                    const sectionId = `training-${category.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
                     return (
-                      <div key={category}>
-                        <h3 className="text-lg font-bold">{category}</h3>
+                      <div key={category} id={sectionId} className="scroll-mt-24">
+                        <h3 className="text-lg font-bold">{category === "General Clinic Education" ? "Clinic Education" : category}</h3>
                         <div className="mt-3 grid gap-3 md:grid-cols-2">
                           {resources.map((resource) => (
                             <article key={resource.id} className="rounded-2xl border bg-slate-50 p-4">
