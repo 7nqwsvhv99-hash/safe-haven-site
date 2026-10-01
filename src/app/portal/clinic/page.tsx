@@ -56,6 +56,8 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
   const context = await requirePortalRole("Clinic Team");
   const data = await getClinicPortalData(context.email);
   const canWriteClinic = context.isAdministrator || context.roles.includes("Clinic Team");
+  const canManageClinicInventory = context.isAdministrator;
+  const canRequestClinicReorder = context.isAdministrator || context.roles.includes("Clinic Team");
   const showClinicInventory = data.member?.role !== "Veterinarian";
   const requestedSection = (await searchParams).section || "dates";
   const allowedSections = new Set(["dates", "staffing", "inventory", "training"]);
@@ -213,7 +215,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (latest.member?.role === "Veterinarian") return;
+    if (!current.isAdministrator || latest.member?.role === "Veterinarian") return;
 
     const itemName = formText(formData, "itemName");
     if (!itemName) return;
@@ -242,7 +244,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (latest.member?.role === "Veterinarian") return;
+    if (!current.isAdministrator || latest.member?.role === "Veterinarian") return;
     const itemId = formText(formData, "itemId");
     const item = latest.inventory.find((entry) => entry.id === itemId);
     if (!item) return;
@@ -273,7 +275,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (latest.member?.role === "Veterinarian") return;
+    if (!current.isAdministrator || latest.member?.role === "Veterinarian") return;
     const itemId = formText(formData, "itemId");
     if (!itemId || formData.get("confirmDelete") !== "on") return;
     const item = latest.inventory.find((entry) => entry.id === itemId);
@@ -301,7 +303,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (latest.member?.role === "Veterinarian") return;
+    if (latest.member?.role === "Veterinarian" || (!current.isAdministrator && !current.roles.includes("Clinic Team"))) return;
     const itemId = String(formData.get("itemId") || "");
     const countRaw = String(formData.get("count") || "").trim();
     const item = latest.inventory.find((entry) => entry.id === itemId);
@@ -322,6 +324,10 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
         Notes: item.status === "Not Counted" ? "Opening physical count entered from Clinic Team Portal." : "Physical count adjustment entered from Clinic Team Portal.",
       });
     }
+    await airtableUpdate(TABLES.inventory, itemId, {
+      "Last Counted At": new Date().toISOString(),
+      "Last Counted By": current.displayName || current.email,
+    }, true);
 
     revalidatePath("/portal/clinic");
   }
@@ -343,6 +349,33 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
       "Reorder Reason": `Manual reorder request from Clinic Team Portal. Current count: ${item.current ?? "not counted"} ${item.unit || ""}. Reorder point: ${item.reorderPoint ?? "not set"}. Suggested reorder: ${item.suggestedReorder ?? "not set"}.`,
       "Reorder Notification Sent": false,
     });
+
+    revalidatePath("/portal/clinic");
+  }
+
+  async function receiveClinicInventory(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Clinic Team", "write");
+    if (!current.isAdministrator) return;
+    const latest = await getClinicPortalData(current.email);
+    const itemId = formText(formData, "itemId");
+    const quantity = optionalNumber(formData, "quantity");
+    const item = latest.inventory.find((entry) => entry.id === itemId);
+    if (!item || quantity === undefined || quantity <= 0) return;
+
+    await airtableCreate(TABLES.inventoryTransactions, {
+      Item: [itemId],
+      "Date / Time": new Date().toISOString(),
+      "Transaction Type": "Received",
+      "Quantity Change": quantity,
+      "Entered By": current.displayName || current.email,
+      Notes: "Inventory received through Clinic Team Portal.",
+    }, true);
+
+    await airtableUpdate(TABLES.inventory, itemId, {
+      "Last Received": new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date()),
+      "Reorder Request Status": "Resolved",
+    }, true);
 
     revalidatePath("/portal/clinic");
   }
@@ -396,7 +429,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
               <section className="mt-4 rounded-3xl border bg-white p-7 shadow-sm">
                 <p className="mb-5 text-sm text-muted-foreground">Update physical counts, add supplies, edit item details, and request reorders from the clinic portal.</p>
             
-              {canWriteClinic && (
+              {canManageClinicInventory && (
                 <details className="mb-5 rounded-2xl border border-primary/20 bg-primary/5 p-4">
                   <summary className="cursor-pointer font-semibold text-primary">+ Add a supply</summary>
                   <form action={addClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -423,6 +456,44 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
               {data.inventory.length ? (
                 <>
                   <InventorySearch />
+                  {data.inventory.some((item) => ["Low Stock","Out of Stock","Not Counted"].includes(item.status) || ["Requested","Ordered"].includes(item.reorderStatus)) && (
+                    <section className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                      <h3 className="font-bold text-amber-950">Needs Attention</h3>
+                      <div className="mt-3 grid gap-2 md:grid-cols-2">
+                        {data.inventory.filter((item) => ["Low Stock","Out of Stock","Not Counted"].includes(item.status) || ["Requested","Ordered"].includes(item.reorderStatus)).map((item) => (
+                          <div key={item.id} className="rounded-xl bg-white p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div>
+                                <p className="font-semibold">{item.name}</p>
+                                <p className="mt-1 text-xs text-muted-foreground">{item.status || "No status"}{item.reorderStatus ? ` · Reorder ${item.reorderStatus.toLowerCase()}` : ""}</p>
+                              </div>
+                              <span className="text-sm font-bold">{item.current ?? "—"}</span>
+                            </div>
+                            <p className="mt-2 text-xs text-muted-foreground">Recommended reorder: {item.suggestedReorder ?? 0} {item.unit || ""}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+                  <details className="mb-5 rounded-2xl border bg-white">
+                    <summary className="cursor-pointer px-4 py-4 font-semibold text-primary">Quick Count</summary>
+                    <div className="border-t p-4">
+                      <p className="mb-4 text-sm text-muted-foreground">Use this compact view for a physical count. Enter counts and save each item as you go.</p>
+                      <div className="space-y-2">
+                        {data.inventory.map((item) => (
+                          <form key={item.id} action={saveInventoryCount} className="grid gap-2 rounded-xl bg-slate-50 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
+                            <input type="hidden" name="itemId" value={item.id} />
+                            <div>
+                              <p className="font-medium">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">{item.category || "Other"}{item.lastCountedAt ? ` · Last counted ${formatDate(item.lastCountedAt)}` : ""}</p>
+                            </div>
+                            <input name="count" type="number" min="0" step="1" defaultValue={item.current ?? ""} className="w-28 rounded-lg border bg-white px-3 py-2 text-sm" />
+                            <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save</button>
+                          </form>
+                        ))}
+                      </div>
+                    </div>
+                  </details>
                   <div className="space-y-3">
                   {["Surgical Instruments","Surgery & Sterilization","Anesthesia, Medications & Airway","Vaccines, Testing & Preventive Care","Recovery & Patient Care","Cleaning, PPE & General Supplies","Other"].map((category) => {
                     const categoryItems = data.inventory.filter((item) => (item.category || "Other") === category);
@@ -448,6 +519,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                           <div>
                             <p className="font-semibold">{item.name}</p>
                             {item.unit && <p className="text-xs text-muted-foreground">Unit: {item.unit}</p>}
+                            {item.lastCountedAt && <p className="mt-1 text-xs text-muted-foreground">Last counted {formatDate(item.lastCountedAt)}{item.lastCountedBy ? ` by ${item.lastCountedBy}` : ""}</p>}
                             <p className={`mt-1 text-xs font-semibold ${lowStock || reorderActive ? "text-primary" : "text-muted-foreground"}`}>
                               {reorderActive ? `Reorder ${item.reorderStatus.toLowerCase()}` : (item.status || "No status")}
                             </p>
@@ -455,7 +527,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                           </div>
                           <div className="text-left sm:text-right">
                             <p className="text-lg font-bold">{item.current ?? "—"}</p>
-                            <p className="text-xs text-muted-foreground">Reorder at {item.reorderPoint ?? "—"} · Target {item.target ?? "—"}</p>
+                            <p className="text-xs text-muted-foreground">Reorder at {item.reorderPoint ?? "—"} · Target {item.target ?? "—"} · Recommend {item.suggestedReorder ?? 0}</p>
                           </div>
                         </div>
                         <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
@@ -467,16 +539,27 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                             </label>
                             <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save count</button>
                           </form>
-                          <form action={requestInventoryReorder} className="flex items-end">
-                            <input type="hidden" name="itemId" value={item.id} />
-                            <button disabled={reorderActive} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
-                              {reorderActive ? (item.reorderStatus === "Ordered" ? "Order in progress" : "Reorder requested") : "Request reorder"}
-                            </button>
-                          </form>
+                          {canRequestClinicReorder && (
+                            <div className="flex flex-wrap items-end justify-end gap-2">
+                              <form action={requestInventoryReorder} className="flex items-end">
+                                <input type="hidden" name="itemId" value={item.id} />
+                                <button disabled={reorderActive} className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">
+                                  {reorderActive ? (item.reorderStatus === "Ordered" ? "Order in progress" : "Reorder requested") : "Request reorder"}
+                                </button>
+                              </form>
+                              {canManageClinicInventory && reorderActive && (
+                                <form action={receiveClinicInventory} className="flex items-end gap-2">
+                                  <input type="hidden" name="itemId" value={item.id} />
+                                  <input name="quantity" type="number" min="0.01" step="0.01" required placeholder="Qty received" className="w-28 rounded-lg border bg-white px-3 py-2 text-sm" />
+                                  <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Receive</button>
+                                </form>
+                              )}
+                            </div>
+                          )}
                         </div>
                         {lowStock && !reorderActive && <p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
             
-                        {canWriteClinic && (
+                        {canManageClinicInventory && (
                           <details className="mt-4 border-t pt-4">
                             <summary className="cursor-pointer text-sm font-semibold text-primary">Modify item</summary>
                             <form action={updateClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
