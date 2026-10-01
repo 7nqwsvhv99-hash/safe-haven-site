@@ -155,4 +155,4 @@ export default async () => {
  }
  return new Response(JSON.stringify({ok:true}),{headers:{'Content-Type':'application/json'}});
 };
-export const config={schedule:'15 * * * *'};
+export const config={schedule:'*/15 * * * *'};
