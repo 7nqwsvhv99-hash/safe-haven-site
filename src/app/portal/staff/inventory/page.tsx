@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, Boxes, PackagePlus, AlertTriangle, History } from "lucide-react";
+import { ShelterInventorySearch } from "./inventory-search";
 import {
   airtableCreate, airtableDelete, airtableList, airtableUpdate, asStrings, asText,
   requirePortalRole, TABLES,
@@ -43,6 +44,7 @@ export default async function ShelterInventoryPage({
   );
   const active=shelterItems.filter(r=>Boolean(r.fields.Active));
   const visibleItems=attentionOnly?attention:shelterItems;
+  const categories=Array.from(new Set(visibleItems.map(r=>asText(r.fields.Category)||"Other"))).sort((a,b)=>a.localeCompare(b));
 
   async function addItem(formData:FormData){
     "use server";
@@ -94,7 +96,6 @@ export default async function ShelterInventoryPage({
   async function saveCurrentCount(formData:FormData){
     "use server";
     const current=await requirePortalRole("Staff","write");
-    if(!current.isAdministrator&&!current.roles.includes("Shelter Manager"))return;
     const id=field(formData,"itemId");
     const count=optionalNumber(formData,"count");
     if(!id||count===undefined||count<0)return;
@@ -124,6 +125,7 @@ export default async function ShelterInventoryPage({
   async function requestReorder(formData:FormData){
     "use server";
     const current=await requirePortalRole("Staff","write");
+    if(!current.isAdministrator&&!current.roles.includes("Shelter Manager"))return;
     const id=field(formData,"itemId");
     const latest=await airtableList(TABLES.inventory,[
       "Area","Current Quantity","Reorder Point","Suggested Reorder Quantity","Recommended Reorder Quantity","Unit of Measure","Reorder Request Status"
@@ -168,9 +170,26 @@ export default async function ShelterInventoryPage({
     revalidatePath("/portal/staff");
   }
 
+  async function markOrdered(formData:FormData){
+    "use server";
+    const current=await requirePortalRole("Staff","write");
+    if(!current.isAdministrator&&!current.roles.includes("Shelter Manager"))return;
+    const id=field(formData,"itemId");
+    const latest=await airtableList(TABLES.inventory,["Area","Reorder Request Status"]);
+    const item=latest.find(r=>r.id===id&&asText(r.fields.Area)==="Shelter");
+    if(!item||asText(item.fields["Reorder Request Status"])!=="Requested")return;
+    await airtableUpdate(TABLES.inventory,id,{
+      "Reorder Request Status":"Ordered",
+      "Last Ordered":new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago"}).format(new Date()),
+    },true);
+    revalidatePath("/portal/staff/inventory");
+    revalidatePath("/portal/staff");
+  }
+
   async function recordTransaction(formData:FormData){
     "use server";
     const current=await requirePortalRole("Staff", "write");
+    if(!current.isAdministrator&&!current.roles.includes("Shelter Manager"))return;
     const itemId=field(formData,"itemId"), type=field(formData,"type");
     const qty=optionalNumber(formData,"quantity");
     if(!itemId||!type||qty===undefined||qty<=0)return;
@@ -208,6 +227,7 @@ export default async function ShelterInventoryPage({
       <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
         <h2 className="text-2xl font-bold">Inventory Items</h2>
         <p className="mt-2 text-sm text-muted-foreground">Update counts, request reorders, and maintain supply details. Low-stock items are highlighted automatically.</p>
+        <ShelterInventorySearch />
         <details className="mt-5 rounded-2xl border bg-white">
           <summary className="cursor-pointer px-4 py-4 font-semibold text-primary">Quick Count</summary>
           <div className="space-y-2 border-t p-4">
@@ -220,13 +240,22 @@ export default async function ShelterInventoryPage({
             </form>)}
           </div>
         </details>
-        <div className="mt-5 space-y-4">
-          {visibleItems.map(r=>{
-            const status=asText(r.fields["Inventory Status"]);
-            const reorderStatus=asText(r.fields["Reorder Request Status"]);
-            const low=["Low Stock","Out of Stock"].includes(status);
-            const reorderActive=["Requested","Ordered"].includes(reorderStatus);
-            return <details key={r.id} className={`rounded-2xl border p-5 ${low||reorderActive?"border-orange-300 bg-orange-50/50":""}`}>
+        <div className="mt-5 space-y-3">
+          {categories.map(category=>{
+            const categoryItems=visibleItems.filter(r=>(asText(r.fields.Category)||"Other")===category);
+            if(!categoryItems.length)return null;
+            return <details key={category} name="shelter-inventory-categories" data-shelter-inventory-category className="rounded-2xl border bg-white">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 font-semibold [&::-webkit-details-marker]:hidden">
+                <span>{category}</span>
+                <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-muted-foreground">{categoryItems.length}</span>
+              </summary>
+              <div className="space-y-3 border-t p-3">
+              {categoryItems.map(r=>{
+                const status=asText(r.fields["Inventory Status"]);
+                const reorderStatus=asText(r.fields["Reorder Request Status"]);
+                const low=["Low Stock","Out of Stock"].includes(status);
+                const reorderActive=["Requested","Ordered"].includes(reorderStatus);
+                return <details key={r.id} data-shelter-inventory-item data-inventory-search={`${asText(r.fields["Item Name"])} ${asText(r.fields.Category)} ${asText(r.fields["Unit of Measure"])} ${asText(r.fields["Preferred Vendor"])} ${status}`} className={`rounded-2xl border p-5 ${low||reorderActive?"border-orange-300 bg-orange-50/50":"bg-slate-50"}`}>
               <summary className="cursor-pointer list-none">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
@@ -248,10 +277,16 @@ export default async function ShelterInventoryPage({
                   <label className="text-xs font-medium">Current count<input name="count" type="number" min="0" step="1" defaultValue={num(r.fields["Current Quantity"])} className="mt-1 w-28 rounded-xl border bg-white px-3 py-2.5"/></label>
                   <button className="rounded-full border border-primary px-4 py-2.5 text-sm font-semibold text-primary">Save count</button>
                 </form>
-                {canRequestReorder&&<form action={requestReorder} className="flex items-end">
-                  <input type="hidden" name="itemId" value={r.id}/>
-                  <button disabled={reorderActive} className="rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{reorderActive?(reorderStatus==="Ordered"?"Order in progress":"Reorder requested"):"Request reorder"}</button>
-                </form>}
+                {canRequestReorder&&<div className="flex flex-wrap items-end justify-end gap-2">
+                  <form action={requestReorder} className="flex items-end">
+                    <input type="hidden" name="itemId" value={r.id}/>
+                    <button disabled={reorderActive} className="rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{reorderActive?(reorderStatus==="Ordered"?"Order in progress":"Reorder requested"):"Request reorder"}</button>
+                  </form>
+                  {reorderStatus==="Requested"&&<form action={markOrdered} className="flex items-end">
+                    <input type="hidden" name="itemId" value={r.id}/>
+                    <button className="rounded-full border border-primary px-4 py-2.5 text-sm font-semibold text-primary">Mark ordered</button>
+                  </form>}
+                </div>}
               </div>
               {low&&!reorderActive&&<p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
 
@@ -285,13 +320,16 @@ export default async function ShelterInventoryPage({
                   <button className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-700">Delete item</button>
                 </form>
               </details>}
+                </details>
+              })}
+              </div>
             </details>
           })}
         </div>
       </section>
 
       <div className="space-y-6">
-        <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        {canManageInventory&&<section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex items-center gap-3"><PackagePlus className="h-6 w-6 text-primary"/><div><h2 className="text-2xl font-bold">Record Inventory Movement</h2><p className="text-sm text-muted-foreground">Current quantity is calculated from these transactions.</p></div></div>
           <form action={recordTransaction} className="space-y-3">
             <label className="block text-xs font-medium">Shelter item<select name="itemId" required defaultValue="" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select shelter item</option>{active.map(r=><option key={r.id} value={r.id}>{asText(r.fields["Item Name"])}</option>)}</select></label>
@@ -306,7 +344,7 @@ export default async function ShelterInventoryPage({
             </div></details>
             <button className="w-full rounded-full bg-primary px-5 py-3 font-semibold text-white">Save Transaction</button>
           </form>
-        </section>
+        </section>}
 
         {canManageInventory&&<section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <h2 className="text-2xl font-bold">Add Shelter Item</h2>
