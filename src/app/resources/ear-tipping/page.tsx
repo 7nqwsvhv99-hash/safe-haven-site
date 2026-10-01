@@ -28,7 +28,7 @@ export default function EarTippingResourcePage() {
             <section>
               <h2 className="text-xl font-bold">What is ear tipping?</h2>
               <p className="mt-3 leading-7 text-muted-foreground">
-                Ear tipping is a small trim on the tip of a cat&apos;s ear. It is done while the cat is under anesthesia during spay or neuter surgery.
+                Ear tipping is a small trim on the tip of a cat&apos;s ear. The trim removes about <strong>1/4 inch from the tip of the left ear.</strong>
               </p>
             </section>
 
@@ -49,7 +49,7 @@ export default function EarTippingResourcePage() {
             <section>
               <h2 className="text-xl font-bold">Will it hurt the cat?</h2>
               <p className="mt-3 leading-7 text-muted-foreground">
-                The trim removes about <strong>1/4 inch from the tip of the ear</strong> and is performed while the cat is under anesthesia.
+                Ear tipping is performed while the cat is under anesthesia for spay or neuter surgery.
               </p>
             </section>
 
