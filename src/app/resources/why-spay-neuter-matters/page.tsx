@@ -20,19 +20,11 @@ const impactSteps = [
 
 const benefits = [
   {
-    title: "Prevents unwanted litters",
-    text: "The most direct benefit is simple: sterilized animals cannot produce accidental litters. This reduces the number of animals needing homes and helps prevent future shelter intake.",
+    title: "Health benefits",
+    text: "Spaying prevents uterine infection and eliminates the risk of ovarian and uterine cancers. Neutering eliminates testicular cancer risk and can reduce some prostate problems. Timing should be discussed with a veterinarian because the appropriate age can vary by species, breed, size, health, and individual circumstances.",
   },
   {
-    title: "Supports shelter capacity",
-    text: "Shelters work within a limited capacity for care. Preventing avoidable intake creates more room and resources for animals who are lost, injured, abandoned, or otherwise truly need shelter services.",
-  },
-  {
-    title: "Can provide health benefits",
-    text: "Spaying prevents uterine infection and eliminates the risk of ovarian and uterine cancers. Neutering eliminates testicular cancer risk and can reduce some prostate problems. Timing should be discussed with a veterinarian because the best age can vary by species, breed, size, health, and individual circumstances.",
-  },
-  {
-    title: "Can reduce some mating-related behaviors",
+    title: "Mating-related behaviors",
     text: "Sterilization can reduce behaviors driven by reproductive hormones, including roaming, urine marking, and some mating-related vocalization or fighting. It is not a substitute for training, enrichment, or behavior support.",
   },
 ];
@@ -85,7 +77,7 @@ export default function WhySpayNeuterMattersResourcePage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold">How spay/neuter helps</h2>
+              <h2 className="text-xl font-bold">Benefits for individual animals</h2>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {benefits.map((item) => (
                   <div key={item.title} className="rounded-2xl border p-4">
@@ -97,21 +89,14 @@ export default function WhySpayNeuterMattersResourcePage() {
             </section>
 
             <section>
-              <h2 className="text-xl font-bold">Why this matters to shelters</h2>
+              <h2 className="text-xl font-bold">Community cats and TNR</h2>
               <p className="mt-3 leading-7 text-muted-foreground">
-                Spay/neuter is one part of a broader shelter and community strategy. When fewer animals are born without planned homes, shelters are better positioned to stay within their capacity for care and focus resources on animals who genuinely need housing, medical care, reunification, foster care, or adoption.
-              </p>
-            </section>
-
-            <section>
-              <h2 className="text-xl font-bold">Why this matters for community cats</h2>
-              <p className="mt-3 leading-7 text-muted-foreground">
-                For unowned community cats, sterilization is a core part of Trap-Neuter-Return. Preventing new litters is what makes humane population management possible over time, especially when programs also identify and sterilize new intact cats entering the area.
+                For unowned community cats, sterilization is a core part of <strong>Trap-Neuter-Return</strong>. Preventing new litters allows community-cat populations to stabilize and potentially decline over time, particularly when new intact cats are identified and sterilized.
               </p>
             </section>
 
             <section className="rounded-2xl border bg-slate-50 p-5">
-              <h2 className="text-lg font-bold">Spay/neuter is important, but it is not the only solution</h2>
+              <h2 className="text-lg font-bold">One part of a larger solution</h2>
               <p className="mt-2 leading-7 text-muted-foreground">
                 Strong animal-welfare systems also depend on adoption, foster care, lost-pet reunification, accessible veterinary care, pet-retention support, humane community-cat programs, and responsible shelter capacity management. Spay/neuter works best as part of that larger system.
               </p>
@@ -120,7 +105,7 @@ export default function WhySpayNeuterMattersResourcePage() {
             <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
               <h2 className="text-lg font-bold">Clinic-day takeaway</h2>
               <p className="mt-2 leading-7 text-muted-foreground">
-                Every completed spay or neuter prevents future reproduction for that animal. Accurate patient identification, safe surgery, complete documentation, and clear discharge instructions all contribute to the larger community impact of the clinic.
+                Every patient should receive <strong>safe surgery, accurate documentation, appropriate recovery monitoring, and clear discharge instructions</strong>. Those fundamentals are what turn access to spay/neuter into effective care.
               </p>
             </aside>
 
