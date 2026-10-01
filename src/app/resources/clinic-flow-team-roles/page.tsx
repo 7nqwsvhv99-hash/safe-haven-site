@@ -3,48 +3,48 @@ import Link from "next/link";
 const flowSteps = [
   {
     number: "1",
-    title: "Check-in",
-    text: "Confirm the patient, client or caregiver, planned services, required consent, and any information the clinical team needs before treatment begins.",
+    title: "Arrival & Check-In",
+    text: "Patients move from Anticipated Arrivals to Checked-In after identity, appointment details, consent, planned services, and required client or caregiver information are confirmed.",
   },
   {
     number: "2",
-    title: "Pre-op readiness",
-    text: "The veterinary team reviews the patient, confirms readiness for anesthesia and surgery, and resolves medical questions before proceeding.",
+    title: "Ready for Surgery",
+    text: "Health screening and required preoperative information are completed before a surgical patient advances.",
   },
   {
     number: "3",
-    title: "Surgery",
-    text: "Patients move through anesthesia, preparation, surgery, and required treatments using a steady, coordinated workflow.",
+    title: "Controlled Drugs",
+    text: "Required anesthetic medications are documented and accounted for before surgery according to ClinicDay's controlled-substance workflow.",
   },
   {
     number: "4",
-    title: "Recovery",
-    text: "Each patient is monitored through recovery and moved forward only when the veterinary team determines the patient is ready.",
+    title: "In Surgery",
+    text: "The veterinarian performs the procedure while the veterinary team completes the required clinical care and documentation.",
   },
   {
     number: "5",
-    title: "Pickup and release",
-    text: "Final services and records are confirmed, discharge information is reviewed, and the patient is released to the correct client or caregiver.",
+    title: "Recovery",
+    text: "The patient is monitored after surgery and moves forward only when the veterinary team determines that recovery criteria are met.",
   },
   {
     number: "6",
-    title: "Closeout and reset",
-    text: "Documentation is completed, instruments and work areas are processed, supplies are reset, and unresolved issues are handed off before the clinic ends.",
+    title: "Ready for Pickup → Released → Visit Completed",
+    text: "Final services, documentation, financial settlement, discharge information, and release are completed before the visit is closed.",
   },
 ];
 
 const roles = [
   {
     title: "Front Room System",
-    text: "Manages the client-facing flow: check-in, identity and appointment confirmation, required paperwork and communication, payments, and pickup or release steps.",
+    text: "Manages the client-facing flow: check-in, patient and client confirmation, required consent and communication, payment at check-in, pickup settlement or refund when applicable, and final release.",
   },
   {
     title: "Back Room Documentation",
-    text: "Keeps the patient record aligned with what is happening clinically by tracking patient status and documenting surgery, vaccines, medications, and other completed services.",
+    text: "Keeps ClinicDay current as the patient progresses by updating patient status and documenting the surgery, vaccines, medications, tests, microchip, and other services actually completed.",
   },
   {
     title: "Instrument Sterilization",
-    text: "Keeps clean, correctly prepared sterile packs available by cleaning instruments, assembling and wrapping packs, operating the autoclave according to procedure, and maintaining the clean-to-dirty workflow.",
+    text: "Keeps clean, correctly prepared sterile packs available by cleaning instruments, assembling and wrapping packs, operating the autoclave according to procedure, and maintaining the clean-to-dirty workflow. This assignment may appear as Autoclave in clinic staffing.",
   },
   {
     title: "Veterinarian",
@@ -52,7 +52,7 @@ const roles = [
   },
   {
     title: "Veterinary Technician",
-    text: "Supports anesthesia, surgery, monitoring, and recovery within the technician's training and assigned responsibilities, while helping maintain safe patient flow.",
+    text: "Supports anesthesia, surgery, monitoring, and recovery within the technician's training and assigned responsibilities while helping maintain safe patient flow.",
   },
   {
     title: "General Volunteer",
@@ -80,7 +80,7 @@ export default function ClinicFlowTeamRolesResourcePage() {
               Clinic Flow and Team Roles
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-7 text-muted-foreground">
-              A high-level orientation to the clinic-day workflow and how Front Room, Back Room Documentation, Instrument Sterilization, veterinary staff, and general volunteers work together.
+              A high-level orientation to the ClinicDay workflow and how Front Room, Back Room Documentation, Instrument Sterilization, veterinary staff, and general volunteers work together.
             </p>
           </header>
 
@@ -88,12 +88,12 @@ export default function ClinicFlowTeamRolesResourcePage() {
             <section>
               <h2 className="text-xl font-bold">What good clinic flow looks like</h2>
               <p className="mt-3 leading-7 text-muted-foreground">
-                Effective spay/neuter clinics use <strong>clear roles, predictable patient movement, accurate identification, and timely communication</strong>. The goal is not speed for its own sake. The goal is a safe, steady workflow in which each team member knows what comes next and important information moves with the patient.
+                Effective spay/neuter clinics use <strong>clear roles, predictable patient movement, accurate identification, and timely communication</strong>. The goal is a safe, steady workflow in which each team member knows what comes next and important information moves with the patient.
               </p>
             </section>
 
             <section className="rounded-2xl border bg-slate-50 p-5 sm:p-6">
-              <h2 className="text-lg font-bold">Clinic day at a glance</h2>
+              <h2 className="text-lg font-bold">ClinicDay patient flow</h2>
               <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {flowSteps.map((step) => (
                   <div key={step.number} className="rounded-2xl border bg-white p-4">
@@ -105,6 +105,13 @@ export default function ClinicFlowTeamRolesResourcePage() {
                   </div>
                 ))}
               </div>
+            </section>
+
+            <section className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+              <h2 className="text-lg font-bold">Non-surgical patients</h2>
+              <p className="mt-2 leading-7 text-muted-foreground">
+                Patients receiving only vaccines, testing, microchipping, parasite treatment, or other non-surgical services follow the portions of the workflow that apply to their visit and do not enter the surgical stages.
+              </p>
             </section>
 
             <section>
@@ -122,13 +129,13 @@ export default function ClinicFlowTeamRolesResourcePage() {
               </div>
             </section>
 
-            <section className="rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6">
+            <section className="rounded-2xl border bg-slate-50 p-5 sm:p-6">
               <h2 className="text-lg font-bold">The handoffs that matter most</h2>
               <div className="mt-4 grid gap-4 md:grid-cols-3">
                 <div>
                   <h3 className="font-semibold">Identify before acting</h3>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Confirm the correct patient and record before medications, procedures, documentation changes, or release.
+                    Confirm the correct patient and ClinicDay record before medications, procedures, documentation changes, or release.
                   </p>
                 </div>
                 <div>
@@ -146,17 +153,24 @@ export default function ClinicFlowTeamRolesResourcePage() {
               </div>
             </section>
 
-            <aside className="rounded-2xl border bg-slate-50 p-5">
+            <section>
+              <h2 className="text-xl font-bold">Closeout and reset</h2>
+              <p className="mt-3 leading-7 text-muted-foreground">
+                Closeout is a clinic-operations task rather than a ClinicDay patient stage. Before the clinic ends, documentation should be complete, instruments and work areas processed, supplies reset, and any unresolved issues handed off to the appropriate person.
+              </p>
+            </section>
+
+            <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
               <h2 className="text-lg font-bold">Clinic-day takeaway</h2>
               <p className="mt-2 leading-7 text-muted-foreground">
-                A strong clinic day depends on coordinated handoffs. <strong>Do your assigned role well, keep the patient record current, communicate changes promptly, and help the next person receive a patient who is ready for the next step.</strong>
+                A strong clinic day depends on coordinated handoffs. <strong>Do your assigned role well, keep ClinicDay current, communicate changes promptly, and help the next person receive a patient who is ready for the next step.</strong>
               </p>
             </aside>
 
             <section className="border-t pt-6">
               <h2 className="text-base font-bold">Evidence and best-practice guidance</h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                This resource combines Safe Haven&apos;s clinic roles with high-quality, high-volume spay/neuter guidance emphasizing defined responsibilities, predictable patient flow, clear communication, accurate patient identification, sterile processing, and standardized medical care.
+                This resource combines Safe Haven&apos;s ClinicDay workflow and staffing roles with high-quality, high-volume spay/neuter guidance emphasizing defined responsibilities, predictable patient flow, clear communication, accurate patient identification, sterile processing, and standardized medical care.
               </p>
               <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm font-semibold">
                 <a
