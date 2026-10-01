@@ -221,7 +221,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     await airtableCreate(TABLES.inventory, {
       "Item Name": itemName,
       Area: "Clinic",
-      Category: formText(formData, "category") || "Medical / Clinic Supply",
+      Category: formText(formData, "category") || "Other",
       "Unit of Measure": formText(formData, "unit"),
       ...(optionalNumber(formData, "reorderPoint") !== undefined ? { "Reorder Point": optionalNumber(formData, "reorderPoint") } : {}),
       ...(optionalNumber(formData, "targetQuantity") !== undefined ? { "Target Quantity": optionalNumber(formData, "targetQuantity") } : {}),
@@ -252,7 +252,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
 
     await airtableUpdate(TABLES.inventory, itemId, {
       "Item Name": itemName,
-      Category: formText(formData, "category") || "Medical / Clinic Supply",
+      Category: formText(formData, "category") || "Other",
       "Unit of Measure": formText(formData, "unit"),
       "Reorder Point": optionalNumber(formData, "reorderPoint") ?? null,
       "Target Quantity": optionalNumber(formData, "targetQuantity") ?? null,
@@ -401,8 +401,8 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                   <summary className="cursor-pointer font-semibold text-primary">+ Add a supply</summary>
                   <form action={addClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
                     <label className="text-xs font-medium">Supply name<input name="itemName" required placeholder="e.g. Sterile gauze sponges" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                    <label className="text-xs font-medium">Category<select name="category" defaultValue="Medical / Clinic Supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
-                      {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
+                    <label className="text-xs font-medium">Category<select name="category" defaultValue="Other" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
+                      {["Surgical Instruments","Surgery & Sterilization","Anesthesia, Medications & Airway","Vaccines, Testing & Preventive Care","Recovery & Patient Care","Cleaning, PPE & General Supplies","Other"].map((category)=><option key={category}>{category}</option>)}
                     </select></label>
                     <label className="text-xs font-medium">Unit of measure<input name="unit" placeholder="e.g. box, dose, each" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                     <div className="grid grid-cols-2 gap-3">
@@ -424,16 +424,26 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                 <>
                   <InventorySearch />
                   <div className="space-y-3">
-                  {data.inventory.map((item) => {
-                    const lowStock = ["Low Stock", "Out of Stock"].includes(item.status);
-                    const reorderActive = ["Requested", "Ordered"].includes(item.reorderStatus);
+                  {["Surgical Instruments","Surgery & Sterilization","Anesthesia, Medications & Airway","Vaccines, Testing & Preventive Care","Recovery & Patient Care","Cleaning, PPE & General Supplies","Other"].map((category) => {
+                    const categoryItems = data.inventory.filter((item) => (item.category || "Other") === category);
+                    if (!categoryItems.length) return null;
                     return (
-                      <div
-                        key={item.id}
-                        data-clinic-inventory-item
-                        data-inventory-search={`${item.name} ${item.category || ""} ${item.unit || ""} ${item.vendor || ""} ${item.status || ""}`}
-                        className={`rounded-2xl border p-4 ${lowStock || reorderActive ? "border-orange-300 bg-orange-50/60" : "border-transparent bg-slate-50"}`}
-                      >
+                      <details key={category} data-clinic-inventory-category className="rounded-2xl border bg-white">
+                        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+                          <span>{category}</span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-muted-foreground">{categoryItems.length}</span>
+                        </summary>
+                        <div className="space-y-3 border-t p-3">
+                          {categoryItems.map((item) => {
+                            const lowStock = ["Low Stock", "Out of Stock"].includes(item.status);
+                            const reorderActive = ["Requested", "Ordered"].includes(item.reorderStatus);
+                            return (
+                              <div
+                                key={item.id}
+                                data-clinic-inventory-item
+                                data-inventory-search={`${item.name} ${item.category || ""} ${item.unit || ""} ${item.vendor || ""} ${item.status || ""}`}
+                                className={`rounded-2xl border p-4 ${lowStock || reorderActive ? "border-orange-300 bg-orange-50/60" : "border-transparent bg-slate-50"}`}
+                              >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <p className="font-semibold">{item.name}</p>
@@ -472,8 +482,8 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                             <form action={updateClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
                               <input type="hidden" name="itemId" value={item.id} />
                               <label className="text-xs font-medium">Supply name<input name="itemName" required defaultValue={item.name} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                              <label className="text-xs font-medium">Category<select name="category" defaultValue={item.category || "Medical / Clinic Supply"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
-                                {["Medical / Clinic Supply","PPE","Cleaning","Laundry","Animal Care","Office","Other"].map((category)=><option key={category}>{category}</option>)}
+                              <label className="text-xs font-medium">Category<select name="category" defaultValue={item.category || "Other"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
+                                {["Surgical Instruments","Surgery & Sterilization","Anesthesia, Medications & Airway","Vaccines, Testing & Preventive Care","Recovery & Patient Care","Cleaning, PPE & General Supplies","Other"].map((category)=><option key={category}>{category}</option>)}
                               </select></label>
                               <label className="text-xs font-medium">Unit of measure<input name="unit" defaultValue={item.unit} placeholder="e.g. box, dose, each" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                               <div className="grid grid-cols-2 gap-3">
@@ -499,7 +509,11 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                             </form>
                           </details>
                         )}
-                      </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </details>
                     );
                   })}
                   </div>
