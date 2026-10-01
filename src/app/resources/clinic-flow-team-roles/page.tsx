@@ -88,7 +88,7 @@ export default function ClinicFlowTeamRolesResourcePage() {
             <section>
               <h2 className="text-xl font-bold">What good clinic flow looks like</h2>
               <p className="mt-3 leading-7 text-muted-foreground">
-                Effective spay/neuter clinics use <strong>clear roles, predictable patient movement, accurate identification, and timely communication</strong>. The goal is a safe, steady workflow in which each team member knows what comes next and important information moves with the patient.
+                Effective clinic flow depends on <strong>clear roles, accurate patient identification, and predictable movement through ClinicDay</strong>. Each patient should reach the next stage only when the required work for the current stage is complete.
               </p>
             </section>
 
@@ -117,7 +117,7 @@ export default function ClinicFlowTeamRolesResourcePage() {
             <section>
               <h2 className="text-xl font-bold">Who does what?</h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                These roles work in parallel. Each person should stay within their assigned training and responsibilities while communicating changes that affect the next step in the patient&apos;s care.
+                Each team member should work within their assigned training and responsibilities.
               </p>
               <div className="mt-4 grid gap-4 md:grid-cols-2">
                 {roles.map((role) => (
@@ -156,14 +156,14 @@ export default function ClinicFlowTeamRolesResourcePage() {
             <section>
               <h2 className="text-xl font-bold">Closeout and reset</h2>
               <p className="mt-3 leading-7 text-muted-foreground">
-                Closeout is a clinic-operations task rather than a ClinicDay patient stage. Before the clinic ends, documentation should be complete, instruments and work areas processed, supplies reset, and any unresolved issues handed off to the appropriate person.
+                Before the clinic ends, complete outstanding documentation, process instruments and work areas, reset supplies, and hand off any unresolved issues.
               </p>
             </section>
 
             <aside className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
               <h2 className="text-lg font-bold">Clinic-day takeaway</h2>
               <p className="mt-2 leading-7 text-muted-foreground">
-                A strong clinic day depends on coordinated handoffs. <strong>Do your assigned role well, keep ClinicDay current, communicate changes promptly, and help the next person receive a patient who is ready for the next step.</strong>
+                <strong>Know your role, keep ClinicDay accurate, and do not move a patient forward until the current step is complete.</strong>
               </p>
             </aside>
 
