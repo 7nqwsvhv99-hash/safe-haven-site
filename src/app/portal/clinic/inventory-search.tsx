@@ -46,6 +46,26 @@ export function InventorySearch() {
     setVisibleCount(visible);
   }, [query]);
 
+  useEffect(() => {
+    const groups = Array.from(
+      document.querySelectorAll<HTMLDetailsElement>("[data-clinic-inventory-category]")
+    );
+
+    const handleToggle = (event: Event) => {
+      const openedGroup = event.currentTarget as HTMLDetailsElement;
+      if (!openedGroup.open || query.trim()) return;
+
+      groups.forEach((group) => {
+        if (group !== openedGroup) group.open = false;
+      });
+    };
+
+    groups.forEach((group) => group.addEventListener("toggle", handleToggle));
+    return () => {
+      groups.forEach((group) => group.removeEventListener("toggle", handleToggle));
+    };
+  }, [query]);
+
   return (
     <div className="mb-5">
       <label htmlFor="clinic-inventory-search" className="sr-only">
