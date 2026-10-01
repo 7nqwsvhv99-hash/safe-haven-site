@@ -23,10 +23,15 @@ Airtable automation APIs cannot publish changes. An authorized user must click U
 | [Veterinarian Preference → Vet Tech Round](https://airtable.com/app2vpch2JJVrP9pu/wflojG2FuGpMTyXSu) | Update the additional date-stamping/safety changes in this draft |
 | [Clinic Staffing - Email New Invitation](https://airtable.com/app2vpch2JJVrP9pu/wflYToQj7svk47SSR) | Update |
 | [Clinic One-Week Reconfirmation Reminder](https://airtable.com/app2vpch2JJVrP9pu/wfldmQB3o4pnbtURD) | Update; now includes catch-up, late signups, unanswered invitations, and deadline escalation |
+| [Clinic Staffing → Create ClinicDay Date](https://airtable.com/app2vpch2JJVrP9pu/wflb3vhnLncB7Hmf0) | Review and turn On. This is the event-driven primary sync. |
 | [ClinicDay Dates → Clinic Staffing](https://airtable.com/app2vpch2JJVrP9pu/wfljSUcIgwNDgle90) | Update to retire its writer, then turn Off |
 | [ClinicDay Date Changes → Clinic Staffing](https://airtable.com/app2vpch2JJVrP9pu/wflDR41AQt0H7L6kx) | Update to retire its writer, then turn Off |
 
-After verifying these live versions, set the Netlify production environment variable `CLINIC_SCHEDULING_V2_ENABLED=true`, including the Functions scope, and redeploy. Until then the new sync deliberately returns a paused result. This prevents the old Airtable sync writers and the new Netlify writer from racing. Confirm the first six-hour `sync-clinic-dates` execution succeeds and canonical links remain unique. It runs at minute 15 every six hours, so cross-base edits are not instantaneous. Put ClinicDay on hold immediately when changing or cancelling a clinic; do not wait for the six-hour sync to stop bookings.
+After verifying these live versions, set the Netlify production environment variable `CLINIC_SCHEDULING_V2_ENABLED=true`, including the Functions scope, and redeploy. Until then the sync deliberately returns a paused result. This prevents the old Airtable sync writers and the new Netlify writer from racing.
+
+The primary clinic-date creation path is now event-driven: when a Clinic Staffing Date first has at least one confirmed veterinarian and at least one confirmed vet tech, and it does not yet have a ClinicDay Record ID, the Airtable automation calls the production Netlify sync endpoint once. The endpoint re-reads the record and independently re-validates the qualifying conditions before creating or reusing a matching ClinicDay date and writing the canonical ClinicDay record ID back to Shelter Management.
+
+A separate Netlify reconciliation remains as a safety net only. It now runs hourly instead of every 15 minutes. This catches missed events, legacy edits, date/type changes, cancellations, and cross-base inconsistencies without making high-frequency polling the primary architecture. Put ClinicDay on hold immediately when changing or cancelling a clinic; do not wait for the hourly reconciliation to stop bookings.
 
 ## Daily operating rules
 
@@ -56,5 +61,7 @@ Automated checks: nine mocked workflow tests cover canonical matching, duplicate
 ## Automation budget
 
 Shelter Management has 34 configured automations after adding one queue sender. Airtable permits 50 per base including disabled automations, leaving 16 slots. Retiring the two legacy writers does not free slots unless they are deleted later. Extend shared scripts instead of creating an automation per role or reminder. A second base is unnecessary for these changes. Monthly run limits are shared at the workspace level and depend on the actual plan; check current workspace usage before launch. Another base in the same workspace does not increase that allowance.
+
+The event-driven ClinicDay creation automation consumes a run only when a staffing date enters the qualifying state, instead of consuming scheduled runs throughout the month. The hourly reconciliation is a Netlify scheduled function, so its clock invocations do not consume Airtable automation runs, though any Airtable changes it makes can still trigger other automations.
 
 The newer [Volunteer Onboarding guide](volunteer-onboarding.md) covers the integrated Staff Portal workspace, restricted roles, waiver register update, and reduced background schedule.
