@@ -428,7 +428,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                     const categoryItems = data.inventory.filter((item) => (item.category || "Other") === category);
                     if (!categoryItems.length) return null;
                     return (
-                      <details key={category} data-clinic-inventory-category className="rounded-2xl border bg-white">
+                      <details key={category} name="clinic-inventory-categories" data-clinic-inventory-category className="rounded-2xl border bg-white">
                         <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 font-semibold text-foreground [&::-webkit-details-marker]:hidden">
                           <span>{category}</span>
                           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-muted-foreground">{categoryItems.length}</span>
