@@ -12,6 +12,9 @@ export function InventorySearch() {
     const items = Array.from(
       document.querySelectorAll<HTMLElement>("[data-clinic-inventory-item]")
     );
+    const groups = Array.from(
+      document.querySelectorAll<HTMLDetailsElement>("[data-clinic-inventory-category]")
+    );
 
     let visible = 0;
     items.forEach((item) => {
@@ -19,6 +22,25 @@ export function InventorySearch() {
       const matches = !normalized || searchable.includes(normalized);
       item.hidden = !matches;
       if (matches) visible += 1;
+    });
+
+    groups.forEach((group) => {
+      const groupItems = Array.from(
+        group.querySelectorAll<HTMLElement>("[data-clinic-inventory-item]")
+      );
+      const hasMatch = groupItems.some((item) => !item.hidden);
+
+      group.hidden = normalized ? !hasMatch : false;
+
+      if (normalized && hasMatch) {
+        if (!group.open) {
+          group.dataset.searchOpened = "true";
+          group.open = true;
+        }
+      } else if (!normalized && group.dataset.searchOpened === "true") {
+        group.open = false;
+        delete group.dataset.searchOpened;
+      }
     });
 
     setVisibleCount(visible);
