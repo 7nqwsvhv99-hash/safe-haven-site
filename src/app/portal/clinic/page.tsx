@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone, BookOpen, ExternalLink } from "lucide-react";
 import { VeterinarianDateForm } from "./veterinarian-date-form";
 import { TrainingResourceSections } from "./training-resource-sections";
+import { InventorySearch } from "./inventory-search";
 import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, airtableList, airtableDelete, TABLES } from "@/lib/portal";
 
 
@@ -420,12 +421,19 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                 </details>
               )}
               {data.inventory.length ? (
-                <div className="space-y-3">
+                <>
+                  <InventorySearch />
+                  <div className="space-y-3">
                   {data.inventory.map((item) => {
                     const lowStock = ["Low Stock", "Out of Stock"].includes(item.status);
                     const reorderActive = ["Requested", "Ordered"].includes(item.reorderStatus);
                     return (
-                      <div key={item.id} className={`rounded-2xl border p-4 ${lowStock || reorderActive ? "border-orange-300 bg-orange-50/60" : "border-transparent bg-slate-50"}`}>
+                      <div
+                        key={item.id}
+                        data-clinic-inventory-item
+                        data-inventory-search={`${item.name} ${item.category || ""} ${item.unit || ""} ${item.vendor || ""} ${item.status || ""}`}
+                        className={`rounded-2xl border p-4 ${lowStock || reorderActive ? "border-orange-300 bg-orange-50/60" : "border-transparent bg-slate-50"}`}
+                      >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div>
                             <p className="font-semibold">{item.name}</p>
@@ -494,7 +502,8 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                       </div>
                     );
                   })}
-                </div>
+                  </div>
+                </>
               ) : (
                 <p className="text-muted-foreground">No active clinic inventory items are available yet.</p>
               )}
