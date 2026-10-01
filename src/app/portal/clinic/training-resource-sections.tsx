@@ -54,27 +54,41 @@ export function TrainingResourceSections({ resources }: { resources: TrainingRes
             <h3 className="text-lg font-bold">{section.label}</h3>
             {sectionResources.length ? (
               <div className="mt-3 grid gap-3 md:grid-cols-2">
-                {sectionResources.map((resource) => (
-                  <article key={resource.id} className="rounded-2xl border bg-slate-50 p-4">
-                    <p className="font-semibold">{resource.title}</p>
-                    <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">
-                      {resource.resourceType}
-                    </p>
-                    {resource.description && (
-                      <p className="mt-3 text-sm text-muted-foreground">{resource.description}</p>
-                    )}
-                    {resource.url && (
-                      <a
-                        href={resource.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
-                      >
-                        Open resource <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    )}
-                  </article>
-                ))}
+                {sectionResources.map((resource) =>
+                  resource.url ? (
+                    <a
+                      key={resource.id}
+                      href={resource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Open ${resource.title}`}
+                      className="group block rounded-2xl border bg-slate-50 p-4 transition hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-foreground">{resource.title}</p>
+                          <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                            {resource.resourceType}
+                          </p>
+                        </div>
+                        <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-primary opacity-70 transition group-hover:opacity-100" />
+                      </div>
+                      {resource.description && (
+                        <p className="mt-3 text-sm text-muted-foreground">{resource.description}</p>
+                      )}
+                    </a>
+                  ) : (
+                    <article key={resource.id} className="rounded-2xl border bg-slate-50 p-4">
+                      <p className="font-semibold">{resource.title}</p>
+                      <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">
+                        {resource.resourceType}
+                      </p>
+                      {resource.description && (
+                        <p className="mt-3 text-sm text-muted-foreground">{resource.description}</p>
+                      )}
+                    </article>
+                  )
+                )}
               </div>
             ) : (
               <p className="mt-3 text-sm text-muted-foreground">
