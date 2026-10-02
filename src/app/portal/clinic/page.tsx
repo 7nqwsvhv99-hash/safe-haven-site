@@ -56,9 +56,9 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
   const context = await requirePortalRole("Clinic Team");
   const data = await getClinicPortalData(context.email);
   const canWriteClinic = context.isAdministrator || context.roles.includes("Clinic Team");
-  const canManageClinicInventory = context.isAdministrator;
-  const canRequestClinicReorder = context.isAdministrator;
-  const showClinicInventory = data.member?.role !== "Veterinarian";
+  const canManageClinicInventory = canWriteClinic;
+  const canRequestClinicReorder = canWriteClinic;
+  const showClinicInventory = Boolean(data.member) || context.isAdministrator;
   const requestedSection = (await searchParams).section || "dates";
   const allowedSections = new Set(["dates", "staffing", "inventory", "training"]);
   const section = !allowedSections.has(requestedSection) || (requestedSection === "inventory" && !showClinicInventory)
@@ -215,7 +215,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (!current.isAdministrator || latest.member?.role === "Veterinarian") return;
+    if (!latest.member && !current.isAdministrator) return;
 
     const itemName = formText(formData, "itemName");
     if (!itemName) return;
@@ -244,7 +244,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (!current.isAdministrator || latest.member?.role === "Veterinarian") return;
+    if (!latest.member && !current.isAdministrator) return;
     const itemId = formText(formData, "itemId");
     const item = latest.inventory.find((entry) => entry.id === itemId);
     if (!item) return;
@@ -275,7 +275,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (!current.isAdministrator || latest.member?.role === "Veterinarian") return;
+    if (!latest.member && !current.isAdministrator) return;
     const itemId = formText(formData, "itemId");
     if (!itemId || formData.get("confirmDelete") !== "on") return;
     const item = latest.inventory.find((entry) => entry.id === itemId);
@@ -303,7 +303,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (latest.member?.role === "Veterinarian" || (!current.isAdministrator && !current.roles.includes("Clinic Team"))) return;
+    if (!latest.member && !current.isAdministrator) return;
     const itemId = String(formData.get("itemId") || "");
     const countRaw = String(formData.get("count") || "").trim();
     const item = latest.inventory.find((entry) => entry.id === itemId);
@@ -336,7 +336,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (latest.member?.role === "Veterinarian") return;
+    if (!latest.member && !current.isAdministrator) return;
     const itemId = String(formData.get("itemId") || "");
     const item = latest.inventory.find((entry) => entry.id === itemId);
     if (!item) return;
@@ -353,28 +353,11 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     revalidatePath("/portal/clinic");
   }
 
-  async function markClinicInventoryOrdered(formData: FormData) {
-    "use server";
-    const current = await requirePortalRole("Clinic Team", "write");
-    if (!current.isAdministrator) return;
-    const latest = await getClinicPortalData(current.email);
-    const itemId = formText(formData, "itemId");
-    const item = latest.inventory.find((entry) => entry.id === itemId);
-    if (!item || item.reorderStatus !== "Requested") return;
-
-    await airtableUpdate(TABLES.inventory, itemId, {
-      "Reorder Request Status": "Ordered",
-      "Last Ordered": new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date()),
-    }, true);
-
-    revalidatePath("/portal/clinic");
-  }
-
   async function receiveClinicInventory(formData: FormData) {
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
-    if (!current.isAdministrator) return;
     const latest = await getClinicPortalData(current.email);
+    if (!latest.member && !current.isAdministrator) return;
     const itemId = formText(formData, "itemId");
     const quantity = optionalNumber(formData, "quantity");
     const item = latest.inventory.find((entry) => entry.id === itemId);
@@ -391,6 +374,21 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
 
     await airtableUpdate(TABLES.inventory, itemId, {
       "Last Received": new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago" }).format(new Date()),
+    }, true);
+
+    revalidatePath("/portal/clinic");
+  }
+
+  async function resolveClinicInventoryReorder(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Clinic Team", "write");
+    const latest = await getClinicPortalData(current.email);
+    if (!latest.member && !current.isAdministrator) return;
+    const itemId = formText(formData, "itemId");
+    const item = latest.inventory.find((entry) => entry.id === itemId);
+    if (!item || !["Requested", "Ordered"].includes(item.reorderStatus)) return;
+
+    await airtableUpdate(TABLES.inventory, itemId, {
       "Reorder Request Status": "Resolved",
     }, true);
 
@@ -564,18 +562,18 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                   {reorderActive ? (item.reorderStatus === "Ordered" ? "Order in progress" : "Reorder requested") : "Request reorder"}
                                 </button>
                               </form>
-                              {canManageClinicInventory && item.reorderStatus === "Requested" && (
-                                <form action={markClinicInventoryOrdered} className="flex items-end">
-                                  <input type="hidden" name="itemId" value={item.id} />
-                                  <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Mark ordered</button>
-                                </form>
-                              )}
                               {canManageClinicInventory && reorderActive && (
-                                <form action={receiveClinicInventory} className="flex items-end gap-2">
-                                  <input type="hidden" name="itemId" value={item.id} />
-                                  <input name="quantity" type="number" min="0.01" step="0.01" required placeholder="Qty received" className="w-28 rounded-lg border bg-white px-3 py-2 text-sm" />
-                                  <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Receive</button>
-                                </form>
+                                <>
+                                  <form action={receiveClinicInventory} className="flex items-end gap-2">
+                                    <input type="hidden" name="itemId" value={item.id} />
+                                    <input name="quantity" type="number" min="0.01" step="0.01" required placeholder="Qty received" className="w-28 rounded-lg border bg-white px-3 py-2 text-sm" />
+                                    <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Receive</button>
+                                  </form>
+                                  <form action={resolveClinicInventoryReorder} className="flex items-end">
+                                    <input type="hidden" name="itemId" value={item.id} />
+                                    <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Resolved</button>
+                                  </form>
+                                </>
                               )}
                             </div>
                           )}
