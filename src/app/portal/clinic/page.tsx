@@ -563,17 +563,22 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                 </button>
                               </form>
                               {canManageClinicInventory && reorderActive && (
-                                <>
-                                  <form action={receiveClinicInventory} className="flex items-end gap-2">
-                                    <input type="hidden" name="itemId" value={item.id} />
-                                    <input name="quantity" type="number" min="0.01" step="0.01" required placeholder="Qty received" className="w-28 rounded-lg border bg-white px-3 py-2 text-sm" />
-                                    <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Receive</button>
-                                  </form>
-                                  <form action={resolveClinicInventoryReorder} className="flex items-end">
-                                    <input type="hidden" name="itemId" value={item.id} />
-                                    <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Resolved</button>
-                                  </form>
-                                </>
+                                <div className="max-w-md">
+                                  <div className="flex flex-wrap items-end gap-2">
+                                    <form action={receiveClinicInventory} className="flex items-end gap-2">
+                                      <input type="hidden" name="itemId" value={item.id} />
+                                      <input name="quantity" type="number" min="0.01" step="0.01" required placeholder="Qty received" className="w-28 rounded-lg border bg-white px-3 py-2 text-sm" />
+                                      <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Receive</button>
+                                    </form>
+                                    <form action={resolveClinicInventoryReorder} className="flex items-end">
+                                      <input type="hidden" name="itemId" value={item.id} />
+                                      <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Resolved</button>
+                                    </form>
+                                  </div>
+                                  <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                                    If an order arrives partially, record the quantity received and leave the reorder request unresolved until the remaining items arrive.
+                                  </p>
+                                </div>
                               )}
                             </div>
                           )}
