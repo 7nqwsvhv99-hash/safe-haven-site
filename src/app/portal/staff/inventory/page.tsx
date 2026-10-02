@@ -331,7 +331,7 @@ export default async function ShelterInventoryPage({
 
       <div className="space-y-6">
         {canEditInventory&&<section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-          <div className="mb-5 flex items-center gap-3"><PackagePlus className="h-6 w-6 text-primary"/><div><h2 className="text-2xl font-bold">Record Inventory Movement</h2><p className="text-sm text-muted-foreground">Current quantity is calculated from these transactions.</p></div></div>
+          <div className="mb-5 flex items-center gap-3"><PackagePlus className="h-6 w-6 text-primary"/><div><h2 className="text-2xl font-bold">Record Inventory Movement</h2><p className="text-sm text-muted-foreground">Current quantity is calculated from these transactions.</p><p className="mt-1 text-xs leading-5 text-muted-foreground">If an order arrives partially, record the quantity received and leave the reorder request unresolved until the remaining items arrive.</p></div></div>
           <form action={recordTransaction} className="space-y-3">
             <label className="block text-xs font-medium">Shelter item<select name="itemId" required defaultValue="" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select shelter item</option>{active.map(r=><option key={r.id} value={r.id}>{asText(r.fields["Item Name"])}</option>)}</select></label>
             <label className="block text-xs font-medium">Transaction type<select name="type" required defaultValue="Received" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">{(canManageInventory?["Received","Used","Adjustment +","Adjustment -","Damaged / Discarded","Expired"]:["Received"]).map(x=><option key={x}>{x}</option>)}</select></label>
