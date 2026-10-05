@@ -1,3 +1,4 @@
+import { InventoryItemEditor, type InventorySaveResult } from "@/components/inventory-item-editor";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone, BookOpen, ExternalLink } from "lucide-react";
@@ -240,35 +241,40 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     revalidatePath("/portal/clinic");
   }
 
-  async function updateClinicInventoryItem(formData: FormData) {
+  async function updateClinicInventoryItem(formData: FormData): Promise<InventorySaveResult> {
     "use server";
     const current = await requirePortalRole("Clinic Team", "write");
     const latest = await getClinicPortalData(current.email);
-    if (!latest.member && !current.isAdministrator) return;
+    if (!latest.member && !current.isAdministrator) return { ok: false, error: "This item could not be saved. Check the supply name and your inventory access, then try again." };
     const itemId = formText(formData, "itemId");
     const item = latest.inventory.find((entry) => entry.id === itemId);
-    if (!item) return;
+    if (!item) return { ok: false, error: "This item could not be saved. Check the supply name and your inventory access, then try again." };
 
     const itemName = formText(formData, "itemName");
-    if (!itemName) return;
+    if (!itemName) return { ok: false, error: "This item could not be saved. Check the supply name and your inventory access, then try again." };
 
-    await airtableUpdate(TABLES.inventory, itemId, {
-      "Item Name": itemName,
-      Category: formText(formData, "category") || "Other",
-      "Unit of Measure": formText(formData, "unit"),
-      "Reorder Point": optionalNumber(formData, "reorderPoint") ?? null,
-      "Target Quantity": optionalNumber(formData, "targetQuantity") ?? null,
-      "Preferred Vendor": formText(formData, "vendor"),
-      "Purchase URL": formText(formData, "purchaseUrl"),
-      "Typical Unit Cost": optionalNumber(formData, "unitCost") ?? null,
-      "Responsible Person": formText(formData, "responsiblePerson"),
-      "Responsible Email": formText(formData, "responsibleEmail"),
-      "Track Lot / Expiration": formData.get("trackLot") === "on",
-      Notes: formText(formData, "notes"),
-      Active: formData.get("active") === "on",
-    }, true);
+    try {
+      await airtableUpdate(TABLES.inventory, itemId, {
+        "Item Name": itemName,
+        Category: formText(formData, "category") || "Other",
+        "Unit of Measure": formText(formData, "unit"),
+        "Reorder Point": optionalNumber(formData, "reorderPoint") ?? null,
+        "Target Quantity": optionalNumber(formData, "targetQuantity") ?? null,
+        "Preferred Vendor": formText(formData, "vendor"),
+        "Purchase URL": formText(formData, "purchaseUrl"),
+        "Typical Unit Cost": optionalNumber(formData, "unitCost") ?? null,
+        "Responsible Person": formText(formData, "responsiblePerson"),
+        "Responsible Email": formText(formData, "responsibleEmail"),
+        "Track Lot / Expiration": formData.get("trackLot") === "on",
+        Notes: formText(formData, "notes"),
+        Active: formData.get("active") === "on",
+      }, true);
 
-    revalidatePath("/portal/clinic");
+      revalidatePath("/portal/clinic");
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "Changes could not be saved. Your edits are still here. Please try again." };
+    }
   }
 
   async function deleteClinicInventoryItem(formData: FormData) {
@@ -623,9 +629,15 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                         {lowStock && !reorderActive && <p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
             
                         {canManageClinicInventory && (
-                          <details className="mt-4 border-t pt-4">
-                            <summary className="cursor-pointer text-sm font-semibold text-primary">Modify item</summary>
-                            <form action={updateClinicInventoryItem} className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <InventoryItemEditor action={updateClinicInventoryItem} className="mt-4 border-t pt-4" deleteSection={
+                            <form action={deleteClinicInventoryItem} className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
+                              <input type="hidden" name="itemId" value={item.id} />
+                              <p className="text-sm font-semibold text-red-800">Delete item</p>
+                              <p className="mt-1 text-xs text-red-700">If this item has transaction history, it will be archived instead of permanently removed so inventory history remains intact.</p>
+                              <label className="mt-3 flex items-start gap-2 text-xs text-red-800"><input required name="confirmDelete" type="checkbox" className="mt-0.5" /> I confirm that I want to remove this item from active inventory.</label>
+                              <button className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-700">Delete item</button>
+                            </form>
+                          }>
                               <input type="hidden" name="itemId" value={item.id} />
                               <label className="text-xs font-medium">Supply name<input name="itemName" required defaultValue={item.name} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                               <label className="text-xs font-medium">Category<select name="category" defaultValue={item.category || "Other"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">
@@ -644,16 +656,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                               <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" defaultChecked={item.trackLotExpiration} /> Track lot / expiration</label>
                               <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked /> Active</label>
                               <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} defaultValue={item.notes} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                              <button className="w-fit rounded-full border border-primary px-5 py-2 text-sm font-semibold text-primary sm:col-span-2">Save item changes</button>
-                            </form>
-                            <form action={deleteClinicInventoryItem} className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
-                              <input type="hidden" name="itemId" value={item.id} />
-                              <p className="text-sm font-semibold text-red-800">Delete item</p>
-                              <p className="mt-1 text-xs text-red-700">If this item has transaction history, it will be archived instead of permanently removed so inventory history remains intact.</p>
-                              <label className="mt-3 flex items-start gap-2 text-xs text-red-800"><input required name="confirmDelete" type="checkbox" className="mt-0.5" /> I confirm that I want to remove this item from active inventory.</label>
-                              <button className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-700">Delete item</button>
-                            </form>
-                          </details>
+                          </InventoryItemEditor>
                         )}
                               </div>
                             );

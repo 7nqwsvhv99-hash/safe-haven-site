@@ -1,3 +1,4 @@
+import { InventoryItemEditor, type InventorySaveResult } from "@/components/inventory-item-editor";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { revalidatePath } from "next/cache";
@@ -69,29 +70,35 @@ export default async function ShelterInventoryPage({
     revalidatePath("/portal/staff/inventory");
   }
 
-  async function updateItem(formData:FormData){
+  async function updateItem(formData:FormData): Promise<InventorySaveResult> {
     "use server";
     const current=await requirePortalRole("Staff", "write");
-    if(!current.isAdministrator&&!current.roles.includes("Shelter Manager")&&!current.roles.includes("Staff"))return;
+    if(!current.isAdministrator&&!current.roles.includes("Shelter Manager")&&!current.roles.includes("Staff"))return { ok: false, error: "This item could not be saved. Check the supply name and your inventory access, then try again." };
     const id=field(formData,"itemId");
     const latest=await airtableList(TABLES.inventory,["Area"]);
-    if(!latest.some(r=>r.id===id&&asText(r.fields.Area)==="Shelter"))return;
-    await airtableUpdate(TABLES.inventory,id,{
-      "Item Name":field(formData,"itemName"),
-      Category:field(formData,"category"),
-      "Unit of Measure":field(formData,"unit"),
-      "Reorder Point":optionalNumber(formData,"reorderPoint")??null,
-      "Target Quantity":optionalNumber(formData,"targetQuantity")??null,
-      "Preferred Vendor":field(formData,"vendor"),
-      "Purchase URL":field(formData,"purchaseUrl"),
-      "Typical Unit Cost":optionalNumber(formData,"unitCost")??null,
-      "Responsible Person":field(formData,"responsiblePerson"),
-      "Responsible Email":field(formData,"responsibleEmail"),
-      Active:formData.get("active")==="on",
-      "Track Lot / Expiration":formData.get("trackLot")==="on",
-      Notes:field(formData,"notes"),
-    },true);
-    revalidatePath("/portal/staff/inventory");
+    if(!latest.some(r=>r.id===id&&asText(r.fields.Area)==="Shelter"))return { ok: false, error: "This item could not be saved. Check the supply name and your inventory access, then try again." };
+    try {
+      if (!field(formData,"itemName")) return { ok: false, error: "Enter a supply name before saving." };
+      await airtableUpdate(TABLES.inventory,id,{
+        "Item Name":field(formData,"itemName"),
+        Category:field(formData,"category"),
+        "Unit of Measure":field(formData,"unit"),
+        "Reorder Point":optionalNumber(formData,"reorderPoint")??null,
+        "Target Quantity":optionalNumber(formData,"targetQuantity")??null,
+        "Preferred Vendor":field(formData,"vendor"),
+        "Purchase URL":field(formData,"purchaseUrl"),
+        "Typical Unit Cost":optionalNumber(formData,"unitCost")??null,
+        "Responsible Person":field(formData,"responsiblePerson"),
+        "Responsible Email":field(formData,"responsibleEmail"),
+        Active:formData.get("active")==="on",
+        "Track Lot / Expiration":formData.get("trackLot")==="on",
+        Notes:field(formData,"notes"),
+      },true);
+      revalidatePath("/portal/staff/inventory");
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "Changes could not be saved. Your edits are still here. Please try again." };
+    }
   }
 
   async function saveCurrentCount(formData:FormData){
@@ -291,11 +298,18 @@ export default async function ShelterInventoryPage({
               </div>
               {low&&!reorderActive&&<p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
 
-              {canEditInventory&&<details className="mt-5 border-t pt-4">
-                <summary className="cursor-pointer text-sm font-semibold text-primary">Modify item</summary>
-                <form action={updateItem} className="mt-4 grid gap-3 sm:grid-cols-2">
+              {canEditInventory&&<InventoryItemEditor action={updateItem} className="mt-5 border-t pt-4" deleteSection={
+                <form action={deleteItem} className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
                   <input type="hidden" name="itemId" value={r.id}/>
-                  <label className="text-xs font-medium">Supply name<input name="itemName" defaultValue={asText(r.fields["Item Name"])} className="mt-1 w-full rounded-xl border px-3 py-2.5"/></label>
+                  <p className="text-sm font-semibold text-red-800">Delete item</p>
+                  <p className="mt-1 text-xs text-red-700">If this item has transaction history, it will be archived instead of permanently removed so inventory history remains intact.</p>
+                  <label className="mt-3 flex items-start gap-2 text-xs text-red-800"><input required name="confirmDelete" type="checkbox" className="mt-0.5"/> I confirm that I want to remove this item from active inventory.</label>
+                  <button className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-700">Delete item</button>
+                </form>
+              }>
+
+                  <input type="hidden" name="itemId" value={r.id}/>
+                  <label className="text-xs font-medium">Supply name<input name="itemName" required defaultValue={asText(r.fields["Item Name"])} className="mt-1 w-full rounded-xl border px-3 py-2.5"/></label>
                   <label className="text-xs font-medium">Category<select name="category" defaultValue={asText(r.fields.Category)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">{["Animal Food","Litter","Cleaning","Medical / Clinic Supply","PPE","Office","Laundry","Animal Care","Other"].map(x=><option key={x}>{x}</option>)}</select></label>
                   <label className="text-xs font-medium">Unit of measure<input name="unit" defaultValue={asText(r.fields["Unit of Measure"])} className="mt-1 w-full rounded-xl border px-3 py-2.5"/></label>
                   <div className="grid grid-cols-2 gap-3">
@@ -310,17 +324,7 @@ export default async function ShelterInventoryPage({
                   <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" defaultChecked={Boolean(r.fields["Track Lot / Expiration"])}/> Track lot / expiration</label>
                   <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked={Boolean(r.fields.Active)}/> Active</label>
                   <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={3} defaultValue={asText(r.fields.Notes)} className="mt-1 w-full rounded-xl border px-3 py-2.5"/></label>
-                  <button className="w-fit rounded-full border border-primary px-5 py-2.5 text-sm font-semibold text-primary sm:col-span-2">Save item changes</button>
-                </form>
-
-                <form action={deleteItem} className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
-                  <input type="hidden" name="itemId" value={r.id}/>
-                  <p className="text-sm font-semibold text-red-800">Delete item</p>
-                  <p className="mt-1 text-xs text-red-700">If this item has transaction history, it will be archived instead of permanently removed so inventory history remains intact.</p>
-                  <label className="mt-3 flex items-start gap-2 text-xs text-red-800"><input required name="confirmDelete" type="checkbox" className="mt-0.5"/> I confirm that I want to remove this item from active inventory.</label>
-                  <button className="mt-3 rounded-full border border-red-500 px-4 py-2 text-sm font-semibold text-red-700">Delete item</button>
-                </form>
-              </details>}
+              </InventoryItemEditor>}
                 </details>
               })}
               </div>
