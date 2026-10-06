@@ -1,4 +1,5 @@
 import "server-only";
+import { hasGeneralVolunteerParticipation, isAssignedVeterinarian } from "./portal-participation";
 import {canManageOnboarding} from "./onboarding-policy";
 
 import { currentUser } from "@clerk/nextjs/server";
@@ -146,7 +147,7 @@ export async function getPortalContext() {
   const assignedRoles = asStrings(access?.fields.Roles) as PortalRole[];
 
   const [volunteers, clinicMembers, fosterApplications] = await Promise.all([
-    airtableList(TABLES.volunteers, ["Volunteer Name", "Email", "Status"]),
+    airtableList(TABLES.volunteers, ["Volunteer Name", "Email", "Status", "Volunteer Areas", "Application Interests / Experience"]),
     airtableList(TABLES.clinicMembers, ["Team Member Name", "Email", "Active"]),
     airtableList(TABLES.fosterApplications, ["Email", "Status"]),
   ]);
@@ -161,7 +162,10 @@ export async function getPortalContext() {
       normalizeEmail(asText(record.fields.Email)) === primaryEmail &&
       Boolean(record.fields.Active)
   );
-  const matchedVolunteer = Boolean(matchedVolunteerRecord);
+  const matchedVolunteer = Boolean(matchedVolunteerRecord) && hasGeneralVolunteerParticipation(
+    asText(matchedVolunteerRecord?.fields["Application Interests / Experience"]),
+    asStrings(matchedVolunteerRecord?.fields["Volunteer Areas"])
+  );
   const matchedClinicMember = Boolean(matchedClinicMemberRecord);
   const matchedFoster = fosterApplications.some(
     (record) =>
@@ -171,6 +175,7 @@ export async function getPortalContext() {
 
   const roleSet = new Set<PortalRole>(assignedRoles);
   if (matchedVolunteer) roleSet.add("Volunteer");
+  else roleSet.delete("Volunteer");
   if (matchedFoster) roleSet.add("Foster");
   if (matchedClinicMember) roleSet.add("Clinic Team");
   const roles = Array.from(roleSet);
@@ -777,6 +782,7 @@ export async function getClinicPortalData(email: string) {
       }))
     )
     .filter((item) => item.clinic?.date && item.clinic.date.slice(0, 10) >= today && !["Cancelled", "Completed"].includes(item.clinic.stage))
+    .filter((item) => asText(member.fields.Role) !== "Veterinarian" || isAssignedVeterinarian("Veterinarian", item.assignment, item.initialResponse))
     .sort((a, b) => new Date(a.clinic!.date).getTime() - new Date(b.clinic!.date).getTime());
 
   return {

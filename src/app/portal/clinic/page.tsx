@@ -1,5 +1,6 @@
 import { InventoryItemEditor, type InventorySaveResult } from "@/components/inventory-item-editor";
 import Link from "next/link";
+import { splitSubmittedDates, isAssignedVeterinarian } from "@/lib/portal-participation";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone, BookOpen, ExternalLink } from "lucide-react";
 import { VeterinarianDateForm } from "./veterinarian-date-form";
@@ -56,6 +57,28 @@ function daysUntilClinic(value: string) {
 export default async function ClinicPortalPage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
   const context = await requirePortalRole("Clinic Team");
   const data = await getClinicPortalData(context.email);
+  const isVeterinarian = data.member?.role === "Veterinarian";
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const submittedDates = splitSubmittedDates(data.vetPreferences, today);
+  const preferenceCards = (preferences: typeof data.vetPreferences) => (
+    <div className="mt-3 grid gap-3 md:grid-cols-2">
+      {preferences.map(preference => (
+        <div key={preference.id} className="rounded-2xl border bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-semibold">{formatDate(preference.preferredDate)}</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {preference.clinicType || "Full Day"}
+                {preference.startTime && preference.endTime ? ` · ${formatClinicTime(preference.startTime)}–${formatClinicTime(preference.endTime)}` : ""}
+              </p>
+              {preference.notes && <p className="mt-1 text-sm text-muted-foreground">{preference.notes}</p>}
+            </div>
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{preference.status}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
   const canWriteClinic = context.isAdministrator || context.roles.includes("Clinic Team");
   const canManageClinicInventory = canWriteClinic;
   const canRequestClinicReorder = canWriteClinic;
@@ -118,6 +141,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     const latest = await getClinicPortalData(current.email);
     const responseId = String(formData.get("responseId") || "");
     const value = String(formData.get("availability") || "");
+    if (latest.member?.role === "Veterinarian") return;
     if (!responseId || !["Yes", "No"].includes(value) || !latest.dates.some((item) => item.responseId === responseId)) return;
 
     let assignment = "";
@@ -188,9 +212,11 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     ) return;
 
     const matched = latest.dates.find((item) => item.responseId === responseId);
-    if (!matched?.clinic || matched.initialResponse !== "Yes" || (matched.responseClinicDate && matched.responseClinicDate !== matched.clinic.date.slice(0, 10))) return;
+    const veterinarian = isAssignedVeterinarian(latest.member?.role || "", matched?.assignment || "", matched?.initialResponse || "");
+    if (!matched?.clinic || matched.initialResponse !== "Yes" || (!veterinarian && matched.responseClinicDate && matched.responseClinicDate !== matched.clinic.date.slice(0, 10))) return;
     await airtableUpdate(TABLES.clinicResponses, responseId, {
       "One-Week Reconfirmation": value,
+      ...(veterinarian ? { "Availability Clinic Date": matched.clinic.date.slice(0, 10) } : {}),
       "Reconfirmation Date": new Date().toISOString(),
       "Final Attendance Plan": value === "Yes, still attending" ? "Attending" : "Not Attending",
     });
@@ -738,30 +764,18 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
   
                     <VeterinarianDateForm action={submitVeterinarianPreference} />
   
-                    {data.vetPreferences.length > 0 && (
-                      <div className="mt-5">
-                        <h3 className="text-sm font-semibold">My submitted dates</h3>
-                        <div className="mt-3 grid gap-3 md:grid-cols-2">
-                          {data.vetPreferences.map((preference) => (
-                            <div key={preference.id} className="rounded-2xl border bg-white p-4">
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="font-semibold">{formatDate(preference.preferredDate)}</p>
-                                  <p className="mt-1 text-sm text-muted-foreground">
-                                    {preference.clinicType || "Full Day"}
-                                    {preference.startTime && preference.endTime ? ` · ${preference.startTime}–${preference.endTime}` : ""}
-                                  </p>
-                                  {preference.notes && <p className="mt-1 text-sm text-muted-foreground">{preference.notes}</p>}
-                                </div>
-                                <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                                  {preference.status}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                    <div className="mt-5">
+                      <h3 className="text-sm font-semibold">My Submitted Upcoming Dates</h3>
+                      {submittedDates.upcoming.length ? preferenceCards(submittedDates.upcoming) : (
+                        <p className="mt-2 text-sm text-muted-foreground">You have no upcoming submitted dates.</p>
+                      )}
+                      {submittedDates.past.length > 0 && (
+                        <details className="mt-4">
+                          <summary className="inline-flex cursor-pointer list-none rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 [&::-webkit-details-marker]:hidden">Submitted Date History</summary>
+                          {preferenceCards(submittedDates.past)}
+                        </details>
+                      )}
+                    </div>
                   </section>
                 )}
   
@@ -787,7 +801,8 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                               )}
                               {item.clinic?.alert && <p className="mt-2 text-sm font-medium text-primary">{item.clinic.alert}</p>}
                             </div>
-                            <div className="grid gap-3 sm:grid-cols-[minmax(0,1.35fr)_minmax(240px,0.85fr)]">
+                            <div className={`grid gap-3 ${isVeterinarian ? "" : "sm:grid-cols-[minmax(0,1.35fr)_minmax(240px,0.85fr)]"}`}>
+                              {!isVeterinarian && (
                               <div className={`rounded-xl border bg-white p-4 ${(!item.initialResponse || item.initialResponse === "No Response" || (data.member?.role === "Clinic Volunteer" && item.initialResponse === "Yes" && item.assignments.length === 0) || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))) ? "portal-action-glow" : ""}`}>
                                 <form action={saveAvailability}>
                                   <input type="hidden" name="responseId" value={item.responseId} />
@@ -835,9 +850,10 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                 )}
                               </div>
   
+                              )}
                               {item.initialResponse !== "No" && (
                                 <form action={saveReconfirmation} className={`rounded-xl border bg-white p-4 ${(daysUntilClinic(item.clinic?.date || "") <= 7 && item.initialResponse === "Yes" && (!item.reconfirmation || item.reconfirmation === "Awaiting Response")) ? "portal-action-glow" : ""}`}>
-                                  <fieldset disabled={item.initialResponse !== "Yes" || daysUntilClinic(item.clinic?.date || "") > 7 || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))} className="disabled:opacity-50">
+                                  <fieldset disabled={item.initialResponse !== "Yes" || (!isVeterinarian && (daysUntilClinic(item.clinic?.date || "") > 7 || Boolean(item.responseClinicDate && item.responseClinicDate !== item.clinic?.date.slice(0, 10))))} className="disabled:opacity-50">
                                     <input type="hidden" name="responseId" value={item.responseId} />
                                     <p className="mb-2 text-sm font-semibold">Reconfirm attendance</p>
                                     <div className="flex flex-wrap gap-2">
@@ -845,7 +861,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                       <button name="reconfirmation" value="No, can no longer attend" className="rounded-full border px-3 py-1.5 text-sm font-medium hover:bg-primary/5">Can’t attend</button>
                                     </div>
                                     <p className={`mt-2 text-xs ${item.reconfirmation && item.reconfirmation !== "Awaiting Response" ? "font-semibold text-green-700" : "text-muted-foreground"}`}>Current: {item.reconfirmation || "Awaiting response"}</p>
-                                    {daysUntilClinic(item.clinic?.date || "") > 7 && item.initialResponse === "Yes" && <p className="mt-2 text-xs text-muted-foreground">Reconfirmation opens one week before the clinic.</p>}
+                                    {!isVeterinarian && daysUntilClinic(item.clinic?.date || "") > 7 && item.initialResponse === "Yes" && <p className="mt-2 text-xs text-muted-foreground">Reconfirmation opens one week before the clinic.</p>}
                                   </fieldset>
                                 </form>
                               )}

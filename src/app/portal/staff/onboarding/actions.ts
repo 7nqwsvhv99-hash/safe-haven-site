@@ -1,4 +1,5 @@
 'use server';
+import {hasGeneralVolunteerParticipation} from '@/lib/portal-participation';
 import {onboardingAccess} from '@/lib/onboarding-policy';
 import {revalidatePath} from 'next/cache';
 import {requireOnboarding,getOnboardingData,readiness,skills,clinicRoles,needsGeneralOrientation,resolveProfileMatches,hasLikelyEmailTypo} from '@/lib/onboarding';
@@ -100,7 +101,7 @@ export async function completeOnboarding(_previous:OnboardingActionState,form:Fo
   // Volunteer and Clinic Team access are recognized automatically from the active roster records above.
   // If an exact-email Portal Access row already exists, keep it aligned; do not create a duplicate row here.
   if(accesses[0]){
-   const granted=onboardingAccess(asStrings(accesses[0].fields.Roles),role);
+   const granted=onboardingAccess(asStrings(accesses[0].fields.Roles),role,hasGeneralVolunteerParticipation(asText(f['Experience & Interests']),[]));
    await airtableUpdate(TABLES.portalAccess,accesses[0].id,{Roles:granted,Active:true,'Display Name':name});
   }
   await airtableUpdate(TABLES.volunteerApplications,app.id,{Status:'Approved','Onboarding Complete':true,'Decision Date':new Date().toISOString().slice(0,10),'Onboarding Reviewed By':reviewer,'Onboarding Reviewed At':new Date().toISOString()});
