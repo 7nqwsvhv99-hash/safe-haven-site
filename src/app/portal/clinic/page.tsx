@@ -181,10 +181,9 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     const matched = latest.dates.find((item) => item.responseId === responseId);
     if (!matched || matched.initialResponse !== "Yes") return;
 
-    const allowed = new Set<string>();
+    const allowed = new Set<string>(["Front Room Support", "Surgery/Recovery Floater", "General Volunteer"]);
     latest.member.skills.forEach((skill) => {
       if (["Front Room System", "Back Room System", "Autoclave"].includes(skill)) allowed.add(skill);
-      if (skill === "General Support") allowed.add("General Volunteer");
     });
 
     const selectedAssignments = formData.getAll("assignments").map(String).filter((value) => allowed.has(value));
@@ -820,12 +819,21 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                   <form id={`clinic-role-${item.responseId}`} action={saveClinicAssignments} className="mt-4 border-t pt-4">
                                     <input type="hidden" name="responseId" value={item.responseId} />
                                     <p className="mb-1 text-sm font-semibold">Select your clinic role</p>
-                                    <p className="mb-3 text-xs text-muted-foreground">Choose one specialized role when possible. Select more than one only when additional coverage is needed.</p>
+                                    <p className="mb-3 text-xs text-muted-foreground">Choose the roles you expect to perform that day. You may select multiple roles. Specialized roles are available only to trained volunteers.</p>
                                     <div className="space-y-2 text-sm">
                                       {data.member.skills.includes("Front Room System") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Front Room System" defaultChecked={item.assignments.includes("Front Room System")} className="mt-0.5" /><span>Front Room System{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Front Room System"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Front Room System"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
                                       {data.member.skills.includes("Back Room System") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Back Room System" defaultChecked={item.assignments.includes("Back Room System")} className="mt-0.5" /><span>Back Room System{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Back Room System"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Back Room System"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
                                       {data.member.skills.includes("Autoclave") && <label className="flex items-start gap-2"><input type="checkbox" name="assignments" value="Autoclave" defaultChecked={item.assignments.includes("Autoclave")} className="mt-0.5" /><span>Autoclave{data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"]?.length ? <span className="ml-1 text-xs text-muted-foreground">· covered by {data.teamDates.find((date) => date.id === item.clinic?.id)?.volunteerAssignments["Autoclave"].join(", ")}</span> : <span className="ml-1 text-xs font-semibold text-primary">· needed</span>}</span></label>}
-                                      {data.member.skills.includes("General Support") && <label className="flex items-center gap-2"><input type="checkbox" name="assignments" value="General Volunteer" defaultChecked={item.assignments.includes("General Volunteer")} /> General Volunteer</label>}
+                                      {([
+                                        { role: "Front Room Support", description: "Assist with check-in, paperwork, and other front-room tasks under the Front Room System volunteer." },
+                                        { role: "Surgery/Recovery Floater", description: "Provide general assistance in surgery and recovery areas under trained personnel. No specialized medical duties." },
+                                        { role: "General Volunteer", description: "Help with cleaning, supplies, errands, and other needs. A good choice for first-time volunteers." },
+                                      ] as const).map(({ role, description }) => (
+                                        <label key={role} className="flex items-start gap-2">
+                                          <input type="checkbox" name="assignments" value={role} defaultChecked={item.assignments.includes(role)} className="mt-1" />
+                                          <span><span className="font-medium">{role}</span><span className="block text-xs text-muted-foreground">{description}</span></span>
+                                        </label>
+                                      ))}
                                     </div>
                                     {item.assignments.length > 0 && <p className="mt-2 text-xs font-semibold text-green-700">Current role: {item.assignments.join(", ")}</p>}
                                   </form>
