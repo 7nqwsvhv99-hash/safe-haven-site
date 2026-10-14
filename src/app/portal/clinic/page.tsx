@@ -469,16 +469,11 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                   <BookOpen className="h-5 w-5" />
                   Training Resources
                 </Link>
-
-<Link
-  href="/portal/clinic/cage-cards"
-  className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90"
->
-  <Printer className="h-5 w-5" />
-  Print Cage Cards
-</Link>
-
               )}
+              <Link href="/portal/clinic/cage-cards" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
+                <Printer className="h-5 w-5" />
+                Print Cage Cards
+              </Link>
             </div>
 
             {section === "inventory" && showClinicInventory && (
