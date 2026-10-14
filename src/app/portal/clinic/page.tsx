@@ -907,24 +907,22 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                               {(["Front Room System", "Back Room System", "Autoclave"] as const).map((role) => (
                                 <div key={role}><span className="block whitespace-nowrap text-xs text-muted-foreground">{role}</span><strong>{date.volunteerAssignments[role]?.join(", ") || "Unfilled"}</strong></div>
                               ))}
-                              <div className="sm:col-span-3">
-                                <span className="block text-xs text-muted-foreground">General Volunteers</span>
-                                <strong>{[
-                                  ...(date.volunteerAssignments["Front Room Support"] || []),
-                                  ...(date.volunteerAssignments["Surgery/Recovery Floater"] || []),
-                                  ...(date.volunteerAssignments["General Volunteer"] || []),
-                                ].join(", ") || "None confirmed"}</strong>
-                                {date.notes.length > 0 && (
-                                  <div className="mt-3 rounded-xl border bg-white p-3">
-                                    <p className="text-xs font-semibold text-muted-foreground">Notes for this clinic day</p>
-                                    <ul className="mt-2 space-y-2">
-                                      {date.notes.map((note, index) => (
-                                        <li key={`${note.name}-${index}`} className="whitespace-pre-wrap break-words text-sm"><span className="font-semibold">{note.name}:</span> {note.text}</li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                              </div>
+                              {(["Front Room Support", "Surgery/Recovery Floater", "General Volunteer"] as const).map((role) => (
+                                <div key={role}>
+                                  <span className="block text-xs text-muted-foreground">{role === "General Volunteer" ? "General Volunteers" : role}</span>
+                                  <strong>{date.volunteerAssignments[role]?.join(", ") || "None assigned"}</strong>
+                                </div>
+                              ))}
+                              {date.notes.length > 0 && (
+                                <div className="sm:col-span-3 mt-3 rounded-xl border bg-white p-3">
+                                  <p className="text-xs font-semibold text-muted-foreground">Notes for this clinic day</p>
+                                  <ul className="mt-2 space-y-2">
+                                    {date.notes.map((note, index) => (
+                                      <li key={`${note.name}-${index}`} className="whitespace-pre-wrap break-words text-sm"><span className="font-semibold">{note.name}:</span> {note.text}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
