@@ -5,6 +5,7 @@ import type { CageCard, ClinicDayOption } from "@/lib/clinicday-cage-cards";
 
 type Props = { data: { days: ClinicDayOption[]; cards: CageCard[] } };
 type PrintedCard = CageCard & { printedServices: string[]; continuation: boolean };
+type PrintRows = 3 | 4;
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, ch => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
 })[ch] || ch);
@@ -60,7 +61,7 @@ const PRINT_CSS = `
 html, body { margin: 0; padding: 0; background: #fff; color: #000; }
 body { font-family: Arial, Helvetica, sans-serif; }
 .cc-sheet { width: 8.5in; height: 11in; padding: .25in; display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--cc-rows), minmax(0, 1fr));
   break-after: page; page-break-after: always; }
 .cc-sheet:last-child { break-after: auto; page-break-after: auto; }
 .cc-card { min-width: 0; min-height: 0; overflow: hidden; border: 1.3px solid black;
@@ -91,14 +92,15 @@ body { font-family: Arial, Helvetica, sans-serif; }
 @media print { html, body { width: 8.5in; background: #fff; }
   .cc-sheet { margin: 0 !important; box-shadow: none !important; }
 }`;
-function documentHtml(cards: PrintedCard[]): string {
+function documentHtml(cards: PrintedCard[], rows: PrintRows): string {
+  const perSheet = rows * 2;
   let sheets = "";
-  for (let n = 0; n < cards.length; n += 8) {
-    sheets += `<section class="cc-sheet">${cards.slice(n, n + 8).map(cardHtml).join("")}</section>`;
+  for (let n = 0; n < cards.length; n += perSheet) {
+    sheets += `<section class="cc-sheet">${cards.slice(n, n + perSheet).map(cardHtml).join("")}</section>`;
   }
   return `<!doctype html><html lang="en"><head><meta charset="utf-8" />
   <title>Safe Haven Cage Cards</title><style>${PRINT_CSS}</style></head>
-  <body>${sheets || "<p>No cards selected</p>"}</body></html>`;
+  <body style="--cc-rows:${rows}">${sheets || "<p>No cards selected</p>"}</body></html>`;
 }
 
 export function CageCardPrintClient({ data }: Props) {
@@ -106,13 +108,14 @@ export function CageCardPrintClient({ data }: Props) {
   const [day, setDay] = useState(defaultDay);
   const [excluded, setExcluded] = useState<string[]>([]);
   const [filter, setFilter] = useState("");
+  const [rows, setRows] = useState<PrintRows>(4);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const printPending = useRef(false);
   const records = useMemo(() => data.cards.filter(c => c.clinicIds.includes(day) && !/^(cancelled|no show)$/i.test(c.arrival))
     .sort((a, b) => a.caseNumber.localeCompare(b.caseNumber, undefined, {numeric: true})), [data.cards, day]);
   const selected = records.filter(c => !excluded.includes(c.id));
   const cards = selected.flatMap(splitIntoCards);
-  const html = useMemo(() => documentHtml(cards), [cards]);
+  const html = useMemo(() => documentHtml(cards, rows), [cards, rows]);
   const visible = records.filter(c => `${c.caseNumber} ${c.name} ${c.client}`.toLowerCase().includes(filter.toLowerCase()));
   const flip = (id: string) => setExcluded(old => old.includes(id) ? old.filter(x => x !== id) : [...old, id]);
   const print = () => {
@@ -134,7 +137,7 @@ export function CageCardPrintClient({ data }: Props) {
     <div className="flex flex-wrap items-start justify-between gap-4">
       <div><p className="text-sm font-semibold uppercase tracking-widest text-orange-600">Clinic Team Portal</p>
         <h1 className="mt-3 text-3xl font-bold">Print Cage Cards</h1>
-        <p className="mt-3 text-sm text-slate-600">Print eight equal-size cards per US Letter sheet. Handling boxes can be highlighted by volunteers.</p>
+        <p className="mt-3 text-sm text-slate-600">Choose six or eight equal-size cards per US Letter sheet. Handling boxes can be highlighted by volunteers.</p>
       </div>
       <button disabled={!cards.length} onClick={print}
         className="rounded-full bg-orange-500 px-6 py-3 font-semibold text-white shadow-sm transition hover:bg-orange-600 focus-visible:ring-4 focus-visible:ring-orange-200 disabled:cursor-not-allowed disabled:opacity-50">
@@ -152,7 +155,14 @@ export function CageCardPrintClient({ data }: Props) {
         <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Name or case number"
           className="rounded-xl border px-3 py-3 font-normal" />
       </label>
-      <span className="pb-3 text-sm">{selected.length} patients · {cards.length} cards · {Math.ceil(cards.length / 8)} sheets</span>
+      <label className="flex min-w-[220px] flex-col gap-2 text-sm font-semibold">Print layout
+        <select value={rows} onChange={e => setRows(Number(e.target.value) as PrintRows)}
+          className="rounded-xl border px-3 py-3 font-normal">
+          <option value={4}>Letter · 2 columns × 4 rows (8 cards)</option>
+          <option value={3}>Letter · 2 columns × 3 rows (6 cards)</option>
+        </select>
+      </label>
+      <span className="pb-3 text-sm">{selected.length} patients · {cards.length} cards · {Math.ceil(cards.length / (rows * 2))} sheets</span>
       <button className="rounded-full border px-4 py-2 text-sm hover:bg-slate-50" onClick={() => setExcluded([])}>Select all</button>
       <button className="rounded-full border px-4 py-2 text-sm hover:bg-slate-50" onClick={() => setExcluded(records.map(r => r.id))}>Clear</button>
     </div>
@@ -166,10 +176,10 @@ export function CageCardPrintClient({ data }: Props) {
     </div>
     {selected.some(c => !c.handling || !c.services.length) && <p className="mt-4 rounded-xl bg-amber-50 p-4 text-sm text-amber-950">Some selected patients are missing a handling level or services. Review their ClinicDay records before printing.</p>}
     {selected.some(c => c.services.length > 8) && <p className="mt-4 rounded-xl bg-blue-50 p-4 text-sm">Patients with more than eight services will receive an additional continuation card so no service is omitted.</p>}
-    <div className="mt-8 flex items-baseline justify-between"><h2 className="text-xl font-bold">Card preview</h2><span className="text-xs text-slate-500">Letter · 2 columns × 4 rows</span></div>
+    <div className="mt-8 flex items-baseline justify-between"><h2 className="text-xl font-bold">Card preview</h2><span className="text-xs text-slate-500">Letter · 2 columns × {rows} rows · {rows * 2} cards per sheet</span></div>
     <div className="mt-3 overflow-x-auto rounded-2xl bg-slate-100 p-2">
       <iframe title="Cage-card print preview" srcDoc={html} className="block mx-auto border-0 bg-white"
-        style={{ width: "8.5in", height: `${Math.max(1, Math.ceil(cards.length / 8)) * 11.2}in`, maxWidth: "none" }} />
+        style={{ width: "8.5in", height: `${Math.max(1, Math.ceil(cards.length / (rows * 2))) * 11.2}in`, maxWidth: "none" }} />
     </div>
     <iframe ref={iframeRef} title="Cage-card print document" onLoad={onPrintFrameLoad}
       aria-hidden="true" tabIndex={-1} className="fixed -left-[10000px] top-0 h-0 w-0 border-0" />
