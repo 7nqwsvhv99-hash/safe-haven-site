@@ -1,7 +1,7 @@
 import "server-only";
 
 /** Read-only adapter to ClinicDay. This module must never be imported by client components. */
-const BASE_ID = "appH4anlCiITiaWiS";
+const BASE_ID = "app3AcoD2G64aMsEz";
 const CASES_TABLE = "tblOz2F29cXimUoMY";
 const DAYS_TABLE = "tblnOw4Qr5AvCRWvQ";
 
