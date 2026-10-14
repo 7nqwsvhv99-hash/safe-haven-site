@@ -2,7 +2,7 @@ import { InventoryItemEditor, type InventorySaveResult } from "@/components/inve
 import Link from "next/link";
 import { splitSubmittedDates, isAssignedVeterinarian } from "@/lib/portal-participation";
 import { revalidatePath } from "next/cache";
-import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone, BookOpen, ExternalLink } from "lucide-react";
+import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone, BookOpen, ExternalLink, Printer } from "lucide-react";
 import { VeterinarianDateForm } from "./veterinarian-date-form";
 import { TrainingResourceSections } from "./training-resource-sections";
 import { InventorySearch } from "./inventory-search";
@@ -469,6 +469,10 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                   Training Resources
                 </Link>
               )}
+              <Link href="/portal/clinic/cage-cards" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
+                <Printer className="h-5 w-5" />
+                Print Cage Cards
+              </Link>
             </div>
 
             {section === "inventory" && showClinicInventory && (
