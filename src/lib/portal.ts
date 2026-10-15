@@ -1247,3 +1247,30 @@ export {
   asNumber,
   asStrings,
 };
+
+/** Read-only scheduler source: vet-submitted clinic windows attached to real staffing dates. */
+export async function getSurgicalPlannerVetTimes() {
+  const [members, preferences, clinicDates] = await Promise.all([
+    airtableList(TABLES.clinicMembers, ["Team Member Name", "Active"]),
+    airtableList(TABLES.vetClinicPreferences, ["Veterinarian", "Preferred Clinic Date", "Preferred Start Time", "Preferred End Time", "Preference Status", "Clinic Staffing Date"]),
+    airtableList(TABLES.clinicDates, ["Clinic Date", "Veterinarian Preference", "Scheduling Stage"]),
+  ]);
+  const memberNames = new Map(members.map(m => [m.id, asText(m.fields["Team Member Name"])]));
+  const dateRecords = new Map(clinicDates.map(d => [d.id, d]));
+  return preferences.flatMap(p => {
+    const vetIds = asStrings(p.fields.Veterinarian);
+    const start = asText(p.fields["Preferred Start Time"]);
+    const end = asText(p.fields["Preferred End Time"]);
+    const status = asText(p.fields["Preference Status"]);
+    if (!/^\\d{2}:\\d{2}$/.test(start) || !/^\\d{2}:\\d{2}$/.test(end) || status === "Withdrawn") return [];
+    const linked = asStrings(p.fields["Clinic Staffing Date"]).map(id => dateRecords.get(id)).filter((v): v is AirtableRecord => Boolean(v));
+    const attached = linked.length ? linked : clinicDates.filter(d => asStrings(d.fields["Veterinarian Preference"]).includes(p.id));
+    return attached.flatMap(d => {
+      if (["Cancelled", "Completed"].includes(asText(d.fields["Scheduling Stage"]))) return [];
+      const date = asText(d.fields["Clinic Date"]).slice(0, 10);
+      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return [];
+      return vetIds.map(id => ({ date, veterinarian: memberNames.get(id) || "", start, end, status }))
+        .filter(x => ["Dulce Coulson", "Dan Breuer", "Katie Schneider"].includes(x.veterinarian));
+    });
+  });
+}
