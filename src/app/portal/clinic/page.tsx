@@ -469,6 +469,12 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                   Training Resources
                 </Link>
               )}
+              {["jenpopp@hotmail.com", "rachelyn001@yahoo.com"].includes(context.email.toLowerCase()) && (
+                <Link href="/portal/clinic/surgical-capacity" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
+                  <CalendarCheck className="h-5 w-5" />
+                  Surgical Capacity Planner
+                </Link>
+              )}
               <Link href="/portal/clinic/cage-cards" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
                 <Printer className="h-5 w-5" />
                 Print Cage Cards
