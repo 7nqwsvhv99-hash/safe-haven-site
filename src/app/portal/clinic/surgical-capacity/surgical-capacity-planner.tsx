@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 type Group = "stockton" | "alley" | "safe" | "purr" | "public";
-type Counts = { unknown: number; spay: number; neuter: number };
+type Counts = { spay: number; neuter: number };
 type Plan = { counts: Record<Group, Counts>; veterinarian: string; start: string; end: string; approvedExtra: number; notes: string };
 const GROUPS: { key: Group; label: string }[] = [
   { key: "stockton", label: "Stockton TNR" },
@@ -12,9 +12,9 @@ const GROUPS: { key: Group; label: string }[] = [
   { key: "purr", label: "Purrfection" },
   { key: "public", label: "Privately owned" },
 ];
-const empty = (): Counts => ({ unknown: 0, spay: 0, neuter: 0 });
+const empty = (): Counts => ({ spay: 0, neuter: 0 });
 const makePlan = (isSaturday: boolean): Plan => ({
-  counts: { stockton: { unknown: isSaturday ? 6 : 0, spay: 0, neuter: 0 }, alley: empty(), safe: empty(), purr: empty(), public: empty() },
+  counts: { stockton: { spay: isSaturday ? 6 : 0, neuter: 0 }, alley: empty(), safe: empty(), purr: empty(), public: empty() },
   veterinarian: "Dulce Coulson", start: isSaturday ? "08:00" : "10:00", end: isSaturday ? "15:30" : "15:00", approvedExtra: 0, notes: "",
 });
 const minutes = (time: string) => { const [h, m] = time.split(":").map(Number); return h * 60 + m; };
@@ -38,7 +38,7 @@ export function SurgicalCapacityPlanner() {
       const previous = window.localStorage.getItem(key);
       if (previous) {
         const parsed = JSON.parse(previous) as Plan;
-        if (parsed?.counts && GROUPS.every(g => parsed.counts[g.key])) { setPlan(parsed); setSaved(true); }
+        if (parsed?.counts && GROUPS.every(g => parsed.counts[g.key])) { setPlan({ ...parsed, counts: Object.fromEntries(GROUPS.map(g => [g.key, { spay: safeInteger(Number(parsed.counts[g.key].spay || 0) + Number((parsed.counts[g.key] as Counts & {unknown?: number}).unknown || 0)), neuter: safeInteger(Number(parsed.counts[g.key].neuter || 0)) }])) as Record<Group, Counts> }); setSaved(true); }
         else { setPlan(makePlan(isSat)); setSaved(false); }
       } else { setPlan(makePlan(isSat)); setSaved(false); }
     } catch { setPlan(makePlan(isSat)); setSaved(false); }
@@ -47,7 +47,7 @@ export function SurgicalCapacityPlanner() {
 
   const update = (fn: (p: Plan) => Plan) => { setPlan(fn); setSaved(false); };
   const totalCats = GROUPS.reduce((n, g) => n + Object.values(plan.counts[g.key]).reduce((a,b)=>a+b,0), 0);
-  const used = GROUPS.reduce((n, g) => { const c = plan.counts[g.key]; return n + 30 * (c.unknown + c.spay) + 15 * c.neuter; }, 0);
+  const used = GROUPS.reduce((n, g) => { const c = plan.counts[g.key]; return n + 30 * c.spay + 15 * c.neuter; }, 0);
   const hardStopVet = plan.veterinarian !== "Dulce Coulson";
   const baseTarget = isSat && !hardStopVet ? 390 : Math.max(0, minutes(plan.end) - minutes(plan.start) - 60);
   const target = baseTarget + plan.approvedExtra;
@@ -67,7 +67,7 @@ export function SurgicalCapacityPlanner() {
       <p className="mt-2 text-sm text-slate-600">Advisory scheduling guide for Jen and Rachel. Does not book appointments, change clinic records, or enforce limits.</p>
       <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
         <p className="font-semibold">Scheduling commitments</p>
-        <p className="mt-1">Safe Haven animals requiring surgery must be included at the next clinic. Stockton TNR is promised six cat spaces for applicable clinics. Initially count unknown-sex cats at 30 minutes, then adjust when reliable sex information becomes available. If required commitments exceed the target, coordinate with the veterinarian rather than postponing Safe Haven animals automatically.</p>
+        <p className="mt-1">Safe Haven animals requiring surgery must be included at the next clinic. Stockton TNR is promised six cat spaces for applicable clinics. Count all unknown-sex or known female cats as Spay / Unknown (30 minutes), and only confirmed males as Neuter (15 minutes). If required commitments exceed the target, coordinate with the veterinarian rather than postponing Safe Haven animals automatically.</p>
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-semibold">Clinic date<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-2 block w-full rounded-xl border px-3 py-3"/></label>
@@ -81,25 +81,31 @@ export function SurgicalCapacityPlanner() {
         </div>
         <p className="mt-3 text-sm text-slate-600">{isSat && !hardStopVet ? "Saturday baseline target: 390 surgical minutes. Start and end times are informational for Dulce's standard Saturday target." : "Planning formula: clinic end / veterinarian hard stop minus clinic start minus 60 minutes for drop-offs."}</p>
         {!isValidWindow && <p role="alert" className="mt-2 text-sm font-semibold text-red-700">End time must be more than one hour after clinic start.</p>}
-        <div className="mt-5 space-y-4">
-          {GROUPS.map(g => <div key={g.key} className="rounded-2xl border p-4">
-            <div className="flex items-center justify-between gap-3"><h2 className="font-bold">{g.label}</h2><span className="text-xs text-slate-500">{30 * (plan.counts[g.key].unknown + plan.counts[g.key].spay) + 15 * plan.counts[g.key].neuter} min</span></div>
-            <div className="mt-3 grid grid-cols-3 gap-3">
-              {(["unknown","spay","neuter"] as const).map(category=><label key={category} className="text-xs font-semibold capitalize">{category === "unknown" ? "Unknown (30m)" : category === "spay" ? "Spay (30m)" : "Neuter (15m)"}<input aria-label={g.label+" "+category} type="number" inputMode="numeric" min="0" max="100" value={plan.counts[g.key][category]} onChange={e=>update(p=>({...p,counts:{...p.counts,[g.key]:{...p.counts[g.key],[category]:safeInteger(Number(e.target.value))}}}))} className="mt-2 block w-full rounded-xl border px-3 py-2 text-base"/></label>)}
-            </div>
+        <div className="mt-5 overflow-hidden rounded-2xl border">
+          <div className="grid grid-cols-[minmax(0,1.2fr)_repeat(2,minmax(0,1fr))] gap-2 border-b bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-600 sm:px-5">
+            <span>Organization</span><span className="text-center">Spay / Unknown · 30 min</span><span className="text-center">Neuter · 15 min</span>
+          </div>
+          {GROUPS.map(g => <div key={g.key} className="grid grid-cols-[minmax(0,1.2fr)_repeat(2,minmax(0,1fr))] items-center gap-2 border-b px-3 py-3 last:border-b-0 sm:px-5">
+            <span className="text-sm font-semibold">{g.label}</span>
+            {(["spay","neuter"] as const).map(category => <div key={category} className="flex items-center justify-center gap-1">
+              <button type="button" aria-label={"Remove "+g.label+" "+category} disabled={plan.counts[g.key][category]===0} onClick={()=>update(p=>({...p,counts:{...p.counts,[g.key]:{...p.counts[g.key],[category]:Math.max(0,p.counts[g.key][category]-1)}}}))} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-lg disabled:opacity-30" >−</button>
+              <output aria-label={g.label+" "+category+" count"} className="min-w-5 text-center text-sm font-semibold tabular-nums">{plan.counts[g.key][category]}</output>
+              <button type="button" aria-label={"Add "+g.label+" "+category} onClick={()=>update(p=>({...p,counts:{...p.counts,[g.key]:{...p.counts[g.key],[category]:Math.min(100,p.counts[g.key][category]+1)}}}))} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-lg">+</button>
+            </div>)}
           </div>)}
+        </div>
+        <div className="mt-4 rounded-2xl bg-slate-100 p-5" aria-live="polite">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <p className="text-2xl font-bold tabular-nums">{used} / {target} min</p>
+            <p className={remaining < 0 ? "font-semibold text-red-700" : "font-semibold text-emerald-800"}>{remaining < 0 ? Math.abs(remaining)+" min over target" : remaining+" min available"}</p>
+          </div>
+          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-300"><div className={remaining < 0 ? "h-full bg-red-600 transition-all duration-200" : "h-full bg-emerald-600 transition-all duration-200"} style={{width: (target ? Math.min(100,used/target*100) : 100)+"%"}}/></div>
+          <p className="mt-2 text-sm text-slate-700">{totalCats} cats planned · {(used/60).toFixed(2)} surgical hours</p>
+          {remaining < 0 && <p className="mt-2 text-sm font-medium text-red-700">Advisory: review additional workload with the veterinarian. Hard stops remain in effect.</p>}
         </div>
         {isSat && stocktonCount < 6 && <p role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">Stockton TNR: {stocktonCount} of 6 promised spaces represented. Check the commitment before confirming the schedule.</p>}
         <label className="mt-5 block text-sm font-semibold">Veterinarian-approved additional minutes (optional)<input type="number" min="0" max="600" value={plan.approvedExtra} onChange={e=>update(p=>({...p,approvedExtra:safeInteger(Number(e.target.value))*1}))} className="mt-2 block w-full rounded-xl border px-3 py-3"/></label>
         <label className="mt-4 block text-sm font-semibold">Scheduling / approval notes<textarea value={plan.notes} onChange={e=>update(p=>({...p,notes:e.target.value.slice(0,2000)}))} rows={3} placeholder="Special cases, veterinary approval, partner requests…" className="mt-2 block w-full rounded-xl border px-3 py-3"/></label>
-        <div className="mt-6 rounded-2xl bg-slate-100 p-5">
-          <p className="text-sm font-semibold">Planning summary</p>
-          <p className="mt-2 text-3xl font-bold">{used} / {target} minutes</p>
-          <div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-300"><div className={remaining < 0 ? "h-full bg-red-600" : "h-full bg-emerald-600"} style={{width: (target ? Math.min(100,used/target*100) : 100)+"%"}}/></div>
-          <p className="mt-3 font-semibold">{remaining < 0 ? Math.abs(remaining)+" minutes over target, veterinarian review recommended" : remaining+" surgical minutes remaining"}</p>
-          <p className="mt-1 text-sm text-slate-700">{totalCats} cats planned · {(used/60).toFixed(2)} estimated surgical hours · {Math.floor(Math.max(0,remaining)/30)} additional unknown/spay cats OR {Math.floor(Math.max(0,remaining)/15)} additional neuters</p>
-          <p className="mt-2 text-xs text-slate-600">These are alternative possibilities, not additive capacity. Exceeding target is advisory; hard stops still require veterinarian coordination.</p>
-        </div>
         <div className="mt-5 flex flex-wrap gap-3">
           <button onClick={save} className="rounded-full bg-primary px-5 py-3 font-semibold text-white hover:bg-primary/90">{saved ? "Draft saved in this browser" : "Save browser draft"}</button>
           <button onClick={()=>window.print()} className="rounded-full border px-5 py-3 font-semibold">Print / Save PDF</button>
