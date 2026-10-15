@@ -49,7 +49,10 @@ export function SurgicalCapacityPlanner() {
   const totalCats = GROUPS.reduce((n, g) => n + Object.values(plan.counts[g.key]).reduce((a,b)=>a+b,0), 0);
   const used = GROUPS.reduce((n, g) => { const c = plan.counts[g.key]; return n + 30 * c.spay + 15 * c.neuter; }, 0);
   const hardStopVet = plan.veterinarian !== "Dulce Coulson";
-  const baseTarget = isSat && !hardStopVet ? 390 : Math.max(0, minutes(plan.end) - minutes(plan.start) - 60);
+  // The standard 390-minute full Saturday target for Dr. Dulce is already net of lunch.
+  // Hard-stop full-day clinics deduct 60 minutes for drop-offs and 30 minutes for lunch.
+  // Wednesday half-day clinics deduct drop-offs only.
+  const baseTarget = isSat && !hardStopVet ? 390 : Math.max(0, minutes(plan.end) - minutes(plan.start) - 60 - (isSat ? 30 : 0));
   const target = baseTarget + plan.approvedExtra;
   const remaining = target - used;
   const stocktonCount = Object.values(plan.counts.stockton).reduce((a,b)=>a+b,0);
@@ -79,7 +82,7 @@ export function SurgicalCapacityPlanner() {
           <label className="text-sm font-semibold">Clinic start<input type="time" value={plan.start} onChange={e=>update(p=>({...p,start:e.target.value}))} className="mt-2 block w-full rounded-xl border px-3 py-3"/></label>
           <label className="text-sm font-semibold">{hardStopVet ? "Veterinarian hard stop" : "Estimated clinic end"}<input type="time" value={plan.end} onChange={e=>update(p=>({...p,end:e.target.value}))} className="mt-2 block w-full rounded-xl border px-3 py-3"/></label>
         </div>
-        <p className="mt-3 text-sm text-slate-600">{isSat && !hardStopVet ? "Saturday baseline target: 390 surgical minutes. Start and end times are informational for Dulce's standard Saturday target." : "Planning formula: clinic end / veterinarian hard stop minus clinic start minus 60 minutes for drop-offs."}</p>
+        <p className="mt-3 text-sm text-slate-600">{isSat && !hardStopVet ? "Full-day Saturday baseline: 390 surgical minutes, with the 30-minute lunch allowance already included. Start and end times are informational for Dulce\'s standard target." : isSat ? "Full-day planning: clinic duration minus 60 minutes for drop-offs and 30 minutes for lunch." : "Half-day planning: clinic duration minus 60 minutes for drop-offs. No lunch deduction."}</p>
         {!isValidWindow && <p role="alert" className="mt-2 text-sm font-semibold text-red-700">End time must be more than one hour after clinic start.</p>}
         <div className="mt-5 overflow-hidden rounded-2xl border">
           <div className="grid grid-cols-[minmax(0,1.2fr)_repeat(2,minmax(0,1fr))] gap-2 border-b bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-600 sm:px-5">
