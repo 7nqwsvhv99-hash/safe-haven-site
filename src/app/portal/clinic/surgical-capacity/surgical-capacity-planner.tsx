@@ -22,7 +22,7 @@ const dateIsSaturday = (date: string) => new Date(date + "T12:00:00").getDay() =
 const dateIsWednesday = (date: string) => new Date(date + "T12:00:00").getDay() === 3;
 const safeInteger = (n: number) => Number.isFinite(n) ? Math.max(0, Math.min(100, Math.floor(n))) : 0;
 
-export function SurgicalCapacityPlanner() {
+export function SurgicalCapacityPlanner({ vetTimes }: { vetTimes: {date:string; veterinarian:string; start:string; end:string; status:string}[] }) {
   const [date, setDate] = useState("");
   const [plan, setPlan] = useState<Plan>(() => makePlan(true));
   const [saved, setSaved] = useState(false);
@@ -48,15 +48,17 @@ export function SurgicalCapacityPlanner() {
   const update = (fn: (p: Plan) => Plan) => { setPlan(fn); setSaved(false); };
   const totalCats = GROUPS.reduce((n, g) => n + Object.values(plan.counts[g.key]).reduce((a,b)=>a+b,0), 0);
   const used = GROUPS.reduce((n, g) => { const c = plan.counts[g.key]; return n + 30 * c.spay + 15 * c.neuter; }, 0);
+  const matchingTimes = vetTimes.filter(t => t.date === date && t.veterinarian === plan.veterinarian);
+  const confirmedTimes = matchingTimes.length === 1 ? matchingTimes[0] : null;
   const hardStopVet = plan.veterinarian !== "Dulce Coulson";
   // The standard 390-minute full Saturday target for Dr. Dulce is already net of lunch.
   // Hard-stop full-day clinics deduct 60 minutes for drop-offs and 30 minutes for lunch.
   // Wednesday half-day clinics deduct drop-offs only.
-  const baseTarget = isSat && !hardStopVet ? 390 : Math.max(0, minutes(plan.end) - minutes(plan.start) - 60 - (isSat ? 30 : 0));
-  const target = baseTarget + plan.approvedExtra;
+  const baseTarget = !confirmedTimes ? 0 : isSat && !hardStopVet ? 390 : Math.max(0, minutes(confirmedTimes?.end || "00:00") - minutes(confirmedTimes?.start || "00:00") - 60 - (isSat ? 30 : 0));
+  const target = confirmedTimes ? baseTarget + plan.approvedExtra : 0;
   const remaining = target - used;
   const stocktonCount = Object.values(plan.counts.stockton).reduce((a,b)=>a+b,0);
-  const isValidWindow = minutes(plan.end) > minutes(plan.start) + 60;
+  const isValidWindow = Boolean(confirmedTimes && minutes(confirmedTimes.end) > minutes(confirmedTimes.start) + 60);
 
   function save() {
     if (!validDate) return;
@@ -79,11 +81,12 @@ export function SurgicalCapacityPlanner() {
       {date && !validDate && <p role="alert" className="mt-3 font-semibold text-red-700">Select a Wednesday or Saturday clinic date.</p>}
       {validDate && loaded && <>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <label className="text-sm font-semibold">Clinic start<input type="time" value={plan.start} onChange={e=>update(p=>({...p,start:e.target.value}))} className="mt-2 block w-full rounded-xl border px-3 py-3"/></label>
-          <label className="text-sm font-semibold">{hardStopVet ? "Veterinarian hard stop" : "Estimated clinic end"}<input type="time" value={plan.end} onChange={e=>update(p=>({...p,end:e.target.value}))} className="mt-2 block w-full rounded-xl border px-3 py-3"/></label>
+          <div className="text-sm font-semibold">Clinic start<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{confirmedTimes?.start || "Not submitted"}</div></div>
+          <div className="text-sm font-semibold">{hardStopVet ? "Veterinarian hard stop" : "Clinic end"}<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{confirmedTimes?.end || "Not submitted"}</div></div>
         </div>
         <p className="mt-3 text-sm text-slate-600">{isSat && !hardStopVet ? "Full-day Saturday baseline: 390 surgical minutes, with the 30-minute lunch allowance already included. Start and end times are informational for Dulce\'s standard target." : isSat ? "Full-day planning: clinic duration minus 60 minutes for drop-offs and 30 minutes for lunch." : "Half-day planning: clinic duration minus 60 minutes for drop-offs. No lunch deduction."}</p>
-        {!isValidWindow && <p role="alert" className="mt-2 text-sm font-semibold text-red-700">End time must be more than one hour after clinic start.</p>}
+        {!confirmedTimes && <p role="alert" className="mt-2 text-sm font-semibold text-amber-800">No unique veterinarian-submitted time window is linked to this clinic date. Please verify the date and veterinarian in Clinic Staffing. The planner will not assume a start or stop time.</p>}
+        {confirmedTimes && !isValidWindow && <p role="alert" className="mt-2 text-sm font-semibold text-red-700">Submitted end time must be more than one hour after clinic start.</p>}
         <div className="mt-5 overflow-hidden rounded-2xl border">
           <div className="grid grid-cols-[minmax(0,1.2fr)_repeat(2,minmax(0,1fr))] gap-2 border-b bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-600 sm:px-5">
             <span>Organization</span><span className="text-center">Spay / Unknown · 30 min</span><span className="text-center">Neuter · 15 min</span>
