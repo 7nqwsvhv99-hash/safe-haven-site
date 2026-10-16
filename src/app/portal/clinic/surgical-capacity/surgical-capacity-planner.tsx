@@ -18,6 +18,12 @@ const makePlan = (isSaturday: boolean): Plan => ({
   veterinarian: "Dulce Coulson", start: isSaturday ? "08:00" : "10:00", end: isSaturday ? "15:30" : "15:00", approvedExtra: 0, notes: "",
 });
 const minutes = (time: string) => { const [h, m] = time.split(":").map(Number); return h * 60 + m; };
+const formatClock = (value: string) => {
+  if (!/^\d{2}:\d{2}$/.test(value)) return "Not submitted";
+  const [h, m] = value.split(":").map(Number);
+  if (h > 23 || m > 59) return "Not submitted";
+  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
+};
 const dateIsSaturday = (date: string) => new Date(date + "T12:00:00").getDay() === 6;
 const dateIsWednesday = (date: string) => new Date(date + "T12:00:00").getDay() === 3;
 const safeInteger = (n: number) => Number.isFinite(n) ? Math.max(0, Math.min(100, Math.floor(n))) : 0;
@@ -81,8 +87,8 @@ export function SurgicalCapacityPlanner({ vetTimes }: { vetTimes: {date:string; 
       {date && !validDate && <p role="alert" className="mt-3 font-semibold text-red-700">Select a Wednesday or Saturday clinic date.</p>}
       {validDate && loaded && <>
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          <div className="text-sm font-semibold">Clinic start<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{confirmedTimes?.start || "Not submitted"}</div></div>
-          <div className="text-sm font-semibold">{hardStopVet ? "Veterinarian hard stop" : "Clinic end"}<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{confirmedTimes?.end || "Not submitted"}</div></div>
+          <div className="text-sm font-semibold">Clinic start<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{formatClock(confirmedTimes?.start || "")}</div></div>
+          <div className="text-sm font-semibold">{hardStopVet ? "Veterinarian hard stop" : "Clinic end"}<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{formatClock(confirmedTimes?.end || "")}</div></div>
         </div>
         <p className="mt-3 text-sm text-slate-600">{isSat && !hardStopVet ? "Full-day Saturday baseline: 390 surgical minutes, with the 30-minute lunch allowance already included. Start and end times are informational for Dulce\'s standard target." : isSat ? "Full-day planning: clinic duration minus 60 minutes for drop-offs and 30 minutes for lunch." : "Half-day planning: clinic duration minus 60 minutes for drop-offs. No lunch deduction."}</p>
         {!confirmedTimes && <p role="alert" className="mt-2 text-sm font-semibold text-amber-800">No unique veterinarian-submitted time window is linked to this clinic date. Please verify the date and veterinarian in Clinic Staffing. The planner will not assume a start or stop time.</p>}
