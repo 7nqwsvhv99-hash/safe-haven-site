@@ -57,10 +57,11 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
   const matchingTimes = vetTimes.filter(t => t.date === date && t.veterinarian === plan.veterinarian);
   const confirmedTimes = matchingTimes.length === 1 ? matchingTimes[0] : null;
   const hardStopVet = plan.veterinarian !== "Dulce Coulson";
-  // The standard 390-minute full Saturday target for Dr. Dulce is already net of lunch.
-  // Hard-stop full-day clinics deduct 60 minutes for drop-offs and 30 minutes for lunch.
-  // Wednesday half-day clinics deduct drop-offs only.
-  const baseTarget = !confirmedTimes ? 0 : isSat && !hardStopVet ? 390 : Math.max(0, minutes(confirmedTimes?.end || "00:00") - minutes(confirmedTimes?.start || "00:00") - 60 - (isSat ? 30 : 0));
+  // Always calculate from the veterinarian's submitted hours. Full-day clinic
+  // sessions include 60 minutes for drop-offs and 30 minutes for lunch.
+  const selectedClinic = clinicDates.find(clinic => clinic.date === date);
+  const fullDay = selectedClinic?.type === "Full Day";
+  const baseTarget = !confirmedTimes ? 0 : Math.max(0, minutes(confirmedTimes.end) - minutes(confirmedTimes.start) - 60 - (fullDay ? 30 : 0));
   const target = confirmedTimes ? baseTarget + plan.approvedExtra : 0;
   const remaining = target - used;
   const stocktonCount = Object.values(plan.counts.stockton).reduce((a,b)=>a+b,0);
@@ -90,7 +91,7 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
           <div className="text-sm font-semibold">Clinic start<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{formatClock(confirmedTimes?.start || "")}</div></div>
           <div className="text-sm font-semibold">{hardStopVet ? "Veterinarian hard stop" : "Clinic end"}<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{formatClock(confirmedTimes?.end || "")}</div></div>
         </div>
-        <p className="mt-3 text-sm text-slate-600">{isSat && !hardStopVet ? "Full-day Saturday baseline: 390 surgical minutes, with the 30-minute lunch allowance already included. Start and end times are informational for Dulce\'s standard target." : isSat ? "Full-day planning: clinic duration minus 60 minutes for drop-offs and 30 minutes for lunch." : "Half-day planning: clinic duration minus 60 minutes for drop-offs. No lunch deduction."}</p>
+        <p className="mt-3 text-sm text-slate-600">{fullDay ? "Surgical target = veterinarian-submitted clinic hours minus 60 minutes for drop-offs and 30 minutes for lunch." : "Surgical target = veterinarian-submitted clinic hours minus 60 minutes for drop-offs. No lunch deduction for half-day clinics."}</p>
         {!confirmedTimes && <p role="alert" className="mt-2 text-sm font-semibold text-amber-800">No unique veterinarian-submitted time window is linked to this clinic date. Please verify the date and veterinarian in Clinic Staffing. The planner will not assume a start or stop time.</p>}
         {confirmedTimes && !isValidWindow && <p role="alert" className="mt-2 text-sm font-semibold text-red-700">Submitted end time must be more than one hour after clinic start.</p>}
         <div className="mt-5 overflow-hidden rounded-2xl border">
