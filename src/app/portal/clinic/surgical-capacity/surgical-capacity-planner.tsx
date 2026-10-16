@@ -28,7 +28,7 @@ const dateIsSaturday = (date: string) => new Date(date + "T12:00:00").getDay() =
 const dateIsWednesday = (date: string) => new Date(date + "T12:00:00").getDay() === 3;
 const safeInteger = (n: number) => Number.isFinite(n) ? Math.max(0, Math.min(100, Math.floor(n))) : 0;
 
-export function SurgicalCapacityPlanner({ vetTimes }: { vetTimes: {date:string; veterinarian:string; start:string; end:string; status:string}[] }) {
+export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {date:string; veterinarian:string; start:string; end:string; status:string}[]; clinicDates: {date:string; type:string}[] }) {
   const [date, setDate] = useState("");
   const [plan, setPlan] = useState<Plan>(() => makePlan(true));
   const [saved, setSaved] = useState(false);
@@ -81,7 +81,7 @@ export function SurgicalCapacityPlanner({ vetTimes }: { vetTimes: {date:string; 
         <p className="mt-1">Safe Haven animals requiring surgery must be included at the next clinic. Stockton TNR is promised six cat spaces for applicable clinics. Count all unknown-sex or known female cats as Spay / Unknown (30 minutes), and only confirmed males as Neuter (15 minutes). If required commitments exceed the target, coordinate with the veterinarian rather than postponing Safe Haven animals automatically.</p>
       </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <label className="text-sm font-semibold">Clinic date<input type="date" value={date} onChange={e=>setDate(e.target.value)} className="mt-2 block w-full rounded-xl border px-3 py-3"/></label>
+        <label className="text-sm font-semibold">Upcoming clinic<select value={date} onChange={e=>setDate(e.target.value)} className="mt-2 block w-full rounded-xl border px-3 py-3"><option value="">Select an upcoming clinic</option>{clinicDates.map(clinic => <option key={clinic.date} value={clinic.date}>{new Intl.DateTimeFormat("en-US", {weekday:"short",month:"short",day:"numeric",year:"numeric",timeZone:"UTC"}).format(new Date(clinic.date+"T12:00:00Z"))} · {clinic.type}</option>)}</select></label>
         <label className="text-sm font-semibold">Veterinarian<select value={plan.veterinarian} onChange={e=>update(p=>({...p,veterinarian:e.target.value,approvedExtra:0}))} className="mt-2 block w-full rounded-xl border px-3 py-3"><option value="Dulce Coulson">Dr. Dulce Coulson</option><option value="Dan Breuer">Dr. Dan Breuer</option><option value="Katie Schneider">Dr. Katie Schneider</option></select></label>
       </div>
       {date && !validDate && <p role="alert" className="mt-3 font-semibold text-red-700">Select a Wednesday or Saturday clinic date.</p>}

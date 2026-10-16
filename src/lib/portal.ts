@@ -1248,6 +1248,21 @@ export {
   asStrings,
 };
 
+/** Read-only list of upcoming active clinic dates for the planner. */
+export async function getUpcomingSurgicalPlannerDates() {
+  const records = await airtableList(TABLES.clinicDates, ["Clinic Date", "Clinic Type", "ClinicDay Session Type", "Scheduling Stage"], { sort: [{ field: "Clinic Date", direction: "asc" }] });
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const byDate = new Map<string, { date: string; type: string }>();
+  for (const record of records) {
+    const date = asText(record.fields["Clinic Date"]).slice(0, 10);
+    const stage = asText(record.fields["Scheduling Stage"]);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < today || ["Cancelled", "Completed"].includes(stage)) continue;
+    if (![3, 6].includes(new Date(date + "T12:00:00Z").getUTCDay())) continue;
+    byDate.set(date, { date, type: asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]) || (new Date(date + "T12:00:00Z").getUTCDay() === 3 ? "Half Day" : "Full Day") });
+  }
+  return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));
+}
+
 /** Read-only scheduler source: vet-submitted clinic windows attached to real staffing dates. */
 export async function getSurgicalPlannerVetTimes() {
   const [members, preferences, clinicDates] = await Promise.all([
