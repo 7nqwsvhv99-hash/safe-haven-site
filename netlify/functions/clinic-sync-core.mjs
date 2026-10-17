@@ -106,7 +106,7 @@ export async function runClinicDateSync() {
      await notices(row,cancelled?'Cancelled':'Rescheduled',previous?.date||localDate,targetDate,patients);
    }
    const sourcePatch=cancelled?{'Scheduling Hold?':true}:{};
-   if(targetType==='Full Day'&&Number(sf['Max Capacity'])!==26)sourcePatch['Max Capacity']=26;
+   // ClinicDay Airtable owns capacity for existing clinic dates. Defaults apply only when creating new dates.
    if(localCancelled&&!sourceCancelled)sourcePatch['Clinic Cancelled']=true;
    // Never silently move a clinic containing booked patients. Coordinator follows up first.
    if((targetDate!==sourceDate||targetType!==sf['Clinic Type']) && (!patients || (!change&&!f['Booked Appointment Follow-Up Required']))) {
