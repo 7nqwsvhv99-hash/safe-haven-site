@@ -36,6 +36,8 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
   const isSat = date ? dateIsSaturday(date) : true;
   const validDate = date && (dateIsWednesday(date) || dateIsSaturday(date));
   const key = "safe-haven-surgical-planner:" + date;
+  const selectedClinicType = clinicDates.find(clinic => clinic.date === date)?.type;
+  const defaultBuffer = selectedClinicType === "Full Day" ? 30 : 15;
 
   useEffect(() => {
     if (!date || !validDate) { setLoaded(false); return; }
@@ -44,12 +46,12 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
       const previous = window.localStorage.getItem(key);
       if (previous) {
         const parsed = JSON.parse(previous) as Plan;
-        if (parsed?.counts && GROUPS.every(g => parsed.counts[g.key])) { setPlan({ ...parsed, bufferMinutes: typeof parsed.bufferMinutes === "number" && Number.isFinite(parsed.bufferMinutes) ? Math.max(0, Math.min(120, Math.floor(parsed.bufferMinutes))) : (isSat ? 30 : 15), counts: Object.fromEntries(GROUPS.map(g => [g.key, { spay: safeInteger(Number(parsed.counts[g.key].spay || 0) + Number((parsed.counts[g.key] as Counts & {unknown?: number}).unknown || 0)), neuter: safeInteger(Number(parsed.counts[g.key].neuter || 0)) }])) as Record<Group, Counts> }); setSaved(true); }
-        else { setPlan(makePlan(isSat)); setSaved(false); }
+        if (parsed?.counts && GROUPS.every(g => parsed.counts[g.key])) { setPlan({ ...parsed, bufferMinutes: typeof parsed.bufferMinutes === "number" && Number.isFinite(parsed.bufferMinutes) ? Math.max(0, Math.min(120, Math.floor(parsed.bufferMinutes))) : defaultBuffer, counts: Object.fromEntries(GROUPS.map(g => [g.key, { spay: safeInteger(Number(parsed.counts[g.key].spay || 0) + Number((parsed.counts[g.key] as Counts & {unknown?: number}).unknown || 0)), neuter: safeInteger(Number(parsed.counts[g.key].neuter || 0)) }])) as Record<Group, Counts> }); setSaved(true); }
+        else { setPlan({ ...makePlan(isSat), bufferMinutes: defaultBuffer }); setSaved(false); }
       } else { setPlan(makePlan(isSat)); setSaved(false); }
     } catch { setPlan(makePlan(isSat)); setSaved(false); }
     setLoaded(true);
-  }, [date, validDate, isSat, key]);
+  }, [date, validDate, isSat, key, defaultBuffer]);
 
   const update = (fn: (p: Plan) => Plan) => { setPlan(fn); setSaved(false); };
   const totalCats = GROUPS.reduce((n, g) => n + Object.values(plan.counts[g.key]).reduce((a,b)=>a+b,0), 0);
@@ -125,7 +127,7 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
         <div className="mt-5 flex flex-wrap gap-3">
           <button onClick={save} className="rounded-full bg-primary px-5 py-3 font-semibold text-white hover:bg-primary/90">{saved ? "Draft saved in this browser" : "Save browser draft"}</button>
           <button onClick={()=>window.print()} className="rounded-full border px-5 py-3 font-semibold">Print / Save PDF</button>
-          <button onClick={()=>{if(window.confirm("Reset this date's draft?")){update(()=>makePlan(isSat));}}} className="rounded-full border px-5 py-3 font-semibold">Reset planner</button>
+          <button onClick={()=>{if(window.confirm("Reset this date's draft?")){update(()=>({ ...makePlan(isSat), bufferMinutes: defaultBuffer }));}}} className="rounded-full border px-5 py-3 font-semibold">Reset planner</button>
         </div>
         <p className="mt-4 text-xs text-slate-600">Drafts are stored only in this browser on this device, by clinic date. They are not shared between Jen and Rachel or stored in Airtable. Use Print / Save PDF to share a plan. Confirmed appointments remain managed in the existing scheduling system.</p>
       </>}
