@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 type Group = "stockton" | "alley" | "safe" | "purr" | "public";
 type Counts = { spay: number; neuter: number };
-type Plan = { counts: Record<Group, Counts>; veterinarian: string; start: string; end: string; approvedExtra: number; notes: string };
+type Plan = { counts: Record<Group, Counts>; veterinarian: string; start: string; end: string; approvedExtra: number; bufferMinutes: number; notes: string };
 const GROUPS: { key: Group; label: string }[] = [
   { key: "stockton", label: "Stockton TNR" },
   { key: "alley", label: "Alley Cat Project" },
@@ -15,7 +15,7 @@ const GROUPS: { key: Group; label: string }[] = [
 const empty = (): Counts => ({ spay: 0, neuter: 0 });
 const makePlan = (isSaturday: boolean): Plan => ({
   counts: { stockton: { spay: isSaturday ? 6 : 0, neuter: 0 }, alley: empty(), safe: empty(), purr: empty(), public: empty() },
-  veterinarian: "Dulce Coulson", start: isSaturday ? "08:00" : "10:00", end: isSaturday ? "15:30" : "15:00", approvedExtra: 0, notes: "",
+  veterinarian: "Dulce Coulson", start: isSaturday ? "08:00" : "10:00", end: isSaturday ? "15:30" : "15:00", approvedExtra: 0, bufferMinutes: isSaturday ? 30 : 15, notes: "",
 });
 const minutes = (time: string) => { const [h, m] = time.split(":").map(Number); return h * 60 + m; };
 const formatClock = (value: string) => {
@@ -44,7 +44,7 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
       const previous = window.localStorage.getItem(key);
       if (previous) {
         const parsed = JSON.parse(previous) as Plan;
-        if (parsed?.counts && GROUPS.every(g => parsed.counts[g.key])) { setPlan({ ...parsed, counts: Object.fromEntries(GROUPS.map(g => [g.key, { spay: safeInteger(Number(parsed.counts[g.key].spay || 0) + Number((parsed.counts[g.key] as Counts & {unknown?: number}).unknown || 0)), neuter: safeInteger(Number(parsed.counts[g.key].neuter || 0)) }])) as Record<Group, Counts> }); setSaved(true); }
+        if (parsed?.counts && GROUPS.every(g => parsed.counts[g.key])) { setPlan({ ...parsed, bufferMinutes: typeof parsed.bufferMinutes === "number" && Number.isFinite(parsed.bufferMinutes) ? Math.max(0, Math.min(120, Math.floor(parsed.bufferMinutes))) : (isSat ? 30 : 15), counts: Object.fromEntries(GROUPS.map(g => [g.key, { spay: safeInteger(Number(parsed.counts[g.key].spay || 0) + Number((parsed.counts[g.key] as Counts & {unknown?: number}).unknown || 0)), neuter: safeInteger(Number(parsed.counts[g.key].neuter || 0)) }])) as Record<Group, Counts> }); setSaved(true); }
         else { setPlan(makePlan(isSat)); setSaved(false); }
       } else { setPlan(makePlan(isSat)); setSaved(false); }
     } catch { setPlan(makePlan(isSat)); setSaved(false); }
@@ -61,7 +61,8 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
   // sessions include 60 minutes for drop-offs and 30 minutes for lunch.
   const selectedClinic = clinicDates.find(clinic => clinic.date === date);
   const fullDay = selectedClinic?.type === "Full Day";
-  const baseTarget = !confirmedTimes ? 0 : Math.max(0, minutes(confirmedTimes.end) - minutes(confirmedTimes.start) - 60 - (fullDay ? 30 : 0));
+  const bufferMinutes = plan.bufferMinutes;
+  const baseTarget = !confirmedTimes ? 0 : Math.max(0, minutes(confirmedTimes.end) - minutes(confirmedTimes.start) - 60 - (fullDay ? 30 : 0) - bufferMinutes);
   const target = confirmedTimes ? baseTarget + plan.approvedExtra : 0;
   const remaining = target - used;
   const stocktonCount = Object.values(plan.counts.stockton).reduce((a,b)=>a+b,0);
@@ -91,7 +92,7 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
           <div className="text-sm font-semibold">Clinic start<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{formatClock(confirmedTimes?.start || "")}</div></div>
           <div className="text-sm font-semibold">{hardStopVet ? "Veterinarian hard stop" : "Clinic end"}<div className="mt-2 rounded-xl border bg-slate-50 px-3 py-3">{formatClock(confirmedTimes?.end || "")}</div></div>
         </div>
-        <p className="mt-3 text-sm text-slate-600">{fullDay ? "Surgical target = veterinarian-submitted clinic hours minus 60 minutes for drop-offs and 30 minutes for lunch." : "Surgical target = veterinarian-submitted clinic hours minus 60 minutes for drop-offs. No lunch deduction for half-day clinics."}</p>
+        <p className="mt-3 text-sm text-slate-600">{fullDay ? "Surgical target = veterinarian-submitted clinic hours minus 60 minutes for drop-offs, 30 minutes for lunch, and the surgical contingency buffer." : "Surgical target = veterinarian-submitted clinic hours minus 60 minutes for drop-offs and the surgical contingency buffer. No lunch deduction for half-day clinics."}</p>
         {!confirmedTimes && <p role="alert" className="mt-2 text-sm font-semibold text-amber-800">No unique veterinarian-submitted time window is linked to this clinic date. Please verify the date and veterinarian in Clinic Staffing. The planner will not assume a start or stop time.</p>}
         {confirmedTimes && !isValidWindow && <p role="alert" className="mt-2 text-sm font-semibold text-red-700">Submitted end time must be more than one hour after clinic start.</p>}
         <div className="mt-5 overflow-hidden rounded-2xl border">
@@ -117,6 +118,8 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
           {remaining < 0 && <p className="mt-2 text-sm font-medium text-red-700">Advisory: review additional workload with the veterinarian. Hard stops remain in effect.</p>}
         </div>
         {isSat && stocktonCount < 6 && <p role="alert" className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-900">Stockton TNR: {stocktonCount} of 6 promised spaces represented. Check the commitment before confirming the schedule.</p>}
+        <label className="mt-5 block text-sm font-semibold">Surgical contingency buffer (minutes)<input type="number" inputMode="numeric" min="0" max="120" value={bufferMinutes} onChange={e=>update(p=>({...p,bufferMinutes:Math.max(0,Math.min(120,Math.floor(Number(e.target.value)||0)))}))} className="mt-2 block w-28 max-w-full rounded-xl border px-3 py-2.5 text-base" aria-label="Surgical contingency buffer in minutes"/></label>
+        <p className="mt-2 text-xs text-slate-600">Default: 30 minutes for full-day clinics, 15 minutes for half-day clinics. Reserved for unexpected surgical complexity or delays, not additional scheduled procedures.</p>
         <label className="mt-5 block text-sm font-semibold">Veterinarian-approved additional minutes (optional)<input type="number" inputMode="numeric" min="0" max="600" placeholder="0" value={plan.approvedExtra === 0 ? "" : plan.approvedExtra} onChange={e=>update(p=>({...p,approvedExtra:e.target.value === "" ? 0 : Math.min(600,safeInteger(Number(e.target.value)))}))} className="mt-2 block w-28 max-w-full rounded-xl border px-3 py-2.5 text-base" aria-label="Veterinarian-approved additional minutes"/></label>
         <label className="mt-4 block text-sm font-semibold">Scheduling / approval notes<textarea value={plan.notes} onChange={e=>update(p=>({...p,notes:e.target.value.slice(0,2000)}))} rows={3} placeholder="Special cases, veterinary approval, partner requests…" className="mt-2 block w-full rounded-xl border px-3 py-3"/></label>
         <div className="mt-5 flex flex-wrap gap-3">
