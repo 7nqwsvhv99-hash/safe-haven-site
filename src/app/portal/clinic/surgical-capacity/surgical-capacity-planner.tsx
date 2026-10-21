@@ -31,7 +31,7 @@ const safeInteger = (n: number) => Number.isFinite(n) ? Math.max(0, Math.min(100
 export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {date:string; veterinarian:string; start:string; end:string; status:string}[]; clinicDates: {date:string; type:string}[] }) {
   const [date, setDate] = useState("");
   const [vetFilter, setVetFilter] = useState("");
-  const [selectionMode, setSelectionMode] = useState<"date" | "vet">("date");
+
   const [plan, setPlan] = useState<Plan>(() => makePlan(true));
   const [saved, setSaved] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -39,8 +39,8 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
   const uniqueVets = Array.from(new Set(activeAssignments.map(t => t.veterinarian))).sort();
   const datesForVet = (vet: string) => clinicDates.filter(d => activeAssignments.some(t => t.date === d.date && t.veterinarian === vet));
   const vetsForDate = (d: string) => Array.from(new Set(activeAssignments.filter(t => t.date === d).map(t => t.veterinarian))).sort();
-  const visibleDates = selectionMode === "vet" && vetFilter ? datesForVet(vetFilter) : clinicDates.filter(d => vetsForDate(d.date).length > 0);
-  const availableVets = selectionMode === "vet" ? uniqueVets : (date ? vetsForDate(date) : uniqueVets);
+  const visibleDates = vetFilter ? datesForVet(vetFilter) : clinicDates.filter(d => vetsForDate(d.date).length > 0);
+  const availableVets = date ? vetsForDate(date) : uniqueVets;
   const currentVet = date ? (vetsForDate(date).includes(vetFilter) ? vetFilter : (vetsForDate(date).length === 1 ? vetsForDate(date)[0] : "")) : vetFilter;
   const isSat = date ? dateIsSaturday(date) : true;
   const validDate = date && (dateIsWednesday(date) || dateIsSaturday(date));
@@ -92,13 +92,9 @@ export function SurgicalCapacityPlanner({ vetTimes, clinicDates }: { vetTimes: {
         <p className="font-semibold">Scheduling commitments</p>
         <p className="mt-1">Safe Haven animals requiring surgery must be included at the next clinic. Stockton TNR is promised six cat spaces at two designated Saturday clinics per month. Count all unknown-sex or known female cats as Spay / Unknown (30 minutes). Count confirmed males as Neuter (15 minutes). If required commitments exceed the target, coordinate with the veterinarian.</p>
       </div>
-      <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Choose how to find a clinic">
-        <button type="button" onClick={()=>{setSelectionMode("date");setDate("");setVetFilter("");setLoaded(false);}} aria-pressed={selectionMode === "date"} className={selectionMode === "date" ? "rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white" : "rounded-full border px-4 py-2 text-sm font-semibold"}>Find by clinic date</button>
-        <button type="button" onClick={()=>{setSelectionMode("vet");setDate("");setVetFilter("");setLoaded(false);}} aria-pressed={selectionMode === "vet"} className={selectionMode === "vet" ? "rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white" : "rounded-full border px-4 py-2 text-sm font-semibold"}>Find by veterinarian</button>
-      </div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="text-sm font-semibold">Upcoming clinic<select value={date} onChange={e=>{ const next=e.target.value; setDate(next); setVetFilter(next && vetFilter && vetsForDate(next).includes(vetFilter) ? vetFilter : (next && vetsForDate(next).length === 1 ? vetsForDate(next)[0] : "")); }} className="mt-2 block w-full rounded-xl border px-3 py-3"><option value="">Select an upcoming clinic</option>{visibleDates.map(clinic => <option key={clinic.date} value={clinic.date}>{new Intl.DateTimeFormat("en-US", {weekday:"short",month:"short",day:"numeric",year:"numeric",timeZone:"UTC"}).format(new Date(clinic.date+"T12:00:00Z"))} · {clinic.type}</option>)}</select></label>
-        <label className="text-sm font-semibold">Veterinarian<select value={currentVet} onChange={e=>{const vet=e.target.value;setSelectionMode("vet");setVetFilter(vet);setDate("");setLoaded(false);setSaved(false);}} className="mt-2 block w-full rounded-xl border px-3 py-3"><option value="">Select a veterinarian</option>{availableVets.map(vet=><option key={vet} value={vet}>Dr. {vet}</option>)}</select></label>
+        <label className="text-sm font-semibold">Veterinarian<select value={currentVet} onChange={e=>{const vet=e.target.value;setVetFilter(vet);if(date && vet && !vetsForDate(date).includes(vet))setDate("");setLoaded(false);setSaved(false);}} className="mt-2 block w-full rounded-xl border px-3 py-3"><option value="">Select a veterinarian</option>{availableVets.map(vet=><option key={vet} value={vet}>Dr. {vet}</option>)}</select></label>
       </div>
       {date && !validDate && <p role="alert" className="mt-3 font-semibold text-red-700">Select a Wednesday or Saturday clinic date.</p>}
       {validDate && loaded && <>
