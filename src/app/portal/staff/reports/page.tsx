@@ -72,6 +72,7 @@ export default async function ReportsPage(){
 
     <section className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-xl font-semibold">Adoption Visibility</h2><p className="mt-1 text-sm text-muted-foreground">Review median and average length of stay, current days in care, and longest-waiting cats and dogs.</p></div><Link href="/portal/staff/reports/adoption-visibility" className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary/90">Open Adoption Visibility</Link></div></section>
 
+    <section className="mb-8 rounded-2xl border bg-white p-5 sm:p-6"><h2 className="text-xl font-semibold">Inventory Usage & Reporting</h2><p className="mt-1 text-sm text-muted-foreground">Review recorded supply consumption, deliveries, expired supplies, and available cost data for budgeting and donor reporting.</p><Link href="/portal/staff/reports/inventory" className="mt-3 inline-flex rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white">Open Inventory Reports</Link></section>
     <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {[
         ["Animals in care",activeAnimals.length,Home],
