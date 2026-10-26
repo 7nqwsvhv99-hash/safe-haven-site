@@ -70,6 +70,8 @@ export default async function ReportsPage(){
     <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft className="h-4 w-4"/> Staff Portal</Link>
     <header className="mb-8"><p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Management Visibility</p><h1 className="text-4xl font-bold tracking-tight md:text-5xl">Reporting & Dashboards</h1><p className="mt-4 max-w-3xl text-muted-foreground">Live operational reporting from the same records staff use every day, plus the reconciled Community and Clinic impact metrics already used on the public site.</p></header>
 
+    <section className="mb-8 rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-xl font-semibold">Adoption Visibility</h2><p className="mt-1 text-sm text-muted-foreground">Review median and average length of stay, current days in care, and longest-waiting cats and dogs.</p></div><Link href="/portal/staff/reports/adoption-visibility" className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary/90">Open Adoption Visibility</Link></div></section>
+
     <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {[
         ["Animals in care",activeAnimals.length,Home],
