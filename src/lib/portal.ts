@@ -935,7 +935,7 @@ export async function getStaffPortalData() {
   ]);
 
   const now = Date.now();
-  const activeInventory = inventory.filter((record) => Boolean(record.fields.Active));
+  const activeInventory = inventory.filter((record) => Boolean(record.fields.Active) && asText(record.fields.Area) === "Shelter");
   const inventoryAttention = activeInventory.filter((record) => {
     const status = asText(record.fields["Inventory Status"]).toLowerCase();
     const reorderStatus = asText(record.fields["Reorder Request Status"]).toLowerCase();
