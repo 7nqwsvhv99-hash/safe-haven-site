@@ -113,6 +113,7 @@ export default async function StaffPortalPage() {
   ];
 
   const peopleOperations = [
+    { title: "Tasks & Shift Handoffs", description: "Review assigned work, pass information to the next shift, and follow up on unfinished tasks.", href: "/portal/staff/tasks", icon: ClipboardList },
     {
       title: "Staff Scheduling",
       description: "Shift assignments, confirmations, and staffing coverage.",
