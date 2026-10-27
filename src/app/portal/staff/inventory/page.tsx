@@ -253,12 +253,12 @@ export default async function ShelterInventoryPage({
     <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
       <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
         <h2 className="text-2xl font-bold">Inventory Items</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Update counts, request reorders, and maintain supply details. Low-stock items are highlighted automatically.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Review supplies and maintain item details. Use Count Inventory for physical counts and Receive Supplies when deliveries arrive.</p>
         <ShelterInventorySearch />
         <details className="mt-5 rounded-2xl border bg-white">
-          <summary className="cursor-pointer px-4 py-4 font-semibold text-primary">Quick Count</summary>
+          <summary className="cursor-pointer px-4 py-4 font-semibold text-primary">Count Inventory</summary>
           <div className="space-y-2 border-t p-4">
-            <p className="mb-3 text-sm text-muted-foreground">Use this compact view for a physical count. Save each item as you go.</p>
+            <p className="mb-3 text-sm text-muted-foreground">Use when you are physically checking stock. Example: the system shows 30 cans, but there are 28 on the shelf. Enter 28; the system records the correction.</p>
             {visibleItems.map(r=><form key={r.id} action={saveCurrentCount} className="grid gap-2 rounded-xl bg-slate-50 p-3 sm:grid-cols-[1fr_auto_auto] sm:items-center">
               <input type="hidden" name="itemId" value={r.id}/>
               <div><p className="font-medium">{asText(r.fields["Item Name"])}</p><p className="text-xs text-muted-foreground">{asText(r.fields.Category)||"Other"}</p></div>
@@ -305,17 +305,14 @@ export default async function ShelterInventoryPage({
                   <button className="rounded-full border border-primary px-4 py-2.5 text-sm font-semibold text-primary">Save count</button>
                 </form>
                 {canRequestReorder&&<div className="flex flex-wrap items-end justify-end gap-2">
-                  <form action={requestReorder} className="flex items-end">
-                    <input type="hidden" name="itemId" value={r.id}/>
-                    <button disabled={reorderActive} className="rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{reorderActive?(reorderStatus==="Ordered"?"Order in progress":"Reorder requested"):"Request reorder"}</button>
-                  </form>
+                  <Link href={`/portal/staff/inventory/confirm-order?item=${r.id}`} className="rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white">{reorderStatus==="Ordered"?"Review order":"Confirm order placed"}</Link>
                   {reorderActive&&<form action={resolveReorder} className="flex items-end">
                     <input type="hidden" name="itemId" value={r.id}/>
                     <button className="rounded-full border border-primary px-4 py-2.5 text-sm font-semibold text-primary">Resolved</button>
                   </form>}
                 </div>}
               </div>
-              {low&&!reorderActive&&<p className="mt-3 text-xs font-semibold text-primary">Low count detected. A reorder request is needed.</p>}
+              {low&&!reorderActive&&<p className="mt-3 text-xs font-semibold text-primary">Low count detected. The responsible person receives an automatic email when the alert conditions are met.</p>}
 
               {canEditInventory&&<InventoryItemEditor action={updateItem} className="mt-5 border-t pt-4" deleteSection={
                 <form action={deleteItem} className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4">
@@ -355,7 +352,7 @@ export default async function ShelterInventoryPage({
       <div className="space-y-6">
         {canEditInventory&&<section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex items-center gap-3"><PackagePlus className="h-6 w-6 text-primary"/><div><h2 className="text-2xl font-bold">Receive or Adjust Inventory</h2><p className="text-sm text-muted-foreground">Current quantity is calculated from these transactions.</p><p className="mt-1 text-xs leading-5 text-muted-foreground">If an order arrives partially, record the quantity received and leave the reorder request unresolved until the remaining items arrive.</p></div></div>
-          <form action={recordTransaction} encType="multipart/form-data" className="space-y-3">
+          <div className="mb-4 space-y-2 text-sm text-slate-700"><p><strong>Receive:</strong> New supplies arrive. Example: 48 cans delivered; enter 48 cans.</p><p><strong>Count:</strong> Verify total physically present, using the Count Inventory section.</p><p><strong>Adjust:</strong> Record known losses or corrections, such as two damaged cans being discarded.</p><p>For unfinished receiving work, <Link className="font-semibold text-primary underline" href="/portal/staff/tasks">create a shift handoff</Link>.</p></div><form action={recordTransaction} encType="multipart/form-data" className="space-y-3">
             <InventoryItemSelector items={active.map(r=>({id:r.id,name:asText(r.fields["Item Name"]),unit:asText(r.fields["Unit of Measure"])}))}/>
             <label className="block text-xs font-medium">Transaction type<select name="type" required defaultValue="Received" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">{(canManageInventory?["Received","Used","Adjustment +","Adjustment -","Damaged / Discarded","Expired"]:["Received"]).map(x=><option key={x}>{x}</option>)}</select></label>
             <label className="block text-xs font-medium">Quantity in the selected item’s unit (for example, cans, not pallets)<input name="quantity" type="number" min="0.01" step="0.01" required className="mt-1 w-full rounded-xl border px-3 py-2.5"/></label>
