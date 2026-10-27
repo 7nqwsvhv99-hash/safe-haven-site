@@ -19,7 +19,7 @@ import {
   Users,
   UsersRound,
 } from "lucide-react";
-import { getPortalContext, getStaffPortalData } from "@/lib/portal";
+import { getPortalContext, getStaffPortalData, airtableList, asText, TABLES } from "@/lib/portal";
 
 const cardClass =
   "staff-command-card group block h-full rounded-2xl border bg-white p-5 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
@@ -35,7 +35,8 @@ function IconTile({ icon: Icon }: { icon: typeof PawPrint }) {
 export default async function StaffPortalPage() {
   const context = await getPortalContext();
   if (!context.canStaff) redirect(context.canOnboard ? "/portal/staff/onboarding" : "/portal");
-  const data = await getStaffPortalData();
+  const [data, workTasks] = await Promise.all([getStaffPortalData(), airtableList(TABLES.staffTasks, ["Status","Assigned To","Assigned Role"])]);
+  const pendingTasks = workTasks.filter(task => ["Open","In Progress"].includes(asText(task.fields.Status)) && (context.isAdministrator || context.roles.includes("Shelter Manager") || asText(task.fields["Assigned To"]).toLowerCase()===context.email.toLowerCase() || ["","Next shift"].includes(asText(task.fields["Assigned Role"])) || context.roles.includes(asText(task.fields["Assigned Role"]) as typeof context.roles[number])));
 
   const shelterInventory = data.inventory.filter((item) => item.area === "Shelter");
   const highPriorityNeeds = data.highPriorityNeedsCount;
@@ -43,6 +44,7 @@ export default async function StaffPortalPage() {
   const notCounted = data.inventoryNotCountedCount;
 
   const attention = [
+    { title: "Tasks & Shift Handoffs", value: pendingTasks.length, detail: pendingTasks.length === 1 ? "open task or handoff" : "open tasks and handoffs", href: "/portal/staff/tasks", icon: ClipboardList },
     {
       title: "High-Priority Needs",
       value: highPriorityNeeds,
