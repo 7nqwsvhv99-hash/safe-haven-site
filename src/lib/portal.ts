@@ -38,6 +38,7 @@ const TABLES = {
   animalIntakes: "tblkcwdDABVsxtaJH",
   surrenderRequests: "tblEFkAKG8KxtlSWj",
   inventoryTransactions: "tbldEaUyR21Ys7wyi",
+  staffTasks: "tbl6d6vnYMPlrOTuK",
   testimonials: "tbl8npkpyXTkOdS6V",
   newsletterSubscribers: "tblWYHSZNniov20FA",
   donations: "tblY8o1WkBQwOMOzY",
