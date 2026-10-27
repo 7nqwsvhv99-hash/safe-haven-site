@@ -1,0 +1,6 @@
+"use client";
+import { useState } from "react";
+export function InventoryItemSelector({items}:{items:{id:string;name:string;unit:string}[]}) {
+ const [value,setValue]=useState("");const selected=items.find(x=>x.name===value);
+ return <div className="space-y-2"><label className="block text-sm font-medium" htmlFor="inventory-search">Find inventory item</label><input id="inventory-search" type="search" list="inventory-matches" value={value} onChange={e=>setValue(e.target.value)} placeholder="Type first letters of an item" className="w-full rounded-xl border p-3" autoComplete="off" required/><datalist id="inventory-matches">{items.map(x=><option value={x.name} key={x.id}/>)}</datalist><input type="hidden" name="itemId" value={selected?.id||""}/>{selected?<div className="rounded-xl border border-primary/20 bg-primary/5 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-slate-600">Unit of measure</p><p className="mt-1 text-xl font-bold">{selected.unit||"Not configured"}</p><p className="mt-1 text-sm">Enter the total number of {selected.unit||"units"} received, not pallets or cases unless that is the inventory unit.</p></div>:<p className="text-xs text-slate-600">Choose a matching item to display its unit.</p>}</div>;
+}
