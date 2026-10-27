@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+import { SaveCountButton } from "./save-count-button";
 import { InventoryItemSelector } from "./inventory-item-selector";
 import { InventoryItemEditor, type InventorySaveResult } from "@/components/inventory-item-editor";
 import Link from "next/link";
@@ -18,7 +20,7 @@ function Pill({children}:{children:ReactNode}){return <span className="rounded-f
 export default async function ShelterInventoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ attention?: string }>;
+  searchParams: Promise<{ attention?: string; countSaved?: string }>;
 }){
   const context=await requirePortalRole("Staff");
   const canManageInventory=context.isAdministrator||context.roles.includes("Shelter Manager");
@@ -129,6 +131,7 @@ export default async function ShelterInventoryPage({
     },true);
     revalidatePath("/portal/staff/inventory");
     revalidatePath("/portal/staff");
+    redirect("/portal/staff/inventory?countSaved=1");
   }
 
   async function requestReorder(formData:FormData){
@@ -302,7 +305,7 @@ export default async function ShelterInventoryPage({
                 <form action={saveCurrentCount} className="flex flex-wrap items-end gap-2">
                   <input type="hidden" name="itemId" value={r.id}/>
                   <label className="text-xs font-medium">Current count<input name="count" type="number" min="0" step="1" defaultValue={num(r.fields["Current Quantity"])} className="mt-1 w-28 rounded-xl border bg-white px-3 py-2.5"/></label>
-                  <button className="rounded-full border border-primary px-4 py-2.5 text-sm font-semibold text-primary">Save count</button>
+                  <SaveCountButton saved={query.countSaved==="1"}/>
                 </form>
                 {canRequestReorder&&<div className="flex flex-wrap items-end justify-end gap-2">
                   <Link href={`/portal/staff/inventory/confirm-order?item=${r.id}`} className="rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white">{reorderStatus==="Ordered"?"Review order":"Confirm order placed"}</Link>
