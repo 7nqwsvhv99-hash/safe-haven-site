@@ -1,3 +1,4 @@
+import { InventoryItemSelector } from "./inventory-item-selector";
 import { InventoryItemEditor, type InventorySaveResult } from "@/components/inventory-item-editor";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -5,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { ArrowLeft, Boxes, PackagePlus, AlertTriangle, History } from "lucide-react";
 import { ShelterInventorySearch } from "./inventory-search";
 import {
-  airtableCreate, airtableDelete, airtableList, airtableUpdate, asStrings, asText,
+  airtableCreate, airtableDelete, airtableList, airtableUpdate, airtableUploadAttachment, asStrings, asText,
   requirePortalRole, TABLES,
 } from "@/lib/portal";
 
@@ -180,28 +181,43 @@ export default async function ShelterInventoryPage({
 
   async function recordTransaction(formData:FormData){
     "use server";
-    const current=await requirePortalRole("Staff", "write");
-    const itemId=field(formData,"itemId"), type=field(formData,"type");
-    const canPurchase=current.isAdministrator||current.roles.includes("Shelter Manager");
-    const canReceive=canPurchase||current.roles.includes("Staff");
-    if(!canReceive)return;
-    if(type!=="Received"&&!canPurchase)return;
+    const current=await requirePortalRole("Staff","write");
+    const itemId=field(formData,"itemId"),type=field(formData,"type");
+    const manager=current.isAdministrator||current.roles.includes("Shelter Manager");
+    if(type!=="Received"&&!manager)return;
     const qty=optionalNumber(formData,"quantity");
-    if(!itemId||!type||qty===undefined||qty<=0)return;
-    const latest=await airtableList(TABLES.inventory,["Area"]);
-    if(!latest.some(r=>r.id===itemId&&asText(r.fields.Area)==="Shelter"))return;
-    await airtableCreate(TABLES.inventoryTransactions,{
+    if(!itemId||!type||qty===undefined||qty<=0)throw new Error("Choose an item and positive quantity.");
+    const latest=await airtableList(TABLES.inventory,["Area","Item Name","Unit of Measure"]);
+    const item=latest.find(r=>r.id===itemId&&asText(r.fields.Area)==="Shelter");
+    if(!item)throw new Error("Select a valid shelter inventory item.");
+    const file=formData.get("receipt");
+    const receipt=file instanceof File&&file.size>0?file:null;
+    const noReceipt=formData.get("noReceipt")==="on";
+    if(type==="Received"&&!receipt&&!noReceipt)throw new Error("Attach a receipt or mark this as a donation with missing documentation.");
+    if(noReceipt&&type==="Received"&&formData.get("donated")!=="on")throw new Error("Missing receipt exception is only available for donated supplies.");
+    if(receipt&&!(receipt.type.startsWith("image/")||receipt.type==="application/pdf"))throw new Error("Receipt must be a photo or PDF.");
+    if(receipt&&receipt.size>5*1024*1024)throw new Error("Receipt file must be 5MB or smaller.");
+    const rec=await airtableCreate(TABLES.inventoryTransactions,{
       Item:[itemId],"Date / Time":new Date().toISOString(),"Transaction Type":type,
-      "Quantity Change":qty,"Entered By":current.displayName,
+      "Quantity Change":qty,"Entered By":current.displayName||current.email,
       "Vendor / Source":field(formData,"vendor"),
       "Lot Number":field(formData,"lotNumber"),
       ...(field(formData,"expirationDate")?{"Expiration Date":field(formData,"expirationDate")}:{ }),
       ...(optionalNumber(formData,"cost")!==undefined?{Cost:optionalNumber(formData,"cost")}:{ }),
-      Notes:field(formData,"notes"),
+      Notes:[formData.get("donated")==="on"?"Donated supplies":"",field(formData,"notes")].filter(Boolean).join("; "),
     },true);
-    if(type==="Received") await airtableUpdate(TABLES.inventory,itemId,{"Last Received":new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago"}).format(new Date())},true);
-    revalidatePath("/portal/staff/inventory");
-    revalidatePath("/portal/staff");
+    if(!rec)throw new Error("Could not create inventory transaction.");
+    if(receipt)await airtableUploadAttachment(rec.id,"fld3abHZEWugl9CNQ",receipt,true);
+    if(noReceipt){
+      await airtableCreate(TABLES.staffTasks,{
+        Task:"Obtain and attach documentation for donated inventory",
+        Category:"Inventory",Status:"Open",Priority:"Important","Assigned Role":"Bookkeeper",
+        "Related Record ID":rec.id,"Created By":current.displayName||current.email,
+        Description:`Donated ${qty} ${asText(item.fields["Unit of Measure"])} of ${asText(item.fields["Item Name"])} were received without documentation. Obtain donor documentation or record that none is available, then attach supporting evidence to the original inventory transaction.`
+      },true);
+    }
+    if(type==="Received")await airtableUpdate(TABLES.inventory,itemId,{"Last Received":new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago"}).format(new Date())},true);
+    revalidatePath("/portal/staff/inventory");revalidatePath("/portal/staff");revalidatePath("/portal/staff/tasks");
   }
 
   async function resolveReorder(formData:FormData){
@@ -336,11 +352,11 @@ export default async function ShelterInventoryPage({
       <div className="space-y-6">
         {canEditInventory&&<section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex items-center gap-3"><PackagePlus className="h-6 w-6 text-primary"/><div><h2 className="text-2xl font-bold">Receive or Adjust Inventory</h2><p className="text-sm text-muted-foreground">Current quantity is calculated from these transactions.</p><p className="mt-1 text-xs leading-5 text-muted-foreground">If an order arrives partially, record the quantity received and leave the reorder request unresolved until the remaining items arrive.</p></div></div>
-          <form action={recordTransaction} className="space-y-3">
-            <label className="block text-xs font-medium">Shelter item<select name="itemId" required defaultValue="" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select shelter item</option>{active.map(r=><option key={r.id} value={r.id}>{asText(r.fields["Item Name"])} ({asText(r.fields["Unit of Measure"])||"unit not set"})</option>)}</select></label>
+          <form action={recordTransaction} encType="multipart/form-data" className="space-y-3">
+            <InventoryItemSelector items={active.map(r=>({id:r.id,name:asText(r.fields["Item Name"]),unit:asText(r.fields["Unit of Measure"])}))}/>
             <label className="block text-xs font-medium">Transaction type<select name="type" required defaultValue="Received" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5">{(canManageInventory?["Received","Used","Adjustment +","Adjustment -","Damaged / Discarded","Expired"]:["Received"]).map(x=><option key={x}>{x}</option>)}</select></label>
             <label className="block text-xs font-medium">Quantity in the selected item’s unit (for example, cans, not pallets)<input name="quantity" type="number" min="0.01" step="0.01" required className="mt-1 w-full rounded-xl border px-3 py-2.5"/></label>
-            <details className="rounded-2xl bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold">Receiving / exception details</summary><div className="mt-4 space-y-3">
+            <div className="rounded-xl border bg-slate-50 p-3 space-y-2"><label className="flex items-center gap-2 text-sm"><input name="donated" type="checkbox"/> Donated supplies</label><label className="block text-sm font-medium">Receipt photograph or PDF<input name="receipt" type="file" accept="image/*,.pdf,application/pdf" className="mt-1 block w-full text-sm"/></label><label className="flex items-center gap-2 text-sm"><input name="noReceipt" type="checkbox"/> Donated supplies, no receipt provided (creates a bookkeeper follow-up task)</label><p className="text-xs text-slate-600">Required for received supplies unless donated supplies have no receipt. Maximum file size: 5 MB.</p></div><details className="rounded-2xl bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold">Receiving / exception details</summary><div className="mt-4 space-y-3">
               <label className="block text-xs font-medium">Vendor / source<input name="vendor" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
               <label className="block text-xs font-medium">Lot number<input name="lotNumber" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
               <label className="block text-xs font-medium">Expiration date<input name="expirationDate" type="date" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
