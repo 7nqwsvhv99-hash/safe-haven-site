@@ -131,7 +131,7 @@ export default async function ShelterInventoryPage({
     },true);
     revalidatePath("/portal/staff/inventory");
     revalidatePath("/portal/staff");
-    redirect("/portal/staff/inventory?countSaved=1");
+    redirect(`/portal/staff/inventory?countSaved=${encodeURIComponent(id)}`);
   }
 
   async function requestReorder(formData:FormData){
@@ -305,7 +305,7 @@ export default async function ShelterInventoryPage({
                 <form action={saveCurrentCount} className="flex flex-wrap items-end gap-2">
                   <input type="hidden" name="itemId" value={r.id}/>
                   <label className="text-xs font-medium">Current count<input name="count" type="number" min="0" step="1" defaultValue={num(r.fields["Current Quantity"])} className="mt-1 w-28 rounded-xl border bg-white px-3 py-2.5"/></label>
-                  <SaveCountButton saved={query.countSaved==="1"}/>
+                  <SaveCountButton saved={query.countSaved===r.id}/>
                 </form>
                 {canRequestReorder&&<div className="flex flex-wrap items-end justify-end gap-2">
                   <Link href={`/portal/staff/inventory/confirm-order?item=${r.id}`} className="rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white">{reorderStatus==="Ordered"?"Review order":"Confirm order placed"}</Link>
