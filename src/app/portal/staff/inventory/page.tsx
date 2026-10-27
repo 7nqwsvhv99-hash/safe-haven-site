@@ -204,6 +204,7 @@ export default async function ShelterInventoryPage({
       "Lot Number":field(formData,"lotNumber"),
       ...(field(formData,"expirationDate")?{"Expiration Date":field(formData,"expirationDate")}:{ }),
       ...(optionalNumber(formData,"cost")!==undefined?{Cost:optionalNumber(formData,"cost")}:{ }),
+      ...(type==="Received"?{"Acquisition Type":formData.get("donated")==="on"?"Donated":"Purchased"}:{}),
       Notes:[formData.get("donated")==="on"?"Donated supplies":"",field(formData,"notes")].filter(Boolean).join("; "),
     },true);
     if(!rec)throw new Error("Could not create inventory transaction.");
