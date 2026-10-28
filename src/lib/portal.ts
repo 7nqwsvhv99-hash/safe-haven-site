@@ -39,6 +39,7 @@ const TABLES = {
   surrenderRequests: "tblEFkAKG8KxtlSWj",
   inventoryTransactions: "tbldEaUyR21Ys7wyi",
   staffTasks: "tbl6d6vnYMPlrOTuK",
+  staffSchedule: "tblVFTKBcMRM9OuYv",
   testimonials: "tbl8npkpyXTkOdS6V",
   newsletterSubscribers: "tblWYHSZNniov20FA",
   donations: "tblY8o1WkBQwOMOzY",
