@@ -40,6 +40,8 @@ const TABLES = {
   inventoryTransactions: "tbldEaUyR21Ys7wyi",
   staffTasks: "tbl6d6vnYMPlrOTuK",
   staffSchedule: "tblVFTKBcMRM9OuYv",
+  recurringShifts: "tblauvtTqwO9XbOEs",
+  scheduleRequests: "tbl4mreXWxGl8K7Ew",
   testimonials: "tbl8npkpyXTkOdS6V",
   newsletterSubscribers: "tblWYHSZNniov20FA",
   donations: "tblY8o1WkBQwOMOzY",
