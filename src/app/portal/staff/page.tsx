@@ -118,8 +118,8 @@ export default async function StaffPortalPage() {
     { title: "Tasks & Shift Handoffs", description: "Review assigned work, pass information to the next shift, and follow up on unfinished tasks.", href: "/portal/staff/tasks", icon: ClipboardList },
     {
       title: "Staff Scheduling",
-      description: "Shift assignments, confirmations, and staffing coverage.",
-      href: "/portal/staff/schedule",
+      description: "Daily and weekly coverage, recurring templates, and schedule requests.",
+      href: "/portal/staff/scheduling",
       icon: CalendarDays,
     },
     {
