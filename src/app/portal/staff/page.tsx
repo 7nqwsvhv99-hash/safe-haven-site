@@ -35,6 +35,9 @@ function IconTile({ icon: Icon }: { icon: typeof PawPrint }) {
 export default async function StaffPortalPage() {
   const context = await getPortalContext();
   if (!context.canStaff) redirect(context.canOnboard ? "/portal/staff/onboarding" : "/portal");
+  const access = await airtableList(TABLES.portalAccess, ["Email","Shelter Position"]);
+  const position = access.find(x=>asText(x.fields.Email).toLowerCase()===context.email.toLowerCase());
+  if (!context.isAdministrator && asText(position?.fields["Shelter Position"])==="Animal Care Staff") redirect("/portal/staff/my-shift");
   const [data, workTasks] = await Promise.all([getStaffPortalData(), airtableList(TABLES.staffTasks, ["Status","Assigned To","Assigned Role"])]);
   const pendingTasks = workTasks.filter(task => ["Open","In Progress"].includes(asText(task.fields.Status)) && (context.isAdministrator || context.roles.includes("Shelter Manager") || asText(task.fields["Assigned To"]).toLowerCase()===context.email.toLowerCase() || ["","Next shift"].includes(asText(task.fields["Assigned Role"])) || context.roles.includes(asText(task.fields["Assigned Role"]) as typeof context.roles[number])));
 
@@ -248,6 +251,8 @@ export default async function StaffPortalPage() {
                 ["Inventory", "/portal/staff/inventory"],
                 ["Operations", "#operations"],
                 ["Reports", "/portal/staff/reports"],
+                ["Record Message", "/portal/staff/contact-messages"],
+                ["My Shift", "/portal/staff/my-shift"],
               ].map(([label, href]) => (
                 <Link key={href} href={href} className="whitespace-nowrap rounded-full border bg-white px-4 py-2 text-sm font-semibold text-muted-foreground shadow-sm transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary">
                   {label}
