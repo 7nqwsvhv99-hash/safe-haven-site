@@ -25,11 +25,12 @@ export default async function Scheduling({searchParams}:{searchParams:Promise<{d
  async function generate(f:FormData){"use server";const u=await requirePortalRole("Staff","write");if(!u.isAdministrator&&!u.roles.includes("Shelter Manager"))throw new Error("Management only");
  const t=await airtableList(TABLES.recurringShifts,["Position","Staff Name","Staff Email","Day Of Week","Start Time","End Time","Active"]);
  const current=await airtableList(TABLES.staffSchedule,["Start","Shift","Staff Email","Status"]);
+ const exceptions=await airtableList(TABLES.scheduleExceptions,["Date","Type","Applies To","Active"]);
  const from=val(f,"from");if(!/^\d{4}-\d{2}-\d{2}$/.test(from))throw new Error("Choose a valid start date");
  const end=plus(from,55);const upcoming=t.filter(x=>x.fields.Active===true&&asText(x.fields["Staff Email"]));
  let created=0;
- for(let i=0;i<56;i++){const d=plus(from,i);for(const row of upcoming){if(asText(row.fields["Day Of Week"])!==dayName(d))continue;const start=asText(row.fields["Start Time"]),stop=asText(row.fields["End Time"]),mail=asText(row.fields["Staff Email"]);if(!/^\d{2}:\d{2}$/.test(start)||!/^\d{2}:\d{2}$/.test(stop))continue;
- const position=asText(row.fields.Position);if(current.some(x=>asText(x.fields.Start).slice(0,10)===d&&asText(x.fields["Staff Email"]).toLowerCase()===mail.toLowerCase()&&asText(x.fields.Shift)===position))continue;
+ for(let i=0;i<56;i++){const d=plus(from,i);for(const row of upcoming){if(asText(row.fields["Day Of Week"])!==dayName(d))continue;const position=asText(row.fields.Position);if(exceptions.some(x=>x.fields.Active===true&&asText(x.fields.Date).slice(0,10)===d&&["Closed","No Shift"].includes(asText(x.fields.Type))&&["All",position].includes(asText(x.fields["Applies To"]))))continue;const start=asText(row.fields["Start Time"]),stop=asText(row.fields["End Time"]),mail=asText(row.fields["Staff Email"]);if(!/^\d{2}:\d{2}$/.test(start)||!/^\d{2}:\d{2}$/.test(stop))continue;
+ if(current.some(x=>asText(x.fields.Start).slice(0,10)===d&&asText(x.fields["Staff Email"]).toLowerCase()===mail.toLowerCase()&&asText(x.fields.Shift)===position))continue;
  await airtableCreate(TABLES.staffSchedule,{"Shift":position,"Staff Email":mail,"Staff Name":asText(row.fields["Staff Name"]),"Start":centralISO(d,start),"End":centralISO(d,stop),"Status":"Scheduled","Notes":"Generated from recurring template"},true);created++;
  }}revalidatePath("/portal/staff/scheduling");
  }
