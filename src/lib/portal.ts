@@ -43,6 +43,7 @@ const TABLES = {
   recurringShifts: "tblauvtTqwO9XbOEs",
   scheduleRequests: "tbl4mreXWxGl8K7Ew",
   scheduleExceptions: "tbl1Aco0UrZXFw2pI",
+  coverageOffers: "tblUzB3EtaxQ6mTyP",
   testimonials: "tbl8npkpyXTkOdS6V",
   newsletterSubscribers: "tblWYHSZNniov20FA",
   donations: "tblY8o1WkBQwOMOzY",
