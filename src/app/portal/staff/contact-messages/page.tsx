@@ -9,6 +9,7 @@ export default async function ContactMessages(){
  const mappings:Record<string,string>={"Potential adopter":"Animal Welfare Manager","Potential foster":"Animal Welfare Manager","Animal surrender":"Animal Welfare Manager","Potential donor":"Executive Director","Potential volunteer":"Volunteer & Front Desk Coordinator"};
  const roles=[...new Set(topics.map(t=>mappings[t]))];
  const rec=await airtableCreate(TABLES.contactMessages,{"Message":name+" · "+topics.join(", "),"Caller Name":name,"Phone":phone,"Email":email,"Preferred Contact":method,"Topics":topics.join(", "),"Details":details,"Created By":user.email,"Assigned Role":roles.join(", "),"Status":"Open","Created At":new Date().toISOString()},true);
+ if(!rec) throw new Error("Could not save the contact message. No follow-up tasks were created.");
  for(const role of roles){await airtableCreate(TABLES.staffTasks,{"Task":"Follow up: "+name+" ("+topics.filter(t=>mappings[t]===role).join(", ")+")","Category":"Other","Status":"Open","Priority":"Routine","Assigned Role":role,"Description":details+"\nPreferred contact: "+method+"\nPhone: "+phone+"\nEmail: "+email,"Created By":user.email,"Related Record ID":rec.id},true);}
  revalidatePath("/portal/staff/contact-messages");
  }
