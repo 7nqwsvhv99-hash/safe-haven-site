@@ -32,12 +32,13 @@ function IconTile({ icon: Icon }: { icon: typeof PawPrint }) {
   );
 }
 
-export default async function StaffPortalPage() {
+export default async function StaffPortalPage({searchParams}:{searchParams:Promise<{all?:string}>}) {
   const context = await getPortalContext();
   if (!context.canStaff) redirect(context.canOnboard ? "/portal/staff/onboarding" : "/portal");
   const access = await airtableList(TABLES.portalAccess, ["Email","Shelter Position"]);
   const position = access.find(x=>asText(x.fields.Email).toLowerCase()===context.email.toLowerCase());
-  if (!context.isAdministrator && asText(position?.fields["Shelter Position"])==="Animal Care Staff") redirect("/portal/staff/my-shift");
+  const query=await searchParams;
+  if (!context.isAdministrator && asText(position?.fields["Shelter Position"])==="Animal Care Staff" && query.all!=="1") redirect("/portal/staff/my-shift");
   const [data, workTasks] = await Promise.all([getStaffPortalData(), airtableList(TABLES.staffTasks, ["Status","Assigned To","Assigned Role"])]);
   const pendingTasks = workTasks.filter(task => ["Open","In Progress"].includes(asText(task.fields.Status)) && (context.isAdministrator || context.roles.includes("Shelter Manager") || asText(task.fields["Assigned To"]).toLowerCase()===context.email.toLowerCase() || ["","Next shift"].includes(asText(task.fields["Assigned Role"])) || context.roles.includes(asText(task.fields["Assigned Role"]) as typeof context.roles[number])));
 
