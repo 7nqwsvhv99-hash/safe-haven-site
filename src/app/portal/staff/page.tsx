@@ -258,7 +258,7 @@ export default async function StaffPortalPage() {
             <div className="mb-4">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Needs Attention Now</p>
             </div>
-            <div className="mb-10 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="mb-10 grid grid-cols-2 gap-3 lg:grid-cols-5">
               {attention.map(({ title, value, detail, href, icon: Icon }) => (
                 <Link key={title} href={href} target={href.startsWith("http") ? "_blank" : undefined} rel={href.startsWith("http") ? "noopener noreferrer" : undefined} className={cardClass}>
                   <Icon className="mb-3 h-5 w-5 text-primary" />
