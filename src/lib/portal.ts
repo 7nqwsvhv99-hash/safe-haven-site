@@ -44,6 +44,8 @@ const TABLES = {
   scheduleRequests: "tbl4mreXWxGl8K7Ew",
   scheduleExceptions: "tbl1Aco0UrZXFw2pI",
   coverageOffers: "tblUzB3EtaxQ6mTyP",
+  timeEntries: "tblyUbFHOpxXo2EQI",
+  contactMessages: "tblOQnq0kbP6XmNRt",
   testimonials: "tbl8npkpyXTkOdS6V",
   newsletterSubscribers: "tblWYHSZNniov20FA",
   donations: "tblY8o1WkBQwOMOzY",
