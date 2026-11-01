@@ -45,6 +45,7 @@ const TABLES = {
   scheduleExceptions: "tbl1Aco0UrZXFw2pI",
   coverageOffers: "tblUzB3EtaxQ6mTyP",
   timeEntries: "tblyUbFHOpxXo2EQI",
+  shiftChecklist: "tbl2LWGXqU9bZV7sS",
   contactMessages: "tblOQnq0kbP6XmNRt",
   testimonials: "tbl8npkpyXTkOdS6V",
   newsletterSubscribers: "tblWYHSZNniov20FA",
