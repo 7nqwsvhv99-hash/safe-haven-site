@@ -451,7 +451,7 @@ export default async function CareAndHousingPage({
               <div className="mb-5 flex items-center gap-3">
                 <Plus className="h-6 w-6 text-primary" />
                 <div>
-                  <h2 className="text-2xl font-bold">Record Daily Care</h2>
+                  <h2 id="record-care" className="scroll-mt-36 text-2xl font-bold">Record Daily Care</h2>
                   <p className="text-sm text-muted-foreground">Capture routine care and observations at the point of work.</p>
                 </div>
               </div>
