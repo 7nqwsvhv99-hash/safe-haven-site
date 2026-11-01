@@ -13,7 +13,7 @@ export function ClinicShiftNoteForm({
   initialNote: string;
   saveAction: (previous: SaveState, formData: FormData) => Promise<SaveState>;
 }) {
-  const [state, submit, pending] = useActionState(saveAction, { status: "idle" });
+  const [state, submit, pending] = useActionState<SaveState, FormData>(saveAction, { status: "idle" });
   const [edited, setEdited] = useState(false);
 
   useEffect(() => {
