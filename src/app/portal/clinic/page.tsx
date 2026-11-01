@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarCheck, CalendarPlus, ClipboardCheck, Boxes, Megaphone, BookOpen, ExternalLink, Printer } from "lucide-react";
 import { VeterinarianDateForm } from "./veterinarian-date-form";
 import { TrainingResourceSections } from "./training-resource-sections";
+import { ClinicShiftNoteForm } from "./clinic-shift-note-form";
 import { InventorySearch } from "./inventory-search";
 import { requirePortalRole, getClinicPortalData, airtableCreate, airtableUpdate, airtableList, airtableDelete, TABLES } from "@/lib/portal";
 
@@ -223,18 +224,23 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
   }
 
 
-  async function saveClinicNote(formData: FormData) {
+  async function saveClinicNote(_previous: { status: "idle" | "saved" | "error" }, formData: FormData): Promise<{ status: "idle" | "saved" | "error" }> {
     "use server";
-    const current = await requirePortalRole("Clinic Team", "write");
-    const latest = await getClinicPortalData(current.email);
-    if (latest.member?.role !== "Clinic Volunteer") return;
-    const responseId = formText(formData, "responseId");
-    if (!latest.dates.some((item) => item.responseId === responseId)) return;
+    try {
+      const current = await requirePortalRole("Clinic Team", "write");
+      const latest = await getClinicPortalData(current.email);
+      if (latest.member?.role !== "Clinic Volunteer") return { status: "error" };
+      const responseId = formText(formData, "responseId");
+      if (!latest.dates.some((item) => item.responseId === responseId)) return { status: "error" };
 
-    const note = formText(formData, "note");
-    if (note.length > 1000) return;
-    await airtableUpdate(TABLES.clinicResponses, responseId, { Notes: note });
-    revalidatePath("/portal/clinic");
+      const note = formText(formData, "note");
+      if (note.length > 1000) return { status: "error" };
+      await airtableUpdate(TABLES.clinicResponses, responseId, { Notes: note });
+      revalidatePath("/portal/clinic");
+      return { status: "saved" };
+    } catch {
+      return { status: "error" };
+    }
   }
 
   async function addClinicInventoryItem(formData: FormData) {
@@ -856,13 +862,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                                     <summary className="inline-flex cursor-pointer list-none items-center rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 [&::-webkit-details-marker]:hidden">
                                       My shift note
                                     </summary>
-                                    <form action={saveClinicNote} className="mt-3 rounded-2xl border bg-slate-50 p-4">
-                                      <input type="hidden" name="responseId" value={item.responseId} />
-                                      <label htmlFor={`clinic-note-${item.responseId}`} className="block text-sm font-semibold">My shift note</label>
-                                      <p className="mt-1 text-xs text-muted-foreground">Share timing or coverage details, such as needing to leave early. Your note appears on this clinic day’s staffing card.</p>
-                                      <textarea id={`clinic-note-${item.responseId}`} name="note" rows={2} maxLength={1000} defaultValue={item.notes} className="mt-2 w-full rounded-xl border bg-white px-3 py-2 text-sm" placeholder="Example: I need to leave by 2:00 p.m." />
-                                      <button type="submit" className="mt-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">Save note</button>
-                                    </form>
+                                    <ClinicShiftNoteForm responseId={item.responseId} initialNote={item.notes || ""} saveAction={saveClinicNote} />
                                     </details>
                                   </div>
                                 )}
