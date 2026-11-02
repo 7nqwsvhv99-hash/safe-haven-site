@@ -11,6 +11,7 @@ export default async function ReportsPage(){
   const currentUser=await requirePortalRole("Staff");
   const staffAccess=await airtableList(TABLES.portalAccess,["Email","Shelter Position"]);
   const currentPosition=asText(staffAccess.find(x=>asText(x.fields.Email).toLowerCase()===currentUser.email.toLowerCase())?.fields["Shelter Position"]);
+  const canViewVolunteerHours=currentUser.isAdministrator||["Volunteer Coordinator","Volunteer & Front Desk Coordinator","Animal Welfare Manager","Executive Director","Social Media & Events Coordinator"].includes(currentPosition);
   const canViewTaskAccountability=currentUser.isAdministrator||["Animal Welfare Manager","Executive Director"].includes(currentPosition);
   const currentYear=Number(new Intl.DateTimeFormat("en-US",{year:"numeric",timeZone:"America/Chicago"}).format(new Date()));
 
@@ -69,7 +70,7 @@ export default async function ReportsPage(){
   const fosterOutcomes=new Map<string,number>();
   for(const r of fosterPlacements.filter(r=>inYear(r.fields["End Date"],currentYear))){const outcome=asText(r.fields["Return / Outcome"])||"Other";fosterOutcomes.set(outcome,(fosterOutcomes.get(outcome)||0)+1)}
 
-  return <main className="min-h-screen bg-slate-50"><div className="container-custom py-10 md:py-12">{canViewTaskAccountability&&<Link href="/portal/staff/reports/task-accountability" className="mb-6 inline-flex rounded-full border border-primary px-5 py-3 text-sm font-semibold text-primary">Task Accountability Report</Link>}
+  return <main className="min-h-screen bg-slate-50"><div className="container-custom py-10 md:py-12">{canViewVolunteerHours&&<Link href="/portal/staff/reports/volunteer-hours" className="mb-6 mr-3 inline-flex rounded-full border border-primary px-5 py-3 text-sm font-semibold text-primary">Volunteer Hours Report</Link>}{canViewTaskAccountability&&<Link href="/portal/staff/reports/task-accountability" className="mb-6 inline-flex rounded-full border border-primary px-5 py-3 text-sm font-semibold text-primary">Task Accountability Report</Link>}
     <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft className="h-4 w-4"/> Staff Portal</Link>
     <header className="mb-8"><p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Management Visibility</p><h1 className="text-4xl font-bold tracking-tight md:text-5xl">Reporting & Dashboards</h1><p className="mt-4 max-w-3xl text-muted-foreground">Live operational reporting from the same records staff use every day, plus the reconciled Community and Clinic impact metrics already used on the public site.</p></header>
 
