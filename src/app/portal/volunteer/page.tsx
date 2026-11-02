@@ -160,6 +160,7 @@ export default async function VolunteerPortalPage() {
                 </section>
               )}
 
+              <Link href="/portal/volunteer/attendance" className="inline-flex rounded-full bg-primary px-6 py-3 font-semibold text-white">Check In / Check Out</Link>
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">
