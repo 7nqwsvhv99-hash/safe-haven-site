@@ -307,7 +307,7 @@ export default async function ShelterInventoryPage({
                   <label className="text-xs font-medium">Current count<input name="count" type="number" min="0" step="1" defaultValue={num(r.fields["Current Quantity"])} className="mt-1 w-28 rounded-xl border bg-white px-3 py-2.5"/></label>
                   <SaveCountButton saved={query.countSaved===r.id}/>
                 </form>
-                {canRequestReorder&&!reorderActive&&<form action={requestReorder} className="mt-3"><input type="hidden" name="itemId" value={r.id}/><button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Report low stock / Request reorder</button></form>}
+                {canRequestReorder&&low&&!reorderActive&&<form action={requestReorder} className="mt-3"><input type="hidden" name="itemId" value={r.id}/><button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Report low stock / Request reorder</button></form>}
                 {canManageInventory&&<div className="flex flex-wrap items-end justify-end gap-2">
                   <Link href={`/portal/staff/inventory/confirm-order?item=${r.id}`} className="rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white">{reorderStatus==="Ordered"?"Review order":"Confirm order placed"}</Link>
                   {reorderActive&&<form action={resolveReorder} className="flex items-end">
