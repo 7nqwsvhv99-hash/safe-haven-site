@@ -1,0 +1,23 @@
+import Link from "next/link";
+import {revalidatePath} from "next/cache";
+import {requirePortalRole,getVolunteerPortalData,airtableList,airtableCreate,airtableUpdate,asText,TABLES} from "@/lib/portal";
+export default async function Attendance(){
+ const user=await requirePortalRole("Volunteer");
+ const person=await getVolunteerPortalData(user.email);
+ if(!person.volunteer)return <main className="container-custom py-12">Active volunteer record required.</main>;
+ const records=await airtableList(TABLES.volunteerHours,["Volunteer","Hours","Check In At","Check Out At","Attendance Review Status"]);
+ const open=records.filter(r=>Array.isArray(r.fields.Volunteer)&&r.fields.Volunteer.includes(person.volunteer!.id)&&asText(r.fields["Attendance Review Status"])==="Checked In"&&!asText(r.fields["Check Out At"]));
+ async function checkIn(form:FormData){"use server";const u=await requirePortalRole("Volunteer","write");const profile=await getVolunteerPortalData(u.email);if(!profile.volunteer)throw Error("Volunteer profile required");
+ const entries=await airtableList(TABLES.volunteerHours,["Volunteer","Attendance Review Status","Check Out At"]);
+ if(entries.some(r=>Array.isArray(r.fields.Volunteer)&&r.fields.Volunteer.includes(profile.volunteer!.id)&&asText(r.fields["Attendance Review Status"])==="Checked In"&&!asText(r.fields["Check Out At"])))throw Error("Already checked in");
+ const now=new Date();const date=new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago",year:"numeric",month:"2-digit",day:"2-digit"}).format(now);
+ const activity=String(form.get("activity")||"Other");const allowed=["Clinic","Adoption & Community Events","Administrative Support","Other"];if(!allowed.includes(activity))throw Error("Invalid activity");
+ await airtableCreate(TABLES.volunteerHours,{Date:date,Volunteer:[profile.volunteer.id],Hours:0,"Volunteer Activity":activity,"Check In At":now.toISOString(),"Attendance Review Status":"Checked In","Related Event / Shift":String(form.get("event")||"").slice(0,150)},true);revalidatePath("/portal/volunteer/attendance");}
+ async function checkOut(){"use server";const u=await requirePortalRole("Volunteer","write");const profile=await getVolunteerPortalData(u.email);if(!profile.volunteer)throw Error("Volunteer profile required");
+ const entries=await airtableList(TABLES.volunteerHours,["Volunteer","Check In At","Check Out At","Attendance Review Status"]);
+ const active=entries.filter(r=>Array.isArray(r.fields.Volunteer)&&r.fields.Volunteer.includes(profile.volunteer!.id)&&asText(r.fields["Attendance Review Status"])==="Checked In"&&!asText(r.fields["Check Out At"]));
+ if(active.length!==1)throw Error("Expected one active attendance session");
+ const start=Date.parse(asText(active[0].fields["Check In At"]));const end=Date.now();if(!Number.isFinite(start)||end<=start||(end-start)>24*60*60*1000)throw Error("Attendance duration needs coordinator review");
+ await airtableUpdate(TABLES.volunteerHours,active[0].id,{"Check Out At":new Date(end).toISOString(),Hours:Math.round((end-start)/36000)/100,"Attendance Review Status":"Pending Review"},true);revalidatePath("/portal/volunteer/attendance");}
+ return <main className="min-h-screen bg-slate-50"><div className="container-custom max-w-3xl py-10"><Link href="/portal/volunteer" className="text-primary">← Volunteer Portal</Link><h1 className="mt-5 text-3xl font-bold">Volunteer Attendance</h1><p className="mt-2 text-slate-600">Record your actual arrival and departure. Hours are reviewed by the Volunteer Coordinator.</p><section className="mt-6 rounded-2xl border bg-white p-6">{open.length?<><h2 className="font-bold">Checked in</h2><p className="mt-2 text-sm">Started: {new Date(asText(open[0].fields["Check In At"])).toLocaleString("en-US",{timeZone:"America/Chicago",dateStyle:"medium",timeStyle:"short"})}</p><form action={checkOut}><button className="mt-4 rounded-full bg-primary px-6 py-3 font-semibold text-white">Check Out</button></form></>:<form action={checkIn} className="space-y-4"><label className="block text-sm font-semibold">Activity<select name="activity" className="mt-2 block w-full rounded-xl border p-3"><option>Clinic</option><option>Adoption & Community Events</option><option>Administrative Support</option><option>Other</option></select></label><label className="block text-sm font-semibold">Event or shift<input name="event" maxLength={150} className="mt-2 block w-full rounded-xl border p-3"/></label><button className="rounded-full bg-primary px-6 py-3 font-semibold text-white">Check In</button></form>}</section></div></main>;
+}
