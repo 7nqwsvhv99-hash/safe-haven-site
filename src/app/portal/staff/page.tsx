@@ -1,4 +1,5 @@
 import Link from "next/link";
+import {staffUi} from "./staff-ui";
 import { redirect } from "next/navigation";
 import {
   Activity,
@@ -219,12 +220,19 @@ export default async function StaffPortalPage({searchParams}:{searchParams:Promi
           </Link>
 
           <header className="mb-7">
-            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Staff Portal</p>
-            <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Animal Care First</h1>
+            <p className={staffUi.eyebrow}>Staff Portal</p>
+            <h1 className={staffUi.pageTitle}>Animal Care First</h1>
             <p className="mt-3 max-w-3xl text-muted-foreground">
-              See what needs attention, choose the work you need to do, and open the focused workspace for that task.
+              Start with your responsibilities, review what needs attention, and open the right workspace for your work.
             </p>
           </header>
+
+          <section className={staffUi.panel+" mb-6"} aria-label="Your daily workspace">
+            <p className={staffUi.eyebrow}>YOUR DAILY WORKSPACE</p>
+            <h2 className={staffUi.sectionTitle+" mt-1"}>Start with My Shift</h2>
+            <p className="mt-2 text-sm text-slate-600">Clock in, review assigned work and incoming handoffs, complete routine responsibilities, and prepare for the next shift.</p>
+            <Link href="/portal/staff/my-shift" className={staffUi.primaryButton+" mt-4"}>Open My Shift</Link>
+          </section>
 
           {data.announcements.length > 0 && (
             <section className="mb-6 rounded-2xl border bg-white p-5 shadow-sm">
