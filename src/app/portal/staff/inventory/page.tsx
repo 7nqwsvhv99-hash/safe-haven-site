@@ -25,7 +25,7 @@ export default async function ShelterInventoryPage({
   const context=await requirePortalRole("Staff");
   const canManageInventory=context.isAdministrator||context.roles.includes("Shelter Manager");
   const canEditInventory=context.isAdministrator||context.roles.includes("Shelter Manager")||context.roles.includes("Staff");
-  const canRequestReorder=canManageInventory;
+  const canRequestReorder=canEditInventory;
   const query=await searchParams;
   const attentionOnly=query.attention==="1";
   const [items,transactions]=await Promise.all([
@@ -137,7 +137,7 @@ export default async function ShelterInventoryPage({
   async function requestReorder(formData:FormData){
     "use server";
     const current=await requirePortalRole("Staff","write");
-    if(!current.isAdministrator&&!current.roles.includes("Shelter Manager"))return;
+    if(!current.isAdministrator&&!current.roles.includes("Shelter Manager")&&!current.roles.includes("Staff"))return;
     const id=field(formData,"itemId");
     const latest=await airtableList(TABLES.inventory,[
       "Area","Current Quantity","Reorder Point","Suggested Reorder Quantity","Recommended Reorder Quantity","Unit of Measure","Reorder Request Status"
@@ -307,7 +307,8 @@ export default async function ShelterInventoryPage({
                   <label className="text-xs font-medium">Current count<input name="count" type="number" min="0" step="1" defaultValue={num(r.fields["Current Quantity"])} className="mt-1 w-28 rounded-xl border bg-white px-3 py-2.5"/></label>
                   <SaveCountButton saved={query.countSaved===r.id}/>
                 </form>
-                {canRequestReorder&&<div className="flex flex-wrap items-end justify-end gap-2">
+                {canRequestReorder&&low&&!reorderActive&&<form action={requestReorder} className="mt-3"><input type="hidden" name="itemId" value={r.id}/><button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Report low stock / Request reorder</button></form>}
+                {canManageInventory&&<div className="flex flex-wrap items-end justify-end gap-2">
                   <Link href={`/portal/staff/inventory/confirm-order?item=${r.id}`} className="rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white">{reorderStatus==="Ordered"?"Review order":"Confirm order placed"}</Link>
                   {reorderActive&&<form action={resolveReorder} className="flex items-end">
                     <input type="hidden" name="itemId" value={r.id}/>

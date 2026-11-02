@@ -234,6 +234,7 @@ export default async function StaffPortalPage({searchParams}:{searchParams:Promi
             <Link href="/portal/staff/my-shift" className={staffUi.primaryButton+" mt-4"}>Open My Shift</Link>
           </section>
 
+          {context.isAdministrator && <p className="mb-5 text-sm"><Link href="/portal/staff/role-preview" className="font-semibold text-primary underline">View as Role (Administrator Preview)</Link></p>}
           {data.announcements.length > 0 && (
             <section className="mb-6 rounded-2xl border bg-white p-5 shadow-sm">
               <div className="mb-3 flex items-center gap-3">
