@@ -1,0 +1,20 @@
+import Link from "next/link";
+import {requireAdministrator} from "@/lib/portal";
+const views={
+ "animal-care":{name:"Animal Care Staff",intro:"Daily animal care, stock counts, receiving, and shift handoffs.",actions:[["My Shift","/portal/staff/my-shift"],["Shelter Inventory","/portal/staff/inventory"],["Daily Care","/portal/staff/care"],["Tasks & Handoffs","/portal/staff/tasks"]]},
+ "welfare":{name:"Animal Welfare Manager",intro:"Animal welfare follow-ups, ordering, staff supervision, and assignments.",actions:[["Animal Care","/portal/staff/care"],["Shelter Inventory","/portal/staff/inventory"],["Tasks & Handoffs","/portal/staff/tasks"],["Task Accountability","/portal/staff/reports/task-accountability"]]},
+ "director":{name:"Executive Director",intro:"Management oversight, approvals, assignments, and reporting.",actions:[["Staff Scheduling","/portal/staff/scheduling"],["Tasks & Handoffs","/portal/staff/tasks"],["Reports & Dashboards","/portal/staff/reports"],["Task Accountability","/portal/staff/reports/task-accountability"]]},
+ "front-desk":{name:"Volunteer & Front Desk Coordinator",intro:"Volunteer coordination, messages, scheduling, and assigned work.",actions:[["Record Message","/portal/staff/contact-messages"],["Staff Scheduling","/portal/staff/scheduling"],["Tasks & Handoffs","/portal/staff/tasks"]]},
+ "events":{name:"Social Media & Events Coordinator",intro:"Events, public communications, and assigned work.",actions:[["Website & Content","/portal/staff/content"],["Event Reservations","/portal/staff/event-reservations"],["Tasks & Handoffs","/portal/staff/tasks"]]}
+} as const;
+type Role=keyof typeof views;
+export default async function RolePreview({searchParams}:{searchParams:Promise<{role?:string}>}){
+ await requireAdministrator();
+ const query=await searchParams;const key=(query.role&&query.role in views?query.role:"animal-care") as Role;const selected=views[key];
+ return <main className="min-h-screen bg-slate-50"><div className="container-custom max-w-5xl py-10">
+ <div role="status" className="sticky top-20 z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl border-2 border-amber-500 bg-amber-50 px-5 py-4 text-amber-950 shadow-sm"><div><strong>Viewing as: {selected.name}</strong><p className="text-sm">Administrator preview only. No identity, permissions, or records are changed. Links open under your real administrator account.</p></div><Link href="/portal/staff" className="rounded-full border border-amber-800 px-4 py-2 text-sm font-semibold">Exit Preview</Link></div>
+ <p className="mt-7 text-xs font-bold uppercase tracking-widest text-primary">Safe Haven Staff Portal · Role Preview</p><h1 className="mt-2 text-3xl font-bold">Role workspace overview</h1><p className="mt-2 text-slate-600">{selected.intro}</p>
+ <nav aria-label="Choose staff position" className="mt-6 flex flex-wrap gap-2">{Object.entries(views).map(([id,v])=><Link key={id} href={"/portal/staff/role-preview?role="+id} aria-current={id===key?"page":undefined} className={id===key?"rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white":"rounded-full border bg-white px-4 py-2 text-sm font-semibold"}>{v.name}</Link>)}</nav>
+ <section className="mt-7 rounded-2xl border bg-white p-6"><h2 className="text-xl font-bold">Primary responsibilities and workspaces</h2><div className="mt-4 grid gap-3 sm:grid-cols-2">{selected.actions.map(([label,href])=><div key={href} className="rounded-xl border bg-slate-50 p-4"><strong>{label}</strong><p className="mt-1 text-xs text-slate-500">Functional link uses your real administrator permissions.</p><Link href={href} className="mt-3 inline-block text-sm font-semibold text-primary underline">Open workspace as administrator</Link></div>)}</div></section>
+ <p className="mt-5 text-sm text-slate-600">This preview illustrates role-specific navigation, not an impersonated employee session or a guarantee that all underlying page controls match employee permissions. Do not use it to validate employee access control.</p></div></main>
+}
