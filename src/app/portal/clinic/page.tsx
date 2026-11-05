@@ -450,7 +450,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                 ? "Your clinic dates, availability, attendance confirmations, team staffing, and clinic resources."
                 : "Your clinic dates, availability, attendance confirmations, team staffing, inventory, and clinic resources."}
             </p>
-            <div className="mt-5 flex flex-wrap gap-3"><Link href="/portal/clinic/attendance" className="inline-flex rounded-full border border-primary px-5 py-3 font-semibold text-primary">Clinic Volunteer Attendance</Link>
+            <div className="mt-5 flex flex-wrap gap-3"><Link href="/portal/clinic/attendance" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">Clinic Volunteer Attendance</Link>
               {section !== "dates" && (
                 <Link href="/portal/clinic?section=dates" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
                   <CalendarCheck className="h-5 w-5" />
