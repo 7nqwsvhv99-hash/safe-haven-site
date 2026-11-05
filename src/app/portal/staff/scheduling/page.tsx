@@ -43,7 +43,7 @@ export default async function Scheduling({searchParams}:{searchParams:Promise<{d
  const shift=val(f,"shift");if(shift){const records=await airtableList(TABLES.staffSchedule,["Staff Email","Start"]);const found=records.find(x=>x.id===shift);if(!found||asText(found.fields["Staff Email"]).toLowerCase()!==u.email.toLowerCase())throw Error("Shift unavailable");}
  await airtableCreate(TABLES.scheduleRequests,{"Request":`${kind} · ${date}`,"Staff Email":u.email,"Request Type":kind,"Shift Record ID":shift,"Start Date":date,"End Date":end,"Reason":val(f,"reason"),"Status":"Pending"},true);revalidatePath("/portal/staff/scheduling");
  }
- async function review(f:FormData){"use server";const u=await requirePortalRole("Staff","write");if(!u.isAdministrator&&!u.roles.includes("Shelter Manager"))throw Error("Manager access required");
+ async function review(f:FormData){"use server";const u=await requirePortalRole("Staff","write");if(!u.isAdministrator&&!u.roles.includes("Shelter Manager")){const grants=await airtableList(TABLES.portalAccess,["Email","Shelter Position"]);const position=asText(grants.find(x=>asText(x.fields.Email).toLowerCase()===u.email.toLowerCase())?.fields["Shelter Position"]);if(!["Animal Welfare Manager","Executive Director"].includes(position))throw Error("Manager access required");}
  const id=val(f,"id"),action=val(f,"action"),replacement=val(f,"replacement").toLowerCase();if(!["Seeking Coverage","Approved","Declined","Covered"].includes(action))throw Error("Invalid decision");
  const all=await airtableList(TABLES.scheduleRequests,["Staff Email","Start Date","End Date","Shift Record ID","Status"]);const req=all.find(x=>x.id===id);if(!req)throw Error("Request not found");
  if(action==="Covered"){if(!replacement)throw Error("Select a qualified replacement employee");const roster=await airtableList(TABLES.recurringShifts,["Staff Email","Position","Active"]);if(!roster.some(x=>asText(x.fields["Staff Email"]).toLowerCase()===replacement&&x.fields.Active===true&&asText(x.fields.Position).startsWith("Animal Care")))throw Error("Replacement needs active animal-care qualification");
@@ -65,7 +65,7 @@ export default async function Scheduling({searchParams}:{searchParams:Promise<{d
   if(date<today)throw Error("Past shifts cannot be offered");
   const current=await airtableList(TABLES.staffSchedule,["Shift","Start","End","Staff Email","Status"]);
   if(current.some(x=>asText(x.fields.Start).slice(0,10)===date&&asText(x.fields.Shift)===role&&active(asText(x.fields.Status))))throw Error("An active shift already exists. Review the schedule.");
-  const requests=await airtableList(TABLES.scheduleRequests,["Request Type","Shift Record ID","Start Date","Status"]);
+  const requests=await airtableList(TABLES.scheduleRequests,["Request","Request Type","Shift Record ID","Start Date","Status"]);
   if(requests.some(x=>asText(x.fields["Request Type"])==="Open Shift"&&asText(x.fields["Start Date"])===date&&asText(x.fields.Request).includes(role)&&!["Covered","Declined","Cancelled"].includes(asText(x.fields.Status))))throw Error("Coverage already requested for this shift.");
   const qualified=await airtableList(TABLES.recurringShifts,["Staff Email","Position","Active"]);
   const start=role==="Animal Care AM"?"07:00":"14:00",end=role==="Animal Care AM"?"12:00":"19:00";
@@ -84,7 +84,7 @@ export default async function Scheduling({searchParams}:{searchParams:Promise<{d
  }
  async function addException(f:FormData){"use server";
  const u=await requirePortalRole("Staff","write");if(!u.isAdministrator&&!u.roles.includes("Shelter Manager"))throw Error("Management permission required");
- const date=val(f,"date"),type=val(f,"type"),position=val(f,"position");if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!["Closed","No Shift"].includes(type))throw Error("Invalid schedule exception");
+ const date=val(f,"date"),type=val(f,"type"),position=val(f,"position");if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!["Closed","No Shift"].includes(type))throw Error("Invalid schedule exception");
  await airtableCreate(TABLES.scheduleExceptions,{"Exception":`${type} · ${date} · ${position}`,"Date":date,"Type":type,"Applies To":position,"Active":true,"Notes":val(f,"notes"),"Approved By":u.email},true);
  revalidatePath("/portal/staff/scheduling");
  }
