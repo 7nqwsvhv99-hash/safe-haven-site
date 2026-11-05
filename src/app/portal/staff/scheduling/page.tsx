@@ -1,5 +1,6 @@
 import CoverageBars from "./coverage-bars";
 import ScheduleDateControls from "./schedule-date-controls";
+import ScheduleRequestForm from "./schedule-request-form";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -40,10 +41,22 @@ export default async function Scheduling({searchParams}:{searchParams:Promise<{d
  await airtableCreate(TABLES.staffSchedule,{"Shift":position,"Staff Email":mail,"Staff Name":asText(row.fields["Staff Name"]),"Start":centralISO(d,start),"End":centralISO(d,stop),"Status":"Scheduled","Notes":"Generated from recurring template"},true);created++;
  }}revalidatePath("/portal/staff/scheduling");
  }
- async function request(f:FormData){"use server";const u=await requirePortalRole("Staff","write");const kind=val(f,"kind");if(!["Time Off","Unable to Work Scheduled Shift"].includes(kind))throw Error("Invalid request");
- const date=val(f,"date"),end=val(f,"end")||date;if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||end<date)throw Error("Invalid date");
- const shift=val(f,"shift");if(shift){const records=await airtableList(TABLES.staffSchedule,["Staff Email","Start"]);const found=records.find(x=>x.id===shift);if(!found||asText(found.fields["Staff Email"]).toLowerCase()!==u.email.toLowerCase())throw Error("Shift unavailable");}
- await airtableCreate(TABLES.scheduleRequests,{"Request":`${kind} · ${date}`,"Staff Email":u.email,"Request Type":kind,"Shift Record ID":shift,"Start Date":date,"End Date":end,"Reason":val(f,"reason"),"Status":"Pending"},true);revalidatePath("/portal/staff/scheduling");
+ async function request(f:FormData){"use server";
+  const u=await requirePortalRole("Staff","write");const kind=val(f,"kind");
+  if(!["Time Off","Unable to Work Scheduled Shift"].includes(kind))throw Error("Invalid request");
+  let date="",end="",shift="";
+  if(kind==="Unable to Work Scheduled Shift"){
+   shift=val(f,"shift");if(!shift)throw Error("Choose your scheduled shift");
+   const records=await airtableList(TABLES.staffSchedule,["Staff Email","Start","End","Shift","Status"]);
+   const target=records.find(x=>x.id===shift);
+   if(!target||asText(target.fields["Staff Email"]).toLowerCase()!==u.email.toLowerCase()||!active(asText(target.fields.Status)))throw Error("This is not an active assigned shift");
+   date=asText(target.fields.Start).slice(0,10);end=date;
+  }else{
+   date=val(f,"date");end=val(f,"end")||date;
+   if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(end)||end<date)throw Error("Invalid date range");
+  }
+  await airtableCreate(TABLES.scheduleRequests,{"Request":kind+" · "+date,"Staff Email":u.email,"Request Type":kind,"Shift Record ID":shift,"Start Date":date,"End Date":end,"Reason":val(f,"reason"),"Status":"Pending"},true);
+  revalidatePath("/portal/staff/scheduling");
  }
  async function review(f:FormData){"use server";const u=await requirePortalRole("Staff","write");if(!u.isAdministrator&&!u.roles.includes("Shelter Manager")){const grants=await airtableList(TABLES.portalAccess,["Email","Shelter Position"]);const position=asText(grants.find(x=>asText(x.fields.Email).toLowerCase()===u.email.toLowerCase())?.fields["Shelter Position"]);if(!["Animal Welfare Manager","Executive Director"].includes(position))throw Error("Manager access required");}
  const id=val(f,"id"),action=val(f,"action"),replacement=val(f,"replacement").toLowerCase();if(!["Seeking Coverage","Approved","Declined","Covered"].includes(action))throw Error("Invalid decision");
@@ -109,14 +122,7 @@ export default async function Scheduling({searchParams}:{searchParams:Promise<{d
  <input name="notes" aria-label="Exception reason" placeholder="Holiday or exception reason" className="min-w-0 w-full rounded-xl border p-3"/>
  <button className="w-fit whitespace-nowrap rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white hover:bg-primary/90">Add exception</button></form></section>}
  {canManageSchedule&&<section className="mt-6 rounded-2xl border bg-white p-5"><h2 className="font-semibold">Generate eight weeks of shifts</h2><p className="mt-1 text-sm text-slate-600">Only active templates with assigned employee emails are generated. Proposed templates are never activated automatically. Existing assignments are not overwritten.</p><form action={generate} className="mt-3 flex flex-wrap items-center gap-3"><input type="date" name="from" defaultValue={chosen} className="rounded-xl border p-2"/><button className="rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white">Generate schedule</button></form></section>}
- <div className="mt-5"><Link href="/portal/staff/coverage" className="inline-flex rounded-full border border-primary px-5 py-3 text-sm font-semibold text-primary">Shift Coverage Opportunities</Link></div><section className="mt-5 rounded-2xl border bg-white p-4"><h2 className="text-lg font-semibold">Schedule Requests</h2><p className="mt-1 text-xs text-slate-600">Request time off or report an unavailable scheduled shift.</p>
- <form action={request} className="mt-3 grid items-end gap-2 md:grid-cols-3">
-  <label className="min-w-0 text-xs font-medium">Request type<select name="kind" className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"><option value="Time Off">Request Time Off</option><option value="Unable to Work Scheduled Shift">Unable to Work Scheduled Shift</option></select></label>
-  <label className="min-w-0 text-xs font-medium">Date<input required type="date" name="date" className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"/></label>
-  <label className="min-w-0 text-xs font-medium">End date (optional)<input type="date" name="end" className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"/></label>
-  <label className="min-w-0 text-xs font-medium">Scheduled shift<select name="shift" className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"><option value="">No specific shift</option>{shifts.filter(x=>asText(x.fields["Staff Email"]).toLowerCase()===ctx.email.toLowerCase()).map(x=><option key={x.id} value={x.id}>{asText(x.fields.Shift)} · {asText(x.fields.Start).slice(0,10)}</option>)}</select></label>
-  <label className="min-w-0 text-xs font-medium md:col-span-2">Additional information (optional)<input name="reason" className="mt-1 w-full rounded-lg border px-3 py-2 text-sm" placeholder="Add details when needed"/></label>
-  <button className="w-fit whitespace-nowrap rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white">Submit request</button>
- </form></section>
+ <section className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-white p-4"><div><h2 className="text-lg font-semibold">Shift Coverage</h2><p className="mt-1 text-xs text-slate-600">View open shifts, respond to invitations, and review coverage.</p></div><Link href="/portal/staff/coverage" className="inline-flex rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white">View coverage opportunities</Link></section><section className="mt-5 rounded-2xl border bg-white p-4"><h2 className="text-lg font-semibold">Schedule Requests</h2><p className="mt-1 text-xs text-slate-600">Request time off or report an unavailable scheduled shift.</p>
+ <ScheduleRequestForm action={request} shifts={shifts.filter(x=>asText(x.fields["Staff Email"]).toLowerCase()===ctx.email.toLowerCase()&&active(asText(x.fields.Status))&&asText(x.fields.Start).slice(0,10)>=iso(new Date())).sort((a,b)=>asText(a.fields.Start).localeCompare(asText(b.fields.Start))).map(x=>({id:x.id,label:new Date(asText(x.fields.Start)).toLocaleDateString("en-US",{timeZone:"America/Chicago",weekday:"short",month:"short",day:"numeric"})+" · "+asText(x.fields.Shift)+" · "+new Date(asText(x.fields.Start)).toLocaleTimeString("en-US",{timeZone:"America/Chicago",hour:"numeric",minute:"2-digit"})+"–"+new Date(asText(x.fields.End)).toLocaleTimeString("en-US",{timeZone:"America/Chicago",hour:"numeric",minute:"2-digit"})}))}/></section>
  <section className="mt-6 rounded-2xl border bg-white p-5"><h2 className="text-xl font-semibold">{canManageSchedule?"Coverage & time-off requests":"My requests"}</h2>{requests.filter(x=>canManageSchedule||asText(x.fields["Staff Email"]).toLowerCase()===ctx.email.toLowerCase()).map(x=><article key={x.id} className="mt-3 rounded-xl border p-3"><div className="font-medium">{asText(x.fields.Request)}</div><div className="text-sm text-slate-600">Status: {asText(x.fields.Status)}</div>{canManageSchedule&&<form action={review} className="mt-3 grid gap-2 sm:grid-cols-2"><input type="hidden" name="id" value={x.id}/><select name="action" className="rounded-xl border p-2"><option>Seeking Coverage</option><option>Approved</option><option>Covered</option><option>Declined</option></select><input type="email" name="replacement" placeholder="Qualified replacement email for Covered" className="rounded-xl border p-2"/><input name="notes" placeholder="Manager notes" className="rounded-xl border p-2 sm:col-span-2"/><button className="rounded-full bg-primary px-4 py-2 font-semibold text-white sm:col-span-2">Save decision</button></form>}</article>)}</section></div></main>;
 }
