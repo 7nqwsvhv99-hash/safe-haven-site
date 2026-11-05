@@ -4,13 +4,15 @@ import {airtableList,airtableCreate,airtableUpdate,asText,requirePortalRole,TABL
 const get=(f:FormData,k:string)=>String(f.get(k)||"").trim();
 export default async function CoverageOffers(){
  const user=await requirePortalRole("Staff");
- const manager=user.isAdministrator||user.roles.includes("Shelter Manager");
+ const grants=await airtableList(TABLES.portalAccess,["Email","Shelter Position"]);
+ const userPosition=asText(grants.find(x=>asText(x.fields.Email).toLowerCase()===user.email.toLowerCase())?.fields["Shelter Position"]);
+ const manager=user.isAdministrator||user.roles.includes("Shelter Manager")||["Animal Welfare Manager","Executive Director"].includes(userPosition);
  const [offers,shifts,requests]=await Promise.all([
   airtableList(TABLES.coverageOffers,["Offer","Request ID","Shift Record ID","Employee Email","Response","Manager Status"]),
   airtableList(TABLES.staffSchedule,["Shift","Staff Email","Staff Name","Start","End","Status"]),
   airtableList(TABLES.scheduleRequests,["Request","Status","Shift Record ID"])
  ]);
- async function offer(f:FormData){"use server";const u=await requirePortalRole("Staff","write");if(!u.isAdministrator&&!u.roles.includes("Shelter Manager"))throw Error("Management only");
+ async function offer(f:FormData){"use server";const u=await requirePortalRole("Staff","write");if(!u.isAdministrator&&!u.roles.includes("Shelter Manager")){const records=await airtableList(TABLES.portalAccess,["Email","Shelter Position"]);const position=asText(records.find(x=>asText(x.fields.Email).toLowerCase()===u.email.toLowerCase())?.fields["Shelter Position"]);if(!["Animal Welfare Manager","Executive Director"].includes(position))throw Error("Management only");}
  const requestId=get(f,"request"),email=get(f,"email").toLowerCase();const req=(await airtableList(TABLES.scheduleRequests,["Shift Record ID","Status"])).find(x=>x.id===requestId);
  if(!req||!email||!req.fields["Shift Record ID"])throw Error("Choose an existing request with a scheduled shift and employee");
  const shiftId=asText(req.fields["Shift Record ID"]);
