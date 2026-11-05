@@ -450,14 +450,20 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                 ? "Your clinic dates, availability, attendance confirmations, team staffing, and clinic resources."
                 : "Your clinic dates, availability, attendance confirmations, team staffing, inventory, and clinic resources."}
             </p>
-            <div className="mt-5 flex flex-wrap gap-3"><Link href="/portal/clinic/attendance" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">Clinic Volunteer Attendance</Link>
-              {section !== "dates" && (
+            <div className="mt-5 flex flex-wrap gap-3">
+              {section === "dates" ? (
+                <Link href="/portal/clinic?section=staffing" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
+                  <ClipboardCheck className="h-5 w-5" />
+                  Team Staffing Calendar
+                </Link>
+              ) : (
                 <Link href="/portal/clinic?section=dates" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
                   <CalendarCheck className="h-5 w-5" />
                   My Clinic Dates
                 </Link>
               )}
-              {section !== "staffing" && (
+              <Link href="/portal/clinic/attendance" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">Clinic Volunteer Attendance</Link>
+              {section !== "dates" && section !== "staffing" && (
                 <Link href="/portal/clinic?section=staffing" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
                   <ClipboardCheck className="h-5 w-5" />
                   Team Staffing Calendar
