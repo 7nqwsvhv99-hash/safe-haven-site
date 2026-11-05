@@ -1,8 +1,9 @@
 "use client";
 import {useRouter} from "next/navigation";
-import {useState,useTransition} from "react";
+import {useEffect,useState,useTransition} from "react";
 export default function ScheduleDateControls({date,view}:{date:string;view:"day"|"week"}){
  const router=useRouter();const [chosen,setChosen]=useState(date);const [pending,startTransition]=useTransition();
+ useEffect(()=>{setChosen(date)},[date]);
  function go(d:string,v:"day"|"week"){if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return;startTransition(()=>router.push("/portal/staff/scheduling?date="+encodeURIComponent(d)+"&view="+v));}
  return <div className="mt-5 flex flex-wrap items-center gap-3">
   <label htmlFor="staff-schedule-date" className="text-sm">Date</label>
