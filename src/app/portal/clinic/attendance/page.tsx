@@ -96,10 +96,11 @@ export default async function ClinicVolunteerAttendance({searchParams}:{searchPa
  const user=await requirePortalRole("Clinic Team");
  const [dates,responses,members,volunteers,hours]=await load();
  const query=await searchParams;
- const options=dates.filter(d=>dateText(d.fields["Clinic Date"])<=todayChicago()).sort((a,b)=>dateText(b.fields["Clinic Date"]).localeCompare(dateText(a.fields["Clinic Date"]))).slice(0,30);
+ const options=dates.filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(dateText(d.fields["Clinic Date"]))).sort((a,b)=>dateText(b.fields["Clinic Date"]).localeCompare(dateText(a.fields["Clinic Date"]))).slice(0,60);
  const selected=options.find(d=>d.id===query.date)||options[0];
  const clinicId=selected?.id||"",date=dateText(selected?.fields["Clinic Date"]);
  const isToday=date===todayChicago();
+ const isUpcoming=date>todayChicago();
  const matches=responses.filter(r=>ids(r.fields["Clinic Date"]).includes(clinicId)&&activeResponse(r));
  const membersById=new Map(members.map(m=>[m.id,m]));
  const volunteersById=new Map(volunteers.map(v=>[v.id,v]));
@@ -134,7 +135,7 @@ export default async function ClinicVolunteerAttendance({searchParams}:{searchPa
       <div className="flex min-w-0 flex-wrap gap-1">{(p.roles.length?p.roles:["Clinic volunteer"]).map(role=><span key={role} className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">{role}</span>)}</div>
       {kind!=="awaiting"&&<span className="text-xs text-slate-500">{kind==="arrived"?"Arrived "+fmtTime(p.record?.fields["Check In At"]):"Arrived "+fmtTime(p.record?.fields["Check In At"])+" · Departed "+fmtTime(p.record?.fields["Check Out At"])}</span>}
      </div>
-     {p.error?<p className="w-full text-xs font-medium text-amber-800">{p.error} <a className="underline underline-offset-2" href="mailto:hello@brookebernard.com">Contact administrator</a>.</p>:kind==="departed"?<span className="flex shrink-0 items-center gap-1 text-xs font-medium text-green-700">✓ Recorded</span>:authorized&&isToday?<form action={changeAttendance} className="shrink-0"><input type="hidden" name="clinic" value={clinicId}/><input type="hidden" name="member" value={p.id}/><button type="submit" name="mode" value={kind==="awaiting"?"arrived":"departed"} className="min-h-9 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500">{kind==="awaiting"?"Arrived":"Departed"}</button></form>:<span className="shrink-0 text-xs text-slate-400">{isToday?"Read only":"Historical"}</span>}
+     {p.error?<p className="w-full text-xs font-medium text-amber-800">{p.error} <a className="underline underline-offset-2" href="mailto:hello@brookebernard.com">Contact administrator</a>.</p>:kind==="departed"?<span className="flex shrink-0 items-center gap-1 text-xs font-medium text-green-700">✓ Recorded</span>:authorized&&isToday?<form action={changeAttendance} className="shrink-0"><input type="hidden" name="clinic" value={clinicId}/><input type="hidden" name="member" value={p.id}/><button type="submit" name="mode" value={kind==="awaiting"?"arrived":"departed"} className="min-h-9 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500">{kind==="awaiting"?"Arrived":"Departed"}</button></form>:<span className="shrink-0 text-xs text-slate-400">{isToday?"Read only":isUpcoming?"Upcoming":"Historical"}</span>}
     </div>)}
     {!group.length&&<p className="px-3 py-3 text-sm text-slate-500">No volunteers in this section</p>}
    </div>
@@ -151,7 +152,7 @@ export default async function ClinicVolunteerAttendance({searchParams}:{searchPa
   <div className="mt-4 grid grid-cols-3 gap-2">
    {[["Total Volunteers",roster.length],["Volunteers Arrived",arrived],["Volunteers Departed",departed]].map(([label,count])=><div key={label} className="rounded-lg bg-white px-3 py-3 ring-1 ring-slate-200"><p className="text-xs text-slate-500">{label}</p><p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{count}</p></div>)}
   </div>
-  {!isToday&&<p className="mt-4 text-sm text-slate-600">Historical clinic attendance is read-only. Contact an administrator for missing times or corrections.</p>}
+  {!isToday&&<p className="mt-4 text-sm text-slate-600">{isUpcoming?"Upcoming clinic roster is visible for planning. Attendance buttons become available on the clinic date.":"Historical clinic attendance is read-only. Contact an administrator for missing times or corrections."}</p>}
   {!authorized&&<p className="mt-4 text-sm text-slate-600">Only the assigned Front Room System volunteer, Back Room System backup, or an administrator can record attendance.</p>}
   {renderSection("Awaiting Arrival","awaiting")}
   {renderSection("Arrived","arrived")}
