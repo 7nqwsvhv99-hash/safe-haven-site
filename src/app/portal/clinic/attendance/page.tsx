@@ -126,7 +126,8 @@ export default async function ClinicVolunteerAttendance({searchParams}:{searchPa
  for(const a of actions){if(a.action==="undo-arrived"||a.action==="undo-departed"){undone.add(a.previous||"");continue;}if(!undone.has(a.at)){lastAction=a;break;}}
  const missingAttendance=roster.filter(p=>!p.record||(!asText(p.record.fields["Check In At"])&&!asText(p.record.fields["Check Out At"])));
  const needsReview=roster.filter(p=>p.record&&asText(p.record.fields["Attendance Review Status"])!=="Verified");
- const reconciled=roster.length>0&&missingAttendance.length===0&&needsReview.length===0&&roster.every(p=>!p.error);
+ const needsReconciliation=missingAttendance.length>0||needsReview.length>0||roster.some(p=>Boolean(p.error));
+ const showReconciliation=Boolean(date&&date<todayChicago()&&needsReconciliation);
  const dateLabel=date?new Date(date+"T12:00:00Z").toLocaleDateString("en-US",{timeZone:"America/Chicago",weekday:"long",month:"long",day:"numeric",year:"numeric"}):"No clinic date";
  function renderSection(title:string,kind:"awaiting"|"arrived"|"departed"){
   const group=roster.filter(p=>state(p)===kind);
@@ -157,13 +158,17 @@ export default async function ClinicVolunteerAttendance({searchParams}:{searchPa
   </div>
   {!isToday&&<p className="mt-4 text-sm text-slate-600">{isUpcoming?"Upcoming clinic roster is visible for planning. Attendance buttons become available on the clinic date.":"Historical clinic attendance is read-only. Contact an administrator for missing times or corrections."}</p>}
   {!authorized&&<p className="mt-4 text-sm text-slate-600">Only the assigned Front Room System volunteer, Back Room System backup, or an administrator can record attendance.</p>}
-  <section className="mt-5 rounded-xl border border-slate-200 bg-white p-4" aria-labelledby="reconciliation-title">
-   <h2 id="reconciliation-title" className="font-bold text-slate-900">Roster Reconciliation</h2>
-   <p className="mt-2 text-sm text-slate-600">{missingAttendance.length} scheduled volunteers without recorded attendance · {needsReview.length} entries not yet verified.</p>
-   <p className="mt-1 text-sm font-medium">{reconciled?"All scheduled volunteer attendance has been verified.":"Attendance is not yet reconciled."}</p>
-   {missingAttendance.length>0&&<p className="mt-2 text-sm text-slate-600">Missing: {missingAttendance.map(p=>p.name).join(", ")}</p>}
-   <p className="mt-2 text-xs text-slate-500">The Volunteer Coordinator should review no-shows, corrections, and unscheduled attendees before closing the clinic roster.</p>
-  </section>
+  {showReconciliation&&<section className="mt-5 rounded-xl border border-amber-300 bg-amber-50 p-4" aria-label="Attendance reconciliation alert" role="status">
+   <details>
+    <summary className="cursor-pointer text-sm font-semibold text-amber-950">
+     Attendance needs review{missingAttendance.length>0?" · "+missingAttendance.length+" missing":""}{needsReview.length>0?" · "+needsReview.length+" unverified":""}{roster.some(p=>p.error)?" · Record issues":""}
+    </summary>
+    {missingAttendance.length>0&&<p className="mt-3 text-sm text-amber-950">Missing: {missingAttendance.map(p=>p.name).join(", ")}</p>}
+    {needsReview.length>0&&<p className="mt-2 text-sm text-amber-950">Awaiting verification: {needsReview.map(p=>p.name).join(", ")}</p>}
+    {roster.some(p=>p.error)&&<p className="mt-2 text-sm text-amber-950">Check volunteer record links and duplicates.</p>}
+    <p className="mt-2 text-xs text-amber-900">Volunteer Coordinator: review attendance.</p>
+   </details>
+  </section>}
   {renderSection("Awaiting Arrival","awaiting")}
   {renderSection("Arrived","arrived")}
   {renderSection("Departed","departed")}
