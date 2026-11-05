@@ -54,7 +54,7 @@ export default async function Scheduling({searchParams}:{searchParams:Promise<{d
    date=asText(target.fields.Start).slice(0,10);end=date;
   }else{
    date=val(f,"date");end=val(f,"end")||date;
-   if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||!/^\\d{4}-\\d{2}-\\d{2}$/.test(end)||end<date)throw Error("Invalid date range");
+   if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{4}-\d{2}-\d{2}$/.test(end)||end<date)throw Error("Invalid date range");
   }
   await airtableCreate(TABLES.scheduleRequests,{"Request":kind+" · "+date,"Staff Email":u.email,"Request Type":kind,"Shift Record ID":shift,"Start Date":date,"End Date":end,"Reason":val(f,"reason"),"Status":"Pending"},true);
   revalidatePath("/portal/staff/scheduling");
