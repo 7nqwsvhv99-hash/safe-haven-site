@@ -77,7 +77,9 @@ export default async function Scheduling({searchParams}:{searchParams:Promise<{d
   );
   if(!eligible.length)throw Error("No eligible Animal Care employees with active templates and available hours were found.");
   const shift=await airtableCreate(TABLES.staffSchedule,{"Shift":role,"Start":centralISO(date,start),"End":centralISO(date,end),"Notes":"Uncovered shift. Pending management-approved coverage."},true);
+  if(!shift?.id)throw Error("Failed to create the uncovered shift. No coverage offers were sent.");
   const request=await airtableCreate(TABLES.scheduleRequests,{"Request":"Open shift · "+role+" · "+date,"Request Type":"Open Shift","Shift Record ID":shift.id,"Start Date":date,"End Date":date,"Status":"Seeking Coverage","Reason":"Uncovered shift offered by "+actor.email},true);
+  if(!request?.id)throw Error("Failed to create the coverage request. Review the unassigned shift before retrying.");
   for(const email of eligible){
     await airtableCreate(TABLES.coverageOffers,{"Offer":"Coverage · "+role+" · "+date+" · "+email,"Request ID":request.id,"Shift Record ID":shift.id,"Employee Email":email,"Response":"Pending","Manager Status":"Awaiting Response","Offered At":new Date().toISOString()},true);
   }
