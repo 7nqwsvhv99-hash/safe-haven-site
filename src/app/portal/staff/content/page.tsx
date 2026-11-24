@@ -31,8 +31,12 @@ function chicagoLocalToIso(value:string){
 }
 function Status({children}:{children:ReactNode}){return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children}</span>}
 
+async function requireContentPublisher(){const context=await requirePortalRole("Staff","write");if(!context.isAdministrator&&!context.roles.includes("Shelter Manager")&&!context.roles.includes("Executive Director"))throw new Error("Only authorized content managers can change public website content.");return context;}
+
 export default async function WebsiteContentManagementPage(){
-  await requirePortalRole("Staff");
+  const context=await requirePortalRole("Staff");
+  const canPublish=context.isAdministrator||context.roles.includes("Shelter Manager")||context.roles.includes("Executive Director");
+  if(!canPublish)return <main className="container-custom py-10"><Link href="/portal/staff">Staff Portal</Link><h1 className="mt-4 text-2xl font-bold">Events & Website Content</h1><p className="mt-2">Website content is managed by authorized shelter leadership.</p></main>;
   const [events,testimonials,animals]=await Promise.all([
     airtableList(TABLES.events,[
       "Event Name","Event Status","Event Type","Start Date & Time","End Date & Time","All Day Event",
@@ -52,7 +56,7 @@ export default async function WebsiteContentManagementPage(){
   const publishedStories=testimonials.filter(r=>Boolean(r.fields["Approved for Website"])&&asText(r.fields["Website Permission"])==="Granted");
 
   async function createEvent(formData:FormData){
-    "use server";await requirePortalRole("Staff", "write");
+    "use server";await requireContentPublisher();
     const name=field(formData,"eventName");if(!name)return;
     const record=await airtableCreate(TABLES.events,{
       "Event Name":name,"Event Status":field(formData,"eventStatus")||"Draft",
@@ -72,7 +76,7 @@ export default async function WebsiteContentManagementPage(){
   }
 
   async function updateEvent(formData:FormData){
-    "use server";await requirePortalRole("Staff", "write");
+    "use server";await requireContentPublisher();
     const id=field(formData,"eventId");const latest=await airtableList(TABLES.events,["Event Name"]);if(!latest.some(r=>r.id===id))return;
     await airtableUpdate(TABLES.events,id,{
       "Event Name":field(formData,"eventName"),"Event Status":field(formData,"eventStatus"),
@@ -91,8 +95,32 @@ export default async function WebsiteContentManagementPage(){
     revalidatePath("/portal/staff/content");revalidatePath("/events");revalidatePath("/");
   }
 
+  async function duplicateEvent(formData:FormData){
+    "use server";await requireContentPublisher();
+    const id=field(formData,"eventId");
+    const rows=await airtableList(TABLES.events,["Event Name","Event Type","All Day Event","Location Name","Street Address","City","State","ZIP","Event Description","Event Image"]);
+    const source=rows.find(row=>row.id===id);if(!source)throw new Error("Event not found.");
+    const fields:Record<string,unknown>={};
+    for(const key of ["Event Type","All Day Event","Location Name","Street Address","City","State","ZIP","Event Description"]){if(source.fields[key]!==undefined)fields[key]=source.fields[key];}
+    const images=source.fields["Event Image"];
+    if(Array.isArray(images))fields["Event Image"]=images.flatMap(item=>item&&typeof item.url==="string"?[{url:item.url,filename:item.filename}]:[]);
+    await airtableCreate(TABLES.events,{...fields,"Event Name":asText(source.fields["Event Name"])+" (copy)","Event Status":"Draft","Publish on Website":false,"Featured on Homepage":false},true);
+    revalidatePath("/portal/staff/content");
+  }
+
+  async function removeEventImage(formData:FormData){
+    "use server";await requireContentPublisher();
+    const id=field(formData,"eventId"), imageId=field(formData,"imageId");
+    const rows=await airtableList(TABLES.events,["Event Image"]);
+    const source=rows.find(row=>row.id===id);if(!source)throw new Error("Event not found.");
+    const images=source.fields["Event Image"];
+    if(!Array.isArray(images)||!images.some(item=>item?.id===imageId))throw new Error("Image not found.");
+    await airtableUpdate(TABLES.events,id,{"Event Image":images.filter(item=>item?.id!==imageId).map(item=>({id:item.id}))});
+    revalidatePath("/portal/staff/content");revalidatePath("/events");revalidatePath("/");revalidatePath("/events/"+id);
+  }
+
   async function createTestimonial(formData:FormData){
-    "use server";await requirePortalRole("Staff", "write");
+    "use server";await requireContentPublisher();
     const quote=field(formData,"quote");if(!quote)return;
 
     const animalSearch=field(formData,"animalSearch");
@@ -129,7 +157,7 @@ export default async function WebsiteContentManagementPage(){
 
 
     <div className="space-y-8">
-      <details name="public-content" className="rounded-3xl border bg-white p-6 shadow-sm md:p-8"><summary className="flex cursor-pointer list-none items-center gap-4"><CalendarDays className="h-6 w-6 text-primary"/><div className="flex-1"><h2 className="text-2xl font-bold">Events</h2><p className="text-sm text-muted-foreground">{publishedEvents.length} live events · {drafts.length} drafts</p></div><ChevronDown className="h-5 w-5"/></summary><div className={events.length ? "mt-5 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]" : "mt-5"}><div className={events.length ? "space-y-4" : "hidden"}>{events.map(r=><details key={r.id} className="rounded-2xl border p-5"><summary className="cursor-pointer list-none"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{asText(r.fields["Event Name"])}</h3><p className="mt-1 text-sm text-muted-foreground">{fmt(r.fields["Start Date & Time"],true)} · {asText(r.fields["Event Type"])}</p></div><div className="flex gap-2"><Status>{asText(r.fields["Event Status"])}</Status>{Boolean(r.fields["Publish on Website"])&&<span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Website</span>}</div></div></summary><form action={updateEvent} className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-2"><input type="hidden" name="eventId" value={r.id}/><input name="eventName" defaultValue={asText(r.fields["Event Name"])} className="rounded-xl border px-3 py-2.5"/><select name="eventStatus" defaultValue={asText(r.fields["Event Status"])} className="rounded-xl border bg-white px-3 py-2.5">{["Draft","Published","Cancelled","Completed"].map(x=><option key={x}>{x}</option>)}</select><select name="eventType" defaultValue={asText(r.fields["Event Type"])} className="rounded-xl border bg-white px-3 py-2.5">{["Fundraiser","Adoption Event","Community Event","Volunteer Event","Other"].map(x=><option key={x}>{x}</option>)}</select><EventDateFields initialAllDay={Boolean(r.fields["All Day Event"])} initialStart={localInput(r.fields["Start Date & Time"])} initialEnd={localInput(r.fields["End Date & Time"])}/><input name="locationName" defaultValue={asText(r.fields["Location Name"])} placeholder="Location name" className="rounded-xl border px-3 py-2.5"/><input name="street" defaultValue={asText(r.fields["Street Address"])} placeholder="Street address" className="rounded-xl border px-3 py-2.5"/><input name="city" defaultValue={asText(r.fields.City)} placeholder="City" className="rounded-xl border px-3 py-2.5"/><input name="state" defaultValue={asText(r.fields.State)} placeholder="State" className="rounded-xl border px-3 py-2.5"/><input name="zip" defaultValue={asText(r.fields.ZIP)} placeholder="ZIP" className="rounded-xl border px-3 py-2.5"/><label className="block text-sm font-medium sm:col-span-2">Event description<span className="mt-1 block text-xs font-normal text-muted-foreground">Briefly describe the event for visitors. This appears with the event on the website.</span><textarea name="shortDescription" rows={3} defaultValue={asText(r.fields["Event Description"])} className="mt-2 w-full rounded-xl border px-3 py-2.5"/></label><label className="block text-sm font-medium">Button label<span className="mt-1 block text-xs font-normal text-muted-foreground">Optional. Examples: Buy Tickets, RSVP, Register, or Learn More.</span><input name="ctaLabel" defaultValue={asText(r.fields["CTA Label"])} className="mt-2 w-full rounded-xl border px-3 py-2.5"/></label><label className="block text-sm font-medium">Button URL<span className="mt-1 block text-xs font-normal text-muted-foreground">Optional. Paste the webpage visitors should open when they click the event button.</span><input name="ctaUrl" defaultValue={asText(r.fields["CTA URL"])} className="mt-2 w-full rounded-xl border px-3 py-2.5"/></label><label className="text-sm"><input name="featured" type="checkbox" defaultChecked={Boolean(r.fields["Featured on Homepage"])} className="mr-2"/>Featured on homepage</label><label className="text-sm sm:col-span-2">Event image<input name="image" type="file" accept="image/*" className="mt-2 block w-full"/></label><button className="w-fit rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary sm:col-span-2">Save Event</button></form></details>)}</div>
+      <details name="public-content" className="rounded-3xl border bg-white p-6 shadow-sm md:p-8"><summary className="flex cursor-pointer list-none items-center gap-4"><CalendarDays className="h-6 w-6 text-primary"/><div className="flex-1"><h2 className="text-2xl font-bold">Events</h2><p className="text-sm text-muted-foreground">{publishedEvents.length} live events · {drafts.length} drafts</p></div><ChevronDown className="h-5 w-5"/></summary><div className={events.length ? "mt-5 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]" : "mt-5"}><div className={events.length ? "space-y-4" : "hidden"}>{events.map(r=><details key={r.id} className="rounded-2xl border p-5"><summary className="cursor-pointer list-none"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{asText(r.fields["Event Name"])}</h3><p className="mt-1 text-sm text-muted-foreground">{fmt(r.fields["Start Date & Time"],true)} · {asText(r.fields["Event Type"])}</p></div><div className="flex gap-2"><Status>{asText(r.fields["Event Status"])}</Status>{Boolean(r.fields["Publish on Website"])&&<span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Website</span>}</div></div></summary><form action={updateEvent} className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-2"><input type="hidden" name="eventId" value={r.id}/><input name="eventName" defaultValue={asText(r.fields["Event Name"])} className="rounded-xl border px-3 py-2.5"/><select name="eventStatus" defaultValue={asText(r.fields["Event Status"])} className="rounded-xl border bg-white px-3 py-2.5">{["Draft","Published","Cancelled","Completed"].map(x=><option key={x}>{x}</option>)}</select><select name="eventType" defaultValue={asText(r.fields["Event Type"])} className="rounded-xl border bg-white px-3 py-2.5">{["Fundraiser","Adoption Event","Community Event","Volunteer Event","Other"].map(x=><option key={x}>{x}</option>)}</select><EventDateFields initialAllDay={Boolean(r.fields["All Day Event"])} initialStart={localInput(r.fields["Start Date & Time"])} initialEnd={localInput(r.fields["End Date & Time"])}/><input name="locationName" defaultValue={asText(r.fields["Location Name"])} placeholder="Location name" className="rounded-xl border px-3 py-2.5"/><input name="street" defaultValue={asText(r.fields["Street Address"])} placeholder="Street address" className="rounded-xl border px-3 py-2.5"/><input name="city" defaultValue={asText(r.fields.City)} placeholder="City" className="rounded-xl border px-3 py-2.5"/><input name="state" defaultValue={asText(r.fields.State)} placeholder="State" className="rounded-xl border px-3 py-2.5"/><input name="zip" defaultValue={asText(r.fields.ZIP)} placeholder="ZIP" className="rounded-xl border px-3 py-2.5"/><label className="block text-sm font-medium sm:col-span-2">Event description<span className="mt-1 block text-xs font-normal text-muted-foreground">Briefly describe the event for visitors. This appears with the event on the website.</span><textarea name="shortDescription" rows={3} defaultValue={asText(r.fields["Event Description"])} className="mt-2 w-full rounded-xl border px-3 py-2.5"/></label><label className="block text-sm font-medium">Button label<span className="mt-1 block text-xs font-normal text-muted-foreground">Optional. Examples: Buy Tickets, RSVP, Register, or Learn More.</span><input name="ctaLabel" defaultValue={asText(r.fields["CTA Label"])} className="mt-2 w-full rounded-xl border px-3 py-2.5"/></label><label className="block text-sm font-medium">Button URL<span className="mt-1 block text-xs font-normal text-muted-foreground">Optional. Paste the webpage visitors should open when they click the event button.</span><input name="ctaUrl" defaultValue={asText(r.fields["CTA URL"])} className="mt-2 w-full rounded-xl border px-3 py-2.5"/></label><label className="text-sm"><input name="featured" type="checkbox" defaultChecked={Boolean(r.fields["Featured on Homepage"])} className="mr-2"/>Featured on homepage</label><label className="text-sm sm:col-span-2">Event image<input name="image" type="file" accept="image/*" className="mt-2 block w-full"/></label><button className="w-fit rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary sm:col-span-2">Save Event</button></form><form action={duplicateEvent} className="mt-3"><input type="hidden" name="eventId" value={r.id}/><button className="rounded-full border px-4 py-2 text-sm font-semibold">Duplicate Event</button></form>{Array.isArray(r.fields["Event Image"])&&r.fields["Event Image"].map((image:{id:string;url:string;filename?:string})=><form key={image.id} action={removeEventImage} className="mt-3 flex items-center gap-3"><img src={image.url} alt={image.filename||"Event image"} className="h-16 w-24 rounded object-contain"/><input type="hidden" name="eventId" value={r.id}/><input type="hidden" name="imageId" value={image.id}/><label className="text-sm"><input type="checkbox" required className="mr-2"/>Confirm removal</label><button className="rounded-full border px-3 py-1 text-sm">Remove image</button></form>)}</details>)}</div>
       <details className="min-w-0"><summary className="mb-4 cursor-pointer font-semibold text-primary">+ Create Event</summary><form action={createEvent} className={`h-fit rounded-2xl bg-slate-50 p-5 md:p-6 ${events.length ? "" : "mx-auto max-w-5xl"}`}>
         <div className="grid gap-4 sm:grid-cols-2">
           <h3 className="text-lg font-bold sm:col-span-2">Create Event</h3>
