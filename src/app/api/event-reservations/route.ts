@@ -41,6 +41,8 @@ export async function POST(request:Request){
 
   const [event,option]=await Promise.all([airtableGet(EVENTS_TABLE_ID,eventId,token),airtableGet(OPTIONS_TABLE_ID,optionId,token)]);
   if(event.fields["Publish on Website"]!==true||event.fields["Event Status"]!=="Published")return NextResponse.json({error:"This event is not currently accepting public reservations."},{status:400});
+  const eventEnd=Date.parse(String(event.fields["End Date & Time"]||event.fields["Start Date & Time"]||""));
+  if(!Number.isFinite(eventEnd)||eventEnd<Date.now())return NextResponse.json({error:"This event has ended and is no longer accepting reservations."},{status:400});
   const optionEvents=Array.isArray(option.fields.Event)?option.fields.Event as string[]:[];
   if(!optionEvents.includes(eventId)||option.fields.Active!==true)return NextResponse.json({error:"That ticket or package is not currently available."},{status:400});
   const today=new Date().toISOString().slice(0,10);
