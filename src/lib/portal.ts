@@ -56,7 +56,7 @@ const TABLES = {
   publishedTrainingMaterial: "tbl9qYIUNfMS2d3IE",
 } as const;
 
-export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Volunteer Coordinator" | "Shelter Manager" | "Board" | "Administrator";
+export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Volunteer Coordinator" | "Shelter Manager" | "Executive Director" | "Board" | "Administrator";
 
 type AirtableRecord = {
   id: string;
@@ -208,7 +208,7 @@ export async function getPortalContext() {
     canVolunteer: isAdministrator || isBoard || roles.includes("Volunteer"),
     canFoster: isAdministrator || isBoard || roles.includes("Foster"),
     canClinic: isAdministrator || isBoard || roles.includes("Clinic Team"),
-    canStaff: isAdministrator || isBoard || roles.includes("Staff") || roles.includes("Shelter Manager"),
+    canStaff: isAdministrator || isBoard || roles.includes("Staff") || roles.includes("Shelter Manager") || roles.includes("Executive Director"),
     canMedical: isAdministrator || isBoard || roles.includes("Staff") || roles.includes("Medical"),
     canOnboard: canManageOnboarding(roles),
     canViewOnboarding: isBoard || canManageOnboarding(roles),
@@ -231,7 +231,8 @@ export async function requirePortalRole(
     (role === "Volunteer" && context.roles.includes("Volunteer")) ||
     (role === "Foster" && context.roles.includes("Foster")) ||
     (role === "Clinic Team" && context.roles.includes("Clinic Team")) ||
-    (role === "Staff" && (context.roles.includes("Staff") || context.roles.includes("Shelter Manager"))) ||
+    (role === "Staff" && (context.roles.includes("Staff") || context.roles.includes("Shelter Manager") || context.roles.includes("Executive Director"))) ||
+    (role === "Executive Director" && context.roles.includes("Executive Director")) ||
     (role === "Medical" && (context.roles.includes("Staff") || context.roles.includes("Medical")));
   if (!allowed) redirect("/portal");
   return context;
