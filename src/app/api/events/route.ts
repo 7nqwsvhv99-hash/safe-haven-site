@@ -141,13 +141,12 @@ export async function GET(request: Request) {
         (event) =>
           event.name &&
           event.publish &&
+          (all || event.featured) &&
           event.status === "Published" &&
           Number.isFinite(event.effectiveEnd) &&
           event.effectiveEnd >= now
       )
       .sort((a, b) => {
-        if (a.featured !== b.featured) return a.featured ? -1 : 1
-        if (a.displayOrder !== b.displayOrder) return a.displayOrder - b.displayOrder
         return new Date(a.start).getTime() - new Date(b.start).getTime()
       })
       .slice(0, all ? undefined : 3)
