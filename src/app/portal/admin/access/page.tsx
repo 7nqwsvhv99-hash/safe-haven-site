@@ -12,7 +12,7 @@ import {
   PortalRole,
 } from "@/lib/portal";
 
-const portalRoles: PortalRole[] = ["Volunteer", "Foster", "Clinic Team", "Staff", "Medical", "Volunteer Coordinator", "Shelter Manager", "Board", "Administrator"];
+const portalRoles: PortalRole[] = ["Volunteer", "Foster", "Clinic Team", "Staff", "Medical", "Volunteer Coordinator", "Shelter Manager", "Executive Director", "Board", "Administrator"];
 
 export default async function PortalAccessPage() {
   await requireAdministratorOrBoard();
