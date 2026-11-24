@@ -47,6 +47,8 @@ export default async function EventDetailPage({params}:{params:Promise<{eventId:
  const {eventId}=await params;
  const event=await fetchRecord(EVENTS_TABLE_ID,eventId);
  if(!event||event.fields["Publish on Website"]!==true||text(event.fields["Event Status"])!=="Published")notFound();
+ const end=Date.parse(text(event.fields["End Date & Time"])||text(event.fields["Start Date & Time"]));
+ if(!Number.isFinite(end)||end<Date.now())notFound();
  const options=await fetchOptions(eventId);
  const start=text(event.fields["Start Date & Time"]);
  const date=start?new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",weekday:"long",month:"long",day:"numeric",year:"numeric",hour:"numeric",minute:"2-digit"}).format(new Date(start)):"";
