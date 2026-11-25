@@ -1,93 +1,113 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
+import {
+  airtableCreate, airtableGet, capacityForOption, eventIsEligible, findByRequestKey,
+  newConfirmationNumber, readText, reservationTables, ReservationError, validateReservationInput,
+} from "@/lib/event-reservation-service";
+import { createPayPalOrder, getPayPalOrder, paypalConfigured } from "@/lib/paypal";
+import { markEventCapacitySaved, releaseEventCapacity, reserveEventCapacity } from "@/lib/event-capacity";
 
-const AIRTABLE_BASE_ID="app2vpch2JJVrP9pu";
-const EVENTS_TABLE_ID="tbl1wjnnJXBI5a3fy";
-const OPTIONS_TABLE_ID="tblVvPwgFWUhjQolD";
-const RESERVATIONS_TABLE_ID="tblaAz2TlR1JASNLM";
-const PAYPAL_BUSINESS_EMAIL="safehavenbookkeeper1471@gmail.com";
-
-function text(v:FormDataEntryValue|null){return typeof v==="string"?v.trim():"";}
-
-async function airtableGet(table:string,id:string,token:string){
- const response=await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${table}/${id}`,{headers:{Authorization:`Bearer ${token}`},cache:"no-store"});
- const result=await response.json();
- if(!response.ok)throw new Error("Could not load reservation data");
- return result as {id:string;fields:Record<string,unknown>};
-}
-async function airtableList(table:string,fields:string[],token:string){
- const params=new URLSearchParams();params.set("pageSize","100");
- fields.forEach(f=>params.append("fields[]",f));
- const records:{id:string;fields:Record<string,unknown>}[]=[];let offset:string|undefined;
- do{
-  if(offset)params.set("offset",offset);
-  const response=await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${table}?${params}`,{headers:{Authorization:`Bearer ${token}`},cache:"no-store"});
-  const result=await response.json();if(!response.ok)throw new Error("Could not check reservation capacity");
-  records.push(...(result.records||[]));offset=result.offset;
- }while(offset);
- return records as {id:string;fields:Record<string,unknown>}[];
+function chicagoToday() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
 }
 
-export async function POST(request:Request){
- try{
-  const token=process.env.AIRTABLE_ACCESS_TOKEN;
-  if(!token)return NextResponse.json({error:"Server configuration is incomplete."},{status:500});
-  const form=await request.formData();
-  const eventId=text(form.get("eventId")), optionId=text(form.get("optionId"));
-  const firstName=text(form.get("firstName")),lastName=text(form.get("lastName")),email=text(form.get("email")),phone=text(form.get("phone"));
-  const guestNames=text(form.get("guestNames")),specialRequests=text(form.get("specialRequests"));
-  const quantity=Math.max(1,Math.min(20,Number(text(form.get("quantity")))||1));
-  if(!eventId||!optionId||!firstName||!lastName||!email)return NextResponse.json({error:"Please complete the required reservation fields."},{status:400});
+function eligibleForSale(fields: Record<string, unknown>) {
+  if (fields.Active !== true) return false;
+  const today = chicagoToday();
+  const start = readText(fields["Sales Start"]), end = readText(fields["Sales End"]);
+  return (!start || start <= today) && (!end || end >= today);
+}
 
-  const [event,option]=await Promise.all([airtableGet(EVENTS_TABLE_ID,eventId,token),airtableGet(OPTIONS_TABLE_ID,optionId,token)]);
-  if(event.fields["Publish on Website"]!==true||event.fields["Event Status"]!=="Published")return NextResponse.json({error:"This event is not currently accepting public reservations."},{status:400});
-  const eventEnd=Date.parse(String(event.fields["End Date & Time"]||event.fields["Start Date & Time"]||""));
-  if(!Number.isFinite(eventEnd)||eventEnd<Date.now())return NextResponse.json({error:"This event has ended and is no longer accepting reservations."},{status:400});
-  const optionEvents=Array.isArray(option.fields.Event)?option.fields.Event as string[]:[];
-  if(!optionEvents.includes(eventId)||option.fields.Active!==true)return NextResponse.json({error:"That ticket or package is not currently available."},{status:400});
-  const today=new Date().toISOString().slice(0,10);
-  const salesStart=typeof option.fields["Sales Start"]==="string"?option.fields["Sales Start"]:"";
-  const salesEnd=typeof option.fields["Sales End"]==="string"?option.fields["Sales End"]:"";
-  if((salesStart&&salesStart>today)||(salesEnd&&salesEnd<today))return NextResponse.json({error:"Sales are not currently open for that option."},{status:400});
+export async function POST(request: Request) {
+  let heldRequestKey = "";
+  let capacityReserved = false;
+  try {
+    const input = validateReservationInput(await request.json());
+    heldRequestKey = input.requestKey;
+    const prior = await findByRequestKey(input.requestKey);
+    if (prior.length) {
+      const confirmationNumber = readText(prior[0].fields["Confirmation Number"]);
+      const orderId = readText(prior[0].fields["PayPal Order ID"]);
+      if (readText(prior[0].fields["Registration Type"]) === "Free RSVP") return NextResponse.json({ free: true, confirmationNumber });
+      if (orderId) {
+        const order = await getPayPalOrder(orderId);
+        const approvalUrl = order.links?.find((link) => link.rel === "approve")?.href;
+        if (approvalUrl) return NextResponse.json({ approvalUrl, confirmationNumber });
+        if (order.status === "COMPLETED") return NextResponse.json({ confirmationNumber, returnUrl: `/events/reservation-complete?confirmation=${encodeURIComponent(confirmationNumber)}&token=${encodeURIComponent(orderId)}` });
+      }
+      throw new ReservationError("This reservation was already submitted. Contact Safe Haven if you need help.", 409);
+    }
 
-  const price=typeof option.fields.Price==="number"?option.fields.Price:0;
-  if(price<=0)return NextResponse.json({error:"This paid reservation option is not configured with a valid price."},{status:400});
-  const capacity=typeof option.fields["Capacity Units"]==="number"?option.fields["Capacity Units"]:0;
-  if(capacity>0){
-    const reservations=await airtableList(RESERVATIONS_TABLE_ID,["Ticket / Package Option","Quantity","Reservation Status"],token);
-    const used=reservations.filter(r=>{
-      const links=Array.isArray(r.fields["Ticket / Package Option"])?r.fields["Ticket / Package Option"] as string[]:[];
-      return links.includes(optionId)&&r.fields["Reservation Status"]!=="Cancelled";
-    }).reduce((sum,r)=>sum+(typeof r.fields.Quantity==="number"?r.fields.Quantity:0),0);
-    if(used+quantity>capacity)return NextResponse.json({error:"There are not enough remaining reservations for that quantity. Please choose a smaller quantity."},{status:409});
+    const event = await airtableGet(reservationTables.events, input.eventId);
+    if (!eventIsEligible(event)) throw new ReservationError("This event is no longer accepting reservations.", 409);
+    const visitorAction = readText(event.fields["Visitor Action"]);
+    if (!["RSVP for free", "Purchase tickets", "Register and pay"].includes(visitorAction)) throw new ReservationError("This event is not configured to accept online registrations.", 409);
+    const capacityBaselineAt = Date.now();
+
+    const selected = await Promise.all(input.lines.map(async (line) => {
+      const option = await airtableGet(reservationTables.options, line.optionId);
+      const fields = option.fields;
+      if (!Array.isArray(fields.Event) || !(fields.Event as string[]).includes(input.eventId) || !eligibleForSale(fields)) throw new ReservationError("One of your selected options is no longer available.", 409);
+      const price = typeof fields.Price === "number" && Number.isFinite(fields.Price) ? fields.Price : -1;
+      if (price < 0) throw new ReservationError("A selected option is not configured correctly. Please contact Safe Haven.", 409);
+      const capacity = typeof fields["Capacity Units"] === "number" ? fields["Capacity Units"] : 0;
+      if (visitorAction === "RSVP for free" && price !== 0) throw new ReservationError("This event is only accepting free RSVPs.", 409);
+      if (["Purchase tickets", "Register and pay"].includes(visitorAction) && price === 0) throw new ReservationError("A selected option does not match this event’s payment setup.", 409);
+      const used = capacity > 0 ? await capacityForOption(line.optionId) : 0;
+      return { ...line, optionId: line.optionId, name: readText(fields["Option Name"]) || "Event registration", price, capacity, used };
+    }));
+
+    const capacityRequests = selected.map((line) => ({ optionId: line.optionId, quantity: line.quantity, capacity: line.capacity, used: line.used, baselineAt: capacityBaselineAt }));
+    await reserveEventCapacity(input.requestKey, capacityRequests);
+    capacityReserved = capacityRequests.some((item) => item.capacity > 0);
+
+    const total = Number(selected.reduce((sum, line) => sum + line.price * line.quantity, 0).toFixed(2));
+    if (!Number.isFinite(total) || total < 0 || total > 100_000) throw new ReservationError("The registration total is invalid. Please contact Safe Haven.", 409);
+    const free = total === 0;
+    const confirmationNumber = newConfirmationNumber();
+    const now = new Date().toISOString();
+    let orderId = "";
+    let approvalUrl = "";
+
+    if (!free) {
+      if (!paypalConfigured()) throw new ReservationError("Online payment is temporarily unavailable. Please contact Safe Haven to register.", 503);
+      const origin = new URL(request.url).origin;
+      const order = await createPayPalOrder({
+        requestKey: input.requestKey,
+        confirmationNumber,
+        eventName: readText(event.fields["Event Name"]) || "Safe Haven Event",
+        lines: selected.map((line) => ({ name: line.name, quantity: line.quantity, price: line.price })),
+        total,
+        returnUrl: `${origin}/events/reservation-complete?confirmation=${encodeURIComponent(confirmationNumber)}&token={CHECKOUT.ORDER_ID}`,
+        cancelUrl: `${origin}/events/${encodeURIComponent(input.eventId)}?payment=cancelled`,
+      });
+      orderId = order.orderId;
+      approvalUrl = order.approvalUrl;
+    }
+
+    const records = await airtableCreate(reservationTables.reservations, selected.map((line) => ({ fields: {
+      "Reservation Name": `${confirmationNumber} · ${input.lastName}`,
+      Event: [input.eventId], "Ticket / Package Option": [line.optionId], Quantity: line.quantity,
+      "Purchaser First Name": input.firstName, "Purchaser Last Name": input.lastName,
+      "Purchaser Email": input.email, "Purchaser Phone": input.phone,
+      "Guest Names": input.guestNames, "Special Requests": input.specialRequests,
+      "Amount Due": Number((line.price * line.quantity).toFixed(2)), "Amount Paid": 0,
+      ...(free ? {} : { "Payment Status": "Pending Payment", "Payment Method": "PayPal", "PayPal Order ID": orderId }),
+      "Registration Type": free ? "Free RSVP" : "Paid",
+      "Reservation Status": free ? "Confirmed" : "Pending",
+      "Confirmation Number": confirmationNumber, "Idempotency Key": input.requestKey,
+      "Submitted At": now,
+      ...(free ? { "Confirmed At": now } : {}),
+    } })));
+
+    if (!records.length) throw new ReservationError("We could not save the reservation. Please try again.", 503);
+    if (capacityReserved) await markEventCapacitySaved(input.requestKey);
+    return NextResponse.json(free ? { free: true, confirmationNumber } : { approvalUrl, confirmationNumber });
+  } catch (error) {
+    if (heldRequestKey && capacityReserved) {
+      try { await releaseEventCapacity(heldRequestKey); } catch (releaseError) { console.error("Could not release event capacity hold", releaseError); }
+    }
+    const status = error instanceof ReservationError ? error.status : 500;
+    if (!(error instanceof ReservationError)) console.error("Event reservation error", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "We could not create your reservation right now. Please try again." }, { status });
   }
-
-  const confirmationNumber=`SH-${new Date().getFullYear()}-${randomUUID().slice(0,8).toUpperCase()}`;
-  const eventName=typeof event.fields["Event Name"]==="string"?event.fields["Event Name"]:"Safe Haven Event";
-  const optionName=typeof option.fields["Option Name"]==="string"?option.fields["Option Name"]:"Reservation";
-  const amount=Number((price*quantity).toFixed(2));
-  const response=await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${RESERVATIONS_TABLE_ID}`,{
-    method:"POST",headers:{Authorization:`Bearer ${token}`,"Content-Type":"application/json"},
-    body:JSON.stringify({records:[{fields:{
-      "Reservation Name":`${confirmationNumber} · ${lastName}`,
-      Event:[eventId],"Ticket / Package Option":[optionId],Quantity:quantity,
-      "Purchaser First Name":firstName,"Purchaser Last Name":lastName,"Purchaser Email":email,"Purchaser Phone":phone,
-      "Guest Names":guestNames,"Special Requests":specialRequests,"Amount Due":amount,"Amount Paid":0,
-      "Payment Status":"Pending Payment","Payment Method":"PayPal","Reservation Status":"Pending",
-      "Confirmation Number":confirmationNumber,"Submitted At":new Date().toISOString()
-    }}],typecast:true}),cache:"no-store"
-  });
-  const result=await response.json();
-  if(!response.ok)throw new Error("Could not save reservation");
-  const origin=new URL(request.url).origin;
-  return NextResponse.json({
-    confirmationNumber,amount,paypalBusinessEmail:PAYPAL_BUSINESS_EMAIL,
-    itemName:`${eventName} - ${optionName} x${quantity}`,
-    returnUrl:`${origin}/events/reservation-complete?confirmation=${encodeURIComponent(confirmationNumber)}`,
-    cancelUrl:`${origin}/events/${eventId}?payment=cancelled`
-  });
- }catch(error){
-  console.error("Event reservation error",error);
-  return NextResponse.json({error:"We could not create your reservation right now. Please try again."},{status:500});
- }
 }

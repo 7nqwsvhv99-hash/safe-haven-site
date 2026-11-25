@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { markEventCapacitySaved, releaseEventCapacity, reserveEventCapacity } from "@/lib/event-capacity";
 import { CalendarDays, Clock3, Megaphone, Wrench, ArrowLeft, HeartHandshake } from "lucide-react";
-import { requirePortalRole, getVolunteerPortalData, airtableCreate, TABLES } from "@/lib/portal";
+import { requirePortalRole, getVolunteerPortalData, airtableCreate, airtableList, airtableUpdate, asNumber, asStrings, asText, TABLES } from "@/lib/portal";
 import { isVolunteerOpportunity, volunteerOpportunityNames } from "@/lib/volunteer-opportunities";
 
 function formatDateTime(value: string) {
@@ -104,6 +105,78 @@ export default async function VolunteerPortalPage() {
     revalidatePath("/portal/staff/volunteer-opportunities");
   }
 
+  async function respondToEventInvitation(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Volunteer", "write");
+    const latest = await getVolunteerPortalData(current.email);
+    if (!latest.volunteer) return;
+    const invitationId = String(formData.get("invitationId") || "");
+    const response = String(formData.get("response") || "");
+    const invitation = latest.eventInvitations.find((item) => item.id === invitationId);
+    if (!invitation || !["Accept", "Decline", "Release", "Dismiss"].includes(response)) return;
+    if (response === "Dismiss") {
+      if (!invitation.notice) return;
+      await airtableUpdate(TABLES.eventVolunteerInvitations, invitation.id, { "Volunteer Notice": "" }, true);
+      revalidatePath("/portal/volunteer");
+      return;
+    }
+    if (response === "Release" && invitation.status !== "Accepted") return;
+    if (response !== "Release" && !["Invited", "Reconfirmation Required"].includes(invitation.status)) return;
+    const status = response === "Accept" ? "Accepted" : response === "Decline" ? "Declined" : "Released";
+    await airtableUpdate(TABLES.eventVolunteerInvitations, invitation.id, {
+      Status: status,
+      "Responded At": new Date().toISOString(),
+      "Volunteer Notice": "",
+    }, true);
+    if (status === "Declined" || status === "Released") await releaseEventCapacity(invitation.invitationKey).catch((error) => console.error("Could not release volunteer shift hold", error));
+    revalidatePath("/portal/volunteer");
+    revalidatePath("/portal/staff/event-volunteers");
+  }
+
+  async function signUpForEventShift(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Volunteer", "write");
+    const latest = await getVolunteerPortalData(current.email);
+    if (!latest.volunteer) return;
+    const shiftId = String(formData.get("shiftId") || "");
+    const offered = latest.openEventShifts.find((shift) => shift.id === shiftId);
+    if (!offered) return;
+    const baselineAt = Date.now();
+    const requestKey = `event-signup:${latest.volunteer.id}:${shiftId}`;
+    const [shifts, invitations, events] = await Promise.all([
+      airtableList(TABLES.volunteerShifts,["Event","Status","Capacity","Start Date & Time","End Date & Time"]),
+      airtableList(TABLES.eventVolunteerInvitations,["Shift","Volunteer","Status"]),
+      airtableList(TABLES.events,["Event Status","Publish on Website","Volunteers Needed"]),
+    ]);
+    const shift=shifts.find((row)=>row.id===shiftId);
+    const eventId=asStrings(shift?.fields.Event)[0];
+    const event=events.find((row)=>row.id===eventId);
+    if(!shift||asText(shift.fields.Status)==="Cancelled"||!event||asText(event.fields["Event Status"])!=="Published"||event.fields["Publish on Website"]!==true||event.fields["Volunteers Needed"]!==true) return;
+    const end=Date.parse(asText(shift.fields["End Date & Time"]));
+    if(Number.isFinite(end)&&end<Date.now()) return;
+    const capacity=Math.max(1,Math.floor(asNumber(shift.fields.Capacity)||3));
+    const active=invitations.filter((row)=>asStrings(row.fields.Shift).includes(shiftId)&&["Invited","Accepted","Reconfirmation Required"].includes(asText(row.fields.Status)));
+    if(active.some((row)=>asStrings(row.fields.Volunteer).includes(latest.volunteer!.id))) return;
+    if(active.length>=capacity) return;
+    let reserved=false;
+    try {
+      await reserveEventCapacity(requestKey,[{optionId:`event-shift:${shiftId}`,capacity,used:active.length,quantity:1,baselineAt}]);
+      reserved=true;
+      await airtableCreate(TABLES.eventVolunteerInvitations,{
+        "Invitation ID":requestKey,Event:[eventId],Shift:[shiftId],Volunteer:[latest.volunteer.id],Status:"Accepted",
+        "Invited At":new Date().toISOString(),"Responded At":new Date().toISOString(),"Invited By":"Volunteer Portal",
+        Notes:"Volunteer signed up in the portal.","Volunteer Notice":"",
+      },true);
+      await markEventCapacitySaved(requestKey);
+    } catch(error) {
+      if(reserved) await releaseEventCapacity(requestKey).catch((releaseError)=>console.error("Could not release self-signup capacity hold",releaseError));
+      throw error;
+    }
+    revalidatePath("/portal/volunteer");
+    revalidatePath("/portal/staff/event-volunteers");
+    revalidatePath("/portal/staff/reports");
+  }
+
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-slate-50">
       <section className="container-custom py-10 md:py-12">
@@ -161,6 +234,18 @@ export default async function VolunteerPortalPage() {
               )}
 
               <Link href="/portal/volunteer/attendance" className="inline-flex rounded-full bg-primary px-6 py-3 font-semibold text-white">Check In / Check Out</Link>
+              {data.volunteer && data.eventInvitations.length > 0 && <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3"><CalendarDays className="h-6 w-6 text-primary"/><h2 className="text-2xl font-bold">Event Volunteer Shifts</h2></div>
+                <div className="grid gap-4 md:grid-cols-2">{data.eventInvitations.map((invitation) => <article key={invitation.id} className="rounded-2xl bg-slate-50 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-semibold">{invitation.shift?.title || "Event shift"}</h3><p className="mt-1 text-sm text-muted-foreground">{invitation.shift?.start ? formatDateTime(invitation.shift.start) : "Time to be confirmed"}{invitation.shift?.end ? ` – ${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }).format(new Date(invitation.shift.end))}` : ""}</p>{invitation.shift?.location && <p className="mt-1 text-sm text-muted-foreground">{invitation.shift.location}</p>}{invitation.notes && <p className="mt-2 text-sm">{invitation.notes}</p>}</div><span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{invitation.status}</span></div>
+                  {invitation.notice && <p role="status" className="mt-3 rounded-xl border border-orange-300 bg-orange-50 p-3 text-sm font-medium text-orange-950">{invitation.notice}</p>}
+                  <div className="mt-4 flex flex-wrap gap-2">{["Invited", "Reconfirmation Required"].includes(invitation.status) ? <><form action={respondToEventInvitation}><input type="hidden" name="invitationId" value={invitation.id}/><input type="hidden" name="response" value="Accept"/><button className="rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white">{invitation.status === "Reconfirmation Required" ? "Confirm new time" : "Accept shift"}</button></form><form action={respondToEventInvitation}><input type="hidden" name="invitationId" value={invitation.id}/><input type="hidden" name="response" value="Decline"/><button className="rounded-full border px-4 py-2 text-sm font-semibold">Decline</button></form></> : invitation.status === "Accepted" ? <form action={respondToEventInvitation}><input type="hidden" name="invitationId" value={invitation.id}/><input type="hidden" name="response" value="Release"/><button className="rounded-full border px-4 py-2 text-sm font-semibold">Release my place</button></form> : null}{invitation.notice&&!["Invited","Accepted","Reconfirmation Required"].includes(invitation.status)&&<form action={respondToEventInvitation}><input type="hidden" name="invitationId" value={invitation.id}/><input type="hidden" name="response" value="Dismiss"/><button className="rounded-full border px-4 py-2 text-sm font-semibold">Dismiss update</button></form>}</div>
+                </article>)}</div>
+              </section>}
+              {data.volunteer && <section className="rounded-3xl border bg-white p-7 shadow-sm">
+                <div className="mb-5 flex items-center gap-3"><CalendarDays className="h-6 w-6 text-primary"/><h2 className="text-2xl font-bold">Open Event Shifts</h2></div>
+                {data.openEventShifts.length ? <div className="grid gap-4 md:grid-cols-2">{data.openEventShifts.map((shift)=><article key={shift.id} className="rounded-2xl bg-slate-50 p-4"><div className="flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-primary">{shift.eventName}</p><h3 className="mt-1 font-semibold">{shift.title}</h3><p className="mt-1 text-sm text-muted-foreground">{shift.start ? formatDateTime(shift.start) : "Time to be confirmed"}{shift.end ? ` – ${new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" }).format(new Date(shift.end))}` : ""}</p>{shift.location&&<p className="mt-1 text-sm text-muted-foreground">{shift.location}</p>}</div><span className="rounded-full bg-white px-3 py-1 text-xs font-semibold">{shift.available} {shift.available===1?"place":"places"} open</span></div><form action={signUpForEventShift} className="mt-4"><input type="hidden" name="shiftId" value={shift.id}/><button className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white">Sign up</button></form></article>)}</div> : <p className="text-muted-foreground">There are no open event shifts at the moment. Check back for new opportunities.</p>}
+              </section>}
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">

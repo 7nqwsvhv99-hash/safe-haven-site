@@ -33,7 +33,7 @@ export function EventDateFields({
       ? `${startDate}T${startTime}`
       : "";
   const endValue = allDay
-    ? endDate
+    ? endDate || startDate
     : endDate && endTime
       ? `${endDate}T${endTime}`
       : "";
@@ -51,7 +51,7 @@ export function EventDateFields({
           All day event
         </span>
         <span className="mt-1 block text-xs font-normal text-muted-foreground">
-          Select this when visitors only need the event date, not a specific start time.
+          Select this when visitors only need the event date. If the end date is blank, the event runs through the end of the start date.
         </span>
       </label>
 
@@ -64,6 +64,7 @@ export function EventDateFields({
             Start date
             <input
               type="date"
+              required
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
               className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"
@@ -87,6 +88,7 @@ export function EventDateFields({
               <input
                 aria-label="Start date"
                 type="date"
+                required
                 value={startDate}
                 onChange={(event) => setStartDate(event.target.value)}
                 className="w-full rounded-xl border bg-white px-3 py-2.5"
@@ -94,6 +96,7 @@ export function EventDateFields({
               <input
                 aria-label="Start time"
                 type="time"
+                required
                 value={startTime}
                 onChange={(event) => setStartTime(event.target.value)}
                 className="rounded-xl border bg-white px-3 py-2.5"
@@ -101,11 +104,12 @@ export function EventDateFields({
             </div>
           </label>
           <label className="block text-sm font-medium">
-            End date &amp; time <span className="font-normal text-muted-foreground">(optional)</span>
+            End date &amp; time
             <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
               <input
                 aria-label="End date"
                 type="date"
+                required
                 value={endDate}
                 onChange={(event) => setEndDate(event.target.value)}
                 className="w-full rounded-xl border bg-white px-3 py-2.5"
@@ -113,6 +117,7 @@ export function EventDateFields({
               <input
                 aria-label="End time"
                 type="time"
+                required
                 value={endTime}
                 onChange={(event) => setEndTime(event.target.value)}
                 className="rounded-xl border bg-white px-3 py-2.5"

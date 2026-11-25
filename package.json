@@ -7,11 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "bunx tsc --noEmit && next lint",
-    "format": "bunx biome format --write"
+    "format": "bunx biome format --write",
+    "test": "node --test tests/*.test.cjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^7.9.4",
     "@hookform/resolvers": "^5.2.2",
+    "@netlify/database": "^2.0.4",
     "@radix-ui/react-slot": "^1.2.4",
     "@stripe/react-stripe-js": "^5.4.0",
     "@stripe/stripe-js": "^8.5.2",

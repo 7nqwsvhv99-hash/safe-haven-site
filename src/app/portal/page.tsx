@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight, UserCog, PawPrint, Activity } from "lucide-react";
+import { HeartHandshake, Stethoscope, ShieldCheck, ArrowRight, UserCog, PawPrint, Activity, CalendarDays } from "lucide-react";
 import { getPortalContext } from "@/lib/portal";
 
 export default async function PortalPage() {
@@ -34,6 +34,13 @@ export default async function PortalPage() {
       href: "/portal/staff",
       icon: ShieldCheck,
       show: context.isAdministrator || context.canStaff || context.canOnboard,
+    },
+    {
+      title: "Event Volunteer Staffing",
+      description: "Manage event shift invitations, commitments, and open places.",
+      href: "/portal/staff/event-volunteers",
+      icon: CalendarDays,
+      show: context.isAdministrator || context.roles.includes("Volunteer Coordinator"),
     },
     {
       title: "Medical Portal",

@@ -23,6 +23,19 @@ type EventItem = {
   ctaUrl: string
   registrationUrl: string
   hasPaidReservations: boolean
+  hasFreeRsvp: boolean
+  hasRegistrationOptions: boolean
+  startingPrice: number | null
+  hasSponsorship: boolean
+  visitorAction: string
+  cancelled: boolean
+  cancellationReason: string
+  cancellationContact: string
+  hasCancellationNotice: boolean
+  showRescheduleBanner: boolean
+  rescheduleNotice: string
+  previousStart: string
+  previousLocation: string
 }
 
 function formatDate(start: string, allDay: boolean) {
@@ -100,11 +113,19 @@ export function UpcomingEvents({ fullPage = false }: { fullPage?: boolean }) {
                       {event.description}
                     </p>
                   )}
-                  {(event.hasPaidReservations || event.registrationUrl || event.ctaUrl) && (
+                  {event.hasCancellationNotice&&<div role="status" className="event-notice-glow mt-4 rounded-xl border border-orange-300 bg-orange-50 p-4"><p className="font-bold uppercase text-orange-900">Cancelled</p>{event.cancellationReason&&<p className="mt-1 text-sm text-orange-950">{event.cancellationReason}</p>}{event.cancellationContact&&<p className="mt-1 text-xs text-orange-950">Questions? {event.cancellationContact}</p>}</div>}
+                  {event.showRescheduleBanner&&!event.cancelled&&<div role="status" className="event-notice-glow mt-4 rounded-xl border border-orange-300 bg-orange-50 p-4"><p className="font-bold uppercase text-orange-900">Rescheduled</p><p className="mt-1 text-sm text-orange-950">{event.rescheduleNotice}</p>{event.previousStart&&<p className="mt-1 text-xs text-orange-950">Previously {formatDate(event.previousStart,event.allDay)}{event.previousLocation?` at ${event.previousLocation}`:""}</p>}</div>}
+                  {event.startingPrice !== null && (
+                    <p className="mt-3 text-sm font-semibold text-primary">Tickets starting at ${event.startingPrice.toFixed(2)}</p>
+                  )}
+                  {event.hasSponsorship && !event.startingPrice && (
+                    <p className="mt-3 text-sm font-semibold text-primary">Sponsorship options available</p>
+                  )}
+                  {!event.cancelled&&(event.hasRegistrationOptions || event.ctaUrl || (!event.visitorAction&&event.registrationUrl)) && (
                     <Button asChild variant="outline" className="mt-6 w-full">
-                      {event.hasPaidReservations ? (
+                      {event.hasRegistrationOptions ? (
                         <a href={`/events/${event.id}`}>
-                          {event.ctaLabel || "Reserve / Buy Tickets"}
+                          {["Purchase tickets","Register and pay"].includes(event.visitorAction)?"Register & pay fee":event.visitorAction==="RSVP for free"?"RSVP for free":event.ctaLabel || (event.hasPaidReservations ? "Register & pay fee" : "RSVP for free")}
                         </a>
                       ) : (
                         <a href={event.registrationUrl || event.ctaUrl} target="_blank" rel="noopener noreferrer">

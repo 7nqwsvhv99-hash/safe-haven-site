@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { ArrowLeft, BarChart3, HeartHandshake, Home, ClipboardList, Activity, FileText, CalendarDays, Mail, DollarSign } from "lucide-react";
 import { StaffImpactDashboard } from "@/components/staff-impact-dashboard";
-import { airtableList, asText, requirePortalRole, TABLES } from "@/lib/portal";
+import { airtableList, asStrings, asText, requirePortalRole, TABLES } from "@/lib/portal";
+import { eventEndTimestamp } from "@/lib/event-dates";
 
 function asNumber(v:unknown){return typeof v==="number"?v:0}
 function inYear(v:unknown,year:number){const s=asText(v);if(!s)return false;const d=new Date(s);if(Number.isNaN(d.getTime()))return false;return Number(new Intl.DateTimeFormat("en-US",{year:"numeric",timeZone:"America/Chicago"}).format(d))===year}
 function money(v:number){return new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",maximumFractionDigits:0}).format(v)}
+function eventDate(value:unknown){const date=new Date(asText(value));return Number.isNaN(date.getTime())?"Date not recorded":new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",month:"short",day:"numeric",year:"numeric"}).format(date)}
 
 export default async function ReportsPage(){
   const currentUser=await requirePortalRole("Staff");
@@ -17,7 +19,7 @@ export default async function ReportsPage(){
 
   const [
     animals,intakes,adoptions,fosterPlacements,adoptionApps,fosterApps,medical,
-    surrenderRequests,inventory,documents,events,testimonials,subscribers,donations
+    surrenderRequests,inventory,documents,events,eventShifts,eventInvitations,testimonials,subscribers,donations
   ]=await Promise.all([
     airtableList(TABLES.animals,["Species","Adoption Status","Housing Type","Website Listing Readiness","Public Listing"]),
     airtableList(TABLES.animalIntakes,["Animal","Intake Date","Intake Type"]),
@@ -29,7 +31,9 @@ export default async function ReportsPage(){
     airtableList(TABLES.surrenderRequests,["Status","Submitted At","Urgency","Follow-Up Status"]),
     airtableList(TABLES.inventory,["Area","Active","Inventory Status","Current Quantity","Typical Unit Cost"]),
     airtableList(TABLES.documents,["Status","Document Type","Generated Date","Signed Date"]),
-    airtableList(TABLES.events,["Event Status","Start Date & Time","Publish on Website","Featured on Homepage"]),
+    airtableList(TABLES.events,["Event Name","Event Type","Event Status","Start Date & Time","End Date & Time","All Day Event","Location Name","City","State","Publish on Website","Featured on Homepage"]),
+    airtableList(TABLES.volunteerShifts,["Event","Volunteer","Capacity","Status"]),
+    airtableList(TABLES.eventVolunteerInvitations,["Event","Shift","Volunteer","Status"]),
     airtableList(TABLES.testimonials,["Website Permission","Approved for Website","Featured","Received Date"]),
     airtableList(TABLES.newsletterSubscribers,["Status","Subscribed At","Unsubscribed At"]),
     airtableList(TABLES.donations,["Donation Date","Amount","Donation Type","Payment Method","Receipt Status","Acknowledgment Status"])
@@ -56,8 +60,9 @@ export default async function ReportsPage(){
   const inventoryAttention=shelterInventory.filter(r=>["Low Stock","Out of Stock"].includes(asText(r.fields["Inventory Status"])));
   const awaitingSignature=documents.filter(r=>["Ready for Signature","Sent"].includes(asText(r.fields.Status)));
   const now=Date.now();
-  const upcomingEvents=events.filter(r=>{const d=new Date(asText(r.fields["Start Date & Time"]));return !Number.isNaN(d.getTime())&&d.getTime()>=now&&asText(r.fields["Event Status"])!=="Cancelled"});
+  const upcomingEvents=events.filter(r=>{const d=new Date(asText(r.fields["Start Date & Time"]));return !Number.isNaN(d.getTime())&&d.getTime()>=now&&asText(r.fields["Event Status"])==="Published"});
   const publishedEvents=events.filter(r=>Boolean(r.fields["Publish on Website"]));
+  const historicalEvents=events.filter(r=>asText(r.fields["Event Status"])==="Completed"||asText(r.fields["Event Status"])==="Cancelled"||eventEndTimestamp(r.fields)<now).sort((a,b)=>Date.parse(asText(b.fields["Start Date & Time"]))-Date.parse(asText(a.fields["Start Date & Time"])));
   const publishedStories=testimonials.filter(r=>Boolean(r.fields["Approved for Website"])&&asText(r.fields["Website Permission"])==="Granted");
   const activeSubscribers=subscribers.filter(r=>asText(r.fields.Status)==="Subscribed");
   const ytdDonations=donations.filter(r=>inYear(r.fields["Donation Date"],currentYear));
@@ -112,6 +117,8 @@ export default async function ReportsPage(){
     </div>
 
     <section className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8"><h2 className="text-2xl font-bold">Website & Community Engagement</h2><div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><div className="rounded-2xl bg-slate-50 p-5"><CalendarDays className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{publishedEvents.length}</p><p className="text-sm text-muted-foreground">Published events</p></div><div className="rounded-2xl bg-slate-50 p-5"><FileText className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{publishedStories.length}</p><p className="text-sm text-muted-foreground">Published adoption stories</p></div><div className="rounded-2xl bg-slate-50 p-5"><Mail className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{activeSubscribers.length}</p><p className="text-sm text-muted-foreground">Newsletter subscribers</p></div><div className="rounded-2xl bg-slate-50 p-5"><DollarSign className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{money(ytdDonationTotal)}</p><p className="text-sm text-muted-foreground">{currentYear} donations · {ytdDonations.length} gifts</p></div></div></section>
+
+    <section className="mt-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8"><h2 className="text-2xl font-bold">Event History</h2><p className="mt-2 text-sm text-muted-foreground">Past events stay available here for review and reuse. Staffing coverage reflects accepted volunteer commitments and does not count attendance.</p><div className="mt-5 space-y-3">{historicalEvents.map(event=>{const linked=eventShifts.filter(shift=>asStrings(shift.fields.Event).includes(event.id));const accepted=eventInvitations.filter(row=>asStrings(row.fields.Event).includes(event.id)&&asText(row.fields.Status)==="Accepted");const volunteerIds=new Set([...linked.flatMap(shift=>asStrings(shift.fields.Volunteer)),...accepted.flatMap(row=>asStrings(row.fields.Volunteer))]);const assigned=volunteerIds.size;const capacity=linked.reduce((sum,shift)=>sum+(typeof shift.fields.Capacity==="number"?shift.fields.Capacity:0),0);const status=asText(event.fields["Event Status"]);const outcome=status==="Completed"?"Held":status==="Cancelled"?"Cancelled":"Outcome not recorded";return <div key={event.id} className="grid gap-2 rounded-2xl bg-slate-50 p-4 sm:grid-cols-[1.5fr_1fr_0.8fr_0.9fr]"><div><p className="font-semibold">{asText(event.fields["Event Name"])||"Untitled event"}</p><p className="text-sm text-muted-foreground">{asText(event.fields["Event Type"])} · {asText(event.fields["Location Name"])}{event.fields.City?`, ${asText(event.fields.City)}`:""}</p></div><p className="text-sm">{eventDate(event.fields["Start Date & Time"])}</p><p className="text-sm font-semibold">{outcome}</p><p className="text-sm">{linked.length?`${assigned} of ${capacity} volunteer spaces committed`:"No event shifts recorded"}</p></div>})}{!historicalEvents.length&&<p className="text-sm text-muted-foreground">No past events are available yet.</p>}</div></section>
 
     <StaffImpactDashboard/>
 
