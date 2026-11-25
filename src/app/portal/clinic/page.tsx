@@ -123,13 +123,21 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     if (duplicate) return;
 
     const scheduledPreferences = await airtableList(TABLES.vetClinicPreferences, [
-      "Veterinarian", "Preferred Clinic Date", "Preference Status",
+      "Veterinarian", "Preferred Clinic Date", "Preference Status", "Preferred Clinic Type", "Preferred Start Time", "Preferred End Time",
     ]);
-    const dateAlreadyAssigned = scheduledPreferences.some((record) =>
-      String(record.fields["Preference Status"] || "") !== "Withdrawn" &&
-      String(record.fields["Preferred Clinic Date"] || "").slice(0, 10) === preferredDate
-    );
-    if (dateAlreadyAssigned) throw new Error("This clinic date already has a veterinarian preference. Choose another date.");
+    const validTime = (value: string) => /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+    if (!validTime(startTime) || !validTime(endTime)) return;
+    const conflict = scheduledPreferences.some(({fields}) => {
+      if (String(fields["Preference Status"] || "") === "Withdrawn" ||
+          String(fields["Preferred Clinic Date"] || "").slice(0, 10) !== preferredDate) return false;
+      const otherStart = String(fields["Preferred Start Time"] || "");
+      const otherEnd = String(fields["Preferred End Time"] || "");
+      return date.getDay() !== 6 || preferredClinicType !== "Half Day" ||
+        String(fields["Preferred Clinic Type"]) !== "Half Day" ||
+        !validTime(otherStart) || !validTime(otherEnd) || otherStart >= otherEnd ||
+        (startTime < otherEnd && otherStart < endTime);
+    });
+    if (conflict) throw new Error("This clinic session overlaps an existing veterinarian assignment. Choose another available session.");
 
     await airtableCreate(TABLES.vetClinicPreferences, {
       Veterinarian: [latest.member.id],
