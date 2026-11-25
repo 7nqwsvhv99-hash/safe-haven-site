@@ -1,60 +1,19 @@
 import "server-only";
 import { hasGeneralVolunteerParticipation, isAssignedVeterinarian } from "./portal-participation";
 import {canManageOnboarding} from "./onboarding-policy";
+import { getSafeHavenAirtableConfig } from "./airtable-config";
 
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
-const AIRTABLE_BASE_ID = "app2vpch2JJVrP9pu";
-
-const TABLES = {
-  portalAccess: "tblIZIPNjVjxteVrB",
-  announcements: "tblkXpcdMAu9Wo3fV",
-  currentNeeds: "tblw00mfPtjnssgsn",
-  volunteers: "tblpVwUgbClbtcQfz",
-  volunteerHours: "tblEHjmBlgEg9Z7Tm",
-  volunteerShifts: "tblJhGBEAkoGOAPNU",
-  volunteerOpportunityRequests: "tblKWTTkFZdy5Pgdp",
-  clinicMembers: "tblVG88gCVYbRC8Qo",
-  clinicDates: "tblJvWn5fh7Rtfp3O",
-  clinicResponses: "tblEVlmHvHzItbcVl",
-  vetClinicPreferences: "tblZ9DrQNMTKgvDbw",
-  inventory: "tblTFVIVoeyafVC4b",
-  events: "tbl1wjnnJXBI5a3fy",
-  eventTicketOptions: "tblVvPwgFWUhjQolD",
-  eventReservations: "tblaAz2TlR1JASNLM",
-  volunteerApplications: "tblonEhsjg3vWumoj",
-  fosterApplications: "tblFWPjyZMi9DjpBj",
-  fosterPlacements: "tbln4l1GQcJrVmmLj",
-  animals: "tbliTXWvG7gdf023E",
-  medicalRecords: "tblpL1w9JWylKpwQT",
-  fosterResources: "tblyMumQGKqH2oGvJ",
-  fosterUpdates: "tbl3B6nEH5a495vmS",
-  housingLocations: "tblmwvODdr1Iuvy72",
-  dailyCare: "tblojxEUAQid7VNvQ",
-  adoptionApplications: "tblmDw2mrdg40JyoF",
-  adoptions: "tblssnhDEIkz2D0iY",
-  documents: "tblpqIQQvuAJXzF6K",
-  animalIntakes: "tblkcwdDABVsxtaJH",
-  surrenderRequests: "tblEFkAKG8KxtlSWj",
-  inventoryTransactions: "tbldEaUyR21Ys7wyi",
-  staffTasks: "tbl6d6vnYMPlrOTuK",
-  staffSchedule: "tblVFTKBcMRM9OuYv",
-  recurringShifts: "tblauvtTqwO9XbOEs",
-  scheduleRequests: "tbl4mreXWxGl8K7Ew",
-  scheduleExceptions: "tbl1Aco0UrZXFw2pI",
-  coverageOffers: "tblUzB3EtaxQ6mTyP",
-  timeEntries: "tblyUbFHOpxXo2EQI",
-  shiftChecklist: "tbl2LWGXqU9bZV7sS",
-  contactMessages: "tblOQnq0kbP6XmNRt",
-  testimonials: "tbl8npkpyXTkOdS6V",
-  newsletterSubscribers: "tblWYHSZNniov20FA",
-  donations: "tblY8o1WkBQwOMOzY",
-  donors: "tblxDbmdxcZHSsMob",
-  people: "tbluYFu1bFiztV7e4",
-  contactLog: "tblh32yxPhDQTM4L0",
-  publishedTrainingMaterial: "tbl9qYIUNfMS2d3IE",
-} as const;
+const TABLE_KEYS = ["portalAccess","announcements","currentNeeds","volunteers","volunteerHours","volunteerShifts","volunteerOpportunityRequests","clinicMembers","clinicDates","clinicResponses","vetClinicPreferences","inventory","events","eventTicketOptions","eventReservations","eventVolunteerInvitations","volunteerApplications","fosterApplications","fosterPlacements","animals","medicalRecords","fosterResources","fosterUpdates","housingLocations","dailyCare","adoptionApplications","adoptions","documents","animalIntakes","surrenderRequests","inventoryTransactions","staffTasks","staffSchedule","recurringShifts","scheduleRequests","scheduleExceptions","coverageOffers","timeEntries","shiftChecklist","contactMessages","testimonials","newsletterSubscribers","donations","donors","people","contactLog","publishedTrainingMaterial"] as const;
+type TableKey = typeof TABLE_KEYS[number];
+const TABLES = new Proxy({} as Record<TableKey,string>, { get: (_target,key) => {
+  if (typeof key !== "string" || !TABLE_KEYS.includes(key as TableKey)) return undefined;
+  const value = getSafeHavenAirtableConfig().tables[key];
+  if (!value) throw new Error(`Airtable table configuration is missing for ${key}.`);
+  return value;
+} });
 
 export type PortalRole = "Volunteer" | "Foster" | "Clinic Team" | "Staff" | "Medical" | "Volunteer Coordinator" | "Shelter Manager" | "Executive Director" | "Board" | "Administrator";
 
@@ -109,7 +68,7 @@ async function airtableList(
     if (offset) params.set("offset", offset);
 
     const response = await fetch(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${tableId}?${params.toString()}`,
+      `https://api.airtable.com/v0/${getSafeHavenAirtableConfig().baseId}/${tableId}?${params.toString()}`,
       {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
@@ -340,13 +299,13 @@ export async function getVolunteerPortalData(email: string) {
   );
 
   if (!volunteer) {
-    return { volunteer: null, shifts: [], hours: [], announcements: [], needs: [], opportunityRequests: [] };
+    return { volunteer: null, shifts: [], hours: [], announcements: [], needs: [], opportunityRequests: [], eventInvitations: [], openEventShifts: [] };
   }
 
-  const [shifts, hours, announcements, needs, opportunityRequests] = await Promise.all([
+  const [shifts, hours, announcements, needs, opportunityRequests, eventInvitations, eventRecords] = await Promise.all([
     airtableList(
       TABLES.volunteerShifts,
-      ["Shift", "Volunteer", "Start Date & Time", "End Date & Time", "Area", "Status", "Location", "Notes"],
+      ["Shift", "Volunteer", "Start Date & Time", "End Date & Time", "Area", "Status", "Location", "Notes", "Event", "Capacity"],
       { sort: [{ field: "Start Date & Time", direction: "asc" }] }
     ),
     airtableList(
@@ -361,6 +320,11 @@ export async function getVolunteerPortalData(email: string) {
       ["Volunteer", "Opportunity", "Request Status", "Submitted At", "Volunteer Note", "Staff Note", "Reviewed At"],
       { sort: [{ field: "Submitted At", direction: "desc" }] }
     ),
+    airtableList(
+      TABLES.eventVolunteerInvitations,
+      ["Invitation ID", "Event", "Shift", "Volunteer", "Status", "Invited At", "Notes", "Volunteer Notice", "Invited By"]
+    ),
+    airtableList(TABLES.events,["Event Name","Event Status","Publish on Website","Start Date & Time","End Date & Time","Volunteers Needed","Location Name"]),
   ]);
 
   const now = Date.now();
@@ -411,6 +375,43 @@ export async function getVolunteerPortalData(email: string) {
         staffNote: asText(record.fields["Staff Note"]),
         reviewedAt: safeDate(record.fields["Reviewed At"]),
       })),
+    eventInvitations: eventInvitations
+      .filter((record) => asStrings(record.fields.Volunteer).includes(volunteer.id))
+      .filter((record) => ["Invited", "Accepted", "Reconfirmation Required"].includes(asText(record.fields.Status)) || Boolean(asText(record.fields["Volunteer Notice"])))
+      .map((record) => {
+        const shift = shifts.find((item) => asStrings(record.fields.Shift).includes(item.id));
+        return {
+          id: record.id,
+          status: asText(record.fields.Status),
+          invitedAt: safeDate(record.fields["Invited At"]),
+          notes: asText(record.fields.Notes),
+          notice: asText(record.fields["Volunteer Notice"]),
+          invitationKey: asText(record.fields["Invitation ID"]),
+          shift: shift ? {
+            id: shift.id,
+            title: asText(shift.fields.Shift),
+            start: safeDate(shift.fields["Start Date & Time"]),
+            end: safeDate(shift.fields["End Date & Time"]),
+            location: asText(shift.fields.Location),
+            status: asText(shift.fields.Status),
+          } : null,
+        };
+      })
+      .filter((item) => item.shift && ((item.shift.status !== "Cancelled" && (!item.shift.end || Date.parse(item.shift.end) >= now)) || Boolean(item.notice))),
+    openEventShifts: shifts
+      .filter((shift) => asText(shift.fields.Status) !== "Cancelled")
+      .filter((shift) => {
+        const end=safeDate(shift.fields["End Date & Time"]),start=safeDate(shift.fields["Start Date & Time"]);
+        return (!end||Date.parse(end)>=now)&&(!start||Date.parse(start)>=now);
+      })
+      .map((shift) => {
+        const eventId=asStrings(shift.fields.Event)[0];
+        const event=eventRecords.find((row)=>row.id===eventId);
+        const capacity=Math.max(1,Math.floor(asNumber(shift.fields.Capacity)||3));
+        const activeForShift=eventInvitations.filter((row)=>asStrings(row.fields.Shift).includes(shift.id)&&["Invited","Accepted","Reconfirmation Required"].includes(asText(row.fields.Status)));
+        return {id:shift.id,title:asText(shift.fields.Shift),start:safeDate(shift.fields["Start Date & Time"]),end:safeDate(shift.fields["End Date & Time"]),location:asText(shift.fields.Location),eventId,eventName:asText(event?.fields["Event Name"]),capacity,available:Math.max(0,capacity-activeForShift.length),activeForVolunteer:activeForShift.some((row)=>asStrings(row.fields.Volunteer).includes(volunteer.id)),published:Boolean(event?.fields["Publish on Website"])&&asText(event?.fields["Event Status"])==="Published"&&Boolean(event?.fields["Volunteers Needed"])};
+      })
+      .filter((shift)=>shift.published&&shift.available>0&&!shift.activeForVolunteer),
     announcements,
     needs,
   };
@@ -1139,7 +1140,7 @@ async function airtableCreate(tableId: string, fields: Record<string, unknown>, 
   if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
 
   const response = await fetch(
-    `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${tableId}`,
+    `https://api.airtable.com/v0/${getSafeHavenAirtableConfig().baseId}/${tableId}`,
     {
       method: "POST",
       headers: {
@@ -1173,7 +1174,7 @@ async function airtableUploadAttachment(
 
   const bytes = Buffer.from(await file.arrayBuffer());
   const response = await fetch(
-    `https://content.airtable.com/v0/${AIRTABLE_BASE_ID}/${recordId}/${fieldId}/uploadAttachment`,
+    `https://content.airtable.com/v0/${getSafeHavenAirtableConfig().baseId}/${recordId}/${fieldId}/uploadAttachment`,
     {
       method: "POST",
       headers: {
@@ -1202,7 +1203,7 @@ async function airtableDelete(tableId: string, recordId: string) {
   const token = process.env.AIRTABLE_ACCESS_TOKEN;
   if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
   const response = await fetch(
-    `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${tableId}/${recordId}`,
+    `https://api.airtable.com/v0/${getSafeHavenAirtableConfig().baseId}/${tableId}/${recordId}`,
     { method: "DELETE", headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
   );
   const result = await response.json();
@@ -1223,7 +1224,7 @@ async function airtableUpdate(
   if (!token) throw new Error("AIRTABLE_ACCESS_TOKEN is missing");
 
   const response = await fetch(
-    `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${tableId}`,
+    `https://api.airtable.com/v0/${getSafeHavenAirtableConfig().baseId}/${tableId}`,
     {
       method: "PATCH",
       headers: {
@@ -1245,7 +1246,6 @@ async function airtableUpdate(
 }
 
 export {
-  AIRTABLE_BASE_ID,
   TABLES,
   airtableList,
   airtableCreate,
@@ -1276,11 +1276,11 @@ export async function getUpcomingSurgicalPlannerDates() {
 /** Read-only scheduler source: vet-submitted clinic windows attached to real staffing dates. */
 export async function getSurgicalPlannerVetTimes() {
   const [members, preferences, clinicDates] = await Promise.all([
-    airtableList(TABLES.clinicMembers, ["Team Member Name", "Active"]),
+    airtableList(TABLES.clinicMembers, ["Team Member Name", "Role", "Active"]),
     airtableList(TABLES.vetClinicPreferences, ["Veterinarian", "Preferred Clinic Date", "Preferred Start Time", "Preferred End Time", "Preference Status", "Clinic Staffing Date"]),
     airtableList(TABLES.clinicDates, ["Clinic Date", "Veterinarian Preference", "Scheduling Stage"]),
   ]);
-  const memberNames = new Map(members.map(m => [m.id, asText(m.fields["Team Member Name"])]));
+  const memberDetails = new Map(members.map(m => [m.id, { name: asText(m.fields["Team Member Name"]), role: asText(m.fields.Role) }]));
   const dateRecords = new Map(clinicDates.map(d => [d.id, d]));
   return preferences.flatMap(p => {
     const vetIds = asStrings(p.fields.Veterinarian);
@@ -1294,8 +1294,9 @@ export async function getSurgicalPlannerVetTimes() {
       if (["Cancelled", "Completed"].includes(asText(d.fields["Scheduling Stage"]))) return [];
       const date = asText(d.fields["Clinic Date"]).slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
-      return vetIds.map(id => ({ date, veterinarian: memberNames.get(id) || "", start, end, status }))
-        .filter(x => ["Dulce Coulson", "Dan Breuer", "Katie Schneider"].includes(x.veterinarian));
+      return vetIds.map(id => ({ date, ...memberDetails.get(id), start, end, status }))
+        .filter(x => Boolean(x.name) && /veterinarian/i.test(x.role || ""))
+        .map(x => ({ date, veterinarian: x.name || "", start: x.start, end: x.end, status: x.status }));
     });
   });
 }

@@ -10,6 +10,7 @@ const member=await base.getTable('Clinic Team Members').selectRecordAsync(member
 if(!clinic||!member||['Cancelled','Completed'].includes(clinic.getCellValueAsString('Scheduling Stage'))||!member.getCellValue('Active')||!member.getCellValue('Receive Scheduling Emails'))return;
 const date=String(clinic.getCellValue('Clinic Date')||'').slice(0,10);
 const role=member.getCellValueAsString('Role');
+if(role==='Veterinarian')return; // Veterinarians create their own clinic dates; never invite them to another vet's clinic.
 if(role==='Vet Tech'&&!clinic.getCellValue('Confirmed Veterinarians'))return;
 if(role==='Clinic Volunteer'&&(!clinic.getCellValue('Confirmed Veterinarians')||!clinic.getCellValue('Confirmed Vet Techs')))return;
 const email=member.getCellValueAsString('Email');

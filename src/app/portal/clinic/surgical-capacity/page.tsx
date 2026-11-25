@@ -4,10 +4,10 @@ import { notFound } from "next/navigation";
 import { SurgicalCapacityPlanner } from "./surgical-capacity-planner";
 
 export const dynamic = "force-dynamic";
-const SCHEDULERS = new Set(["jenpopp@hotmail.com", "rachelyn001@yahoo.com"]);
 export default async function PlannerPage() {
   const context = await requirePortalRole("Clinic Team");
-  if (!context.isAdministrator && !SCHEDULERS.has(context.email.trim().toLowerCase())) notFound();
+  const canSchedule = context.roles.some((role) => ["Staff", "Volunteer Coordinator", "Shelter Manager", "Executive Director"].includes(role));
+  if (!context.isAdministrator && !canSchedule) notFound();
   const [vetTimes, clinicDates] = await Promise.all([getSurgicalPlannerVetTimes(), getUpcomingSurgicalPlannerDates()]);
   return <main className="mx-auto max-w-5xl px-4 py-8 md:px-8">
     <Link href="/portal/clinic" className="text-sm font-semibold text-primary hover:underline">← Clinic Team Portal</Link>

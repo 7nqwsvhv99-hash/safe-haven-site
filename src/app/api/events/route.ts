@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server"
-
-const AIRTABLE_BASE_ID = "app2vpch2JJVrP9pu"
-const EVENTS_TABLE_ID = "tbl1wjnnJXBI5a3fy"
-const EVENT_OPTIONS_TABLE_ID = "tblVvPwgFWUhjQolD"
+import { eventEndTimestamp } from "@/lib/event-dates"
+import { getSafeHavenAirtableConfig } from "@/lib/airtable-config"
 
 type AirtableAttachment = {
   url?: string
@@ -30,6 +28,7 @@ export async function GET(request: Request) {
   const all = new URL(request.url).searchParams.get("all") === "1"
   try {
     const token = process.env.AIRTABLE_ACCESS_TOKEN
+    const config = getSafeHavenAirtableConfig()
     if (!token) {
       return NextResponse.json({ error: "Server configuration is incomplete." }, { status: 500 })
     }
@@ -56,6 +55,15 @@ export async function GET(request: Request) {
       "CTA Label",
       "CTA URL",
       "Registration / Ticket URL",
+      "Visitor Action",
+      "Cancellation Reason",
+      "Cancellation Contact",
+      "Cancellation Notice Through",
+      "Reschedule Notice",
+      "Reschedule Notice Through",
+      "Previous Start Date & Time",
+      "Previous End Date & Time",
+      "Previous Location",
       "Publish on Website",
       "Featured on Homepage",
       "Display Order",
@@ -66,7 +74,7 @@ export async function GET(request: Request) {
     let offset: string | undefined
     do {
       if (offset) params.set("offset", offset)
-      const response = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${EVENTS_TABLE_ID}?${params}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
+      const response = await fetch(`https://api.airtable.com/v0/${config.baseId}/${config.tables.events}?${params}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
       const result = await response.json()
       if (!response.ok) throw new Error("Could not load events")
       records.push(...(result.records || []))
@@ -76,31 +84,31 @@ export async function GET(request: Request) {
 
     const optionParams = new URLSearchParams()
     optionParams.set("pageSize", "100")
-    for (const field of ["Event", "Active", "Sales Start", "Sales End"]) optionParams.append("fields[]", field)
-    const optionResponse = await fetch(
-      `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${EVENT_OPTIONS_TABLE_ID}?${optionParams}`,
-      { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" }
-    )
-    const optionResult = await optionResponse.json()
-    if (!optionResponse.ok) throw new Error("Could not load event ticket options")
-    const today = new Date().toISOString().slice(0, 10)
-    const eventIdsWithActiveOptions = new Set<string>(
-      (optionResult.records || [])
-        .filter((record: AirtableRecord) => {
-          const fields = record.fields
-          if (!fields.Active) return false
-          const start = text(fields["Sales Start"])
-          const end = text(fields["Sales End"])
-          if (start && start > today) return false
-          if (end && end < today) return false
-          return true
-        })
-        .flatMap((record: AirtableRecord) =>
-          Array.isArray(record.fields.Event)
-            ? (record.fields.Event as string[])
-            : []
-        )
-    )
+    for (const field of ["Event", "Active", "Sales Start", "Sales End", "Price", "Option Type"]) optionParams.append("fields[]", field)
+    const optionRows: AirtableRecord[] = []
+    let optionOffset: string | undefined
+    do {
+      if (optionOffset) optionParams.set("offset", optionOffset)
+      const optionResponse = await fetch(`https://api.airtable.com/v0/${config.baseId}/${config.tables.eventTicketOptions}?${optionParams}`, { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" })
+      const optionResult = await optionResponse.json()
+      if (!optionResponse.ok) throw new Error("Could not load event ticket options")
+      optionRows.push(...(optionResult.records || []))
+      optionOffset = optionResult.offset
+    } while (optionOffset)
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date())
+    const optionsByEvent = new Map<string, Array<{ price: number; type: string }>>()
+    for (const record of optionRows) {
+      const fields = record.fields
+      if (fields.Active !== true) continue
+      const start = text(fields["Sales Start"]), end = text(fields["Sales End"])
+      if ((start && start > today) || (end && end < today)) continue
+      const eventIds = Array.isArray(fields.Event) ? fields.Event as string[] : []
+      for (const eventId of eventIds) {
+        const list = optionsByEvent.get(eventId) || []
+        list.push({ price: typeof fields.Price === "number" ? fields.Price : 0, type: text(fields["Option Type"]) })
+        optionsByEvent.set(eventId, list)
+      }
+    }
 
     const events = records
       .map((record) => {
@@ -108,8 +116,18 @@ export async function GET(request: Request) {
         const start = text(fields["Start Date & Time"])
         const end = text(fields["End Date & Time"])
         const startTime = start ? new Date(start).getTime() : Number.NaN
-        const endTime = end ? new Date(end).getTime() : Number.NaN
-        const effectiveEnd = Number.isFinite(endTime) ? endTime : startTime
+        const effectiveEnd = eventEndTimestamp(fields)
+        const action = text(fields["Visitor Action"])
+        const configuredOptions = optionsByEvent.get(record.id) || []
+        const activeOptions = action === "RSVP for free" ? configuredOptions.filter(option => option.price === 0) : ["Purchase tickets", "Register and pay"].includes(action) ? configuredOptions.filter(option => option.price > 0) : configuredOptions
+        const paidOptions = activeOptions.filter(option => option.price > 0)
+        const admissionPrices = paidOptions.filter(option => !/sponsor/i.test(option.type)).map(option => option.price)
+        const hasFreeOption = activeOptions.some(option => option.price === 0)
+        const cancelled = text(fields["Event Status"]) === "Cancelled"
+        const rescheduleNotice = text(fields["Reschedule Notice"])
+        const rescheduleThrough = Date.parse(text(fields["Reschedule Notice Through"]) || "")
+        const showRescheduleBanner = Boolean(rescheduleNotice) && (!Number.isFinite(rescheduleThrough) ? effectiveEnd >= now : rescheduleThrough >= now)
+        const cancellationThrough = Date.parse(text(fields["Cancellation Notice Through"]) || "")
 
         return {
           id: record.id,
@@ -127,9 +145,23 @@ export async function GET(request: Request) {
           description: text(fields["Event Description"]),
           image: attachments(fields["Event Image"])[0] || "",
           ctaLabel: text(fields["CTA Label"]),
-          ctaUrl: text(fields["CTA URL"]),
+          ctaUrl: action === "Learn more" ? text(fields["Registration / Ticket URL"]) : action ? "" : text(fields["CTA URL"]),
           registrationUrl: text(fields["Registration / Ticket URL"]),
-          hasPaidReservations: eventIdsWithActiveOptions.has(record.id),
+          visitorAction: action,
+          cancelled,
+          cancellationReason: text(fields["Cancellation Reason"]),
+          cancellationContact: text(fields["Cancellation Contact"]),
+          hasCancellationNotice: cancelled && Number.isFinite(cancellationThrough) && cancellationThrough >= now,
+          rescheduleNotice: showRescheduleBanner ? rescheduleNotice : "",
+          showRescheduleBanner,
+          previousStart: text(fields["Previous Start Date & Time"]),
+          previousEnd: text(fields["Previous End Date & Time"]),
+          previousLocation: text(fields["Previous Location"]),
+          hasPaidReservations: paidOptions.length > 0,
+          hasFreeRsvp: hasFreeOption,
+          hasRegistrationOptions: !cancelled && (action ? ["RSVP for free", "Purchase tickets", "Register and pay"].includes(action) && activeOptions.length > 0 : activeOptions.length > 0),
+          startingPrice: admissionPrices.length ? Math.min(...admissionPrices) : null,
+          hasSponsorship: paidOptions.some(option => /sponsor/i.test(option.type)),
           publish: Boolean(fields["Publish on Website"]),
           featured: Boolean(fields["Featured on Homepage"]),
           displayOrder:
@@ -141,10 +173,8 @@ export async function GET(request: Request) {
         (event) =>
           event.name &&
           event.publish &&
-          (all || event.featured) &&
-          event.status === "Published" &&
-          Number.isFinite(event.effectiveEnd) &&
-          event.effectiveEnd >= now
+          (all || (event.featured && !event.cancelled)) &&
+          ((event.status === "Published" && Number.isFinite(event.effectiveEnd) && event.effectiveEnd >= now) || event.hasCancellationNotice)
       )
       .sort((a, b) => {
         return new Date(a.start).getTime() - new Date(b.start).getTime()

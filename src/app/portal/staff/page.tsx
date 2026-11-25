@@ -21,6 +21,7 @@ import {
   UsersRound,
 } from "lucide-react";
 import { getPortalContext, getStaffPortalData, airtableList, asText, TABLES } from "@/lib/portal";
+import { getSafeHavenAirtableConfig } from "@/lib/airtable-config";
 
 const cardClass =
   "staff-command-card group block h-full rounded-2xl border bg-white p-5 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2";
@@ -34,6 +35,7 @@ function IconTile({ icon: Icon }: { icon: typeof PawPrint }) {
 }
 
 export default async function StaffPortalPage({searchParams}:{searchParams:Promise<{all?:string}>}) {
+  const clinicApplicationFormUrl = getSafeHavenAirtableConfig().clinicApplicationFormUrl;
   const context = await getPortalContext();
   if (!context.canStaff) redirect(context.canOnboard ? "/portal/staff/onboarding" : "/portal");
   const access = await airtableList(TABLES.portalAccess, ["Email","Shelter Position"]);
@@ -176,10 +178,18 @@ export default async function StaffPortalPage({searchParams}:{searchParams:Promi
       href: "/portal/staff/event-reservations",
       icon: CalendarDays,
     },
+    ...(context.isAdministrator || context.roles.some((role) => ["Volunteer Coordinator", "Shelter Manager", "Executive Director"].includes(role))
+      ? [{
+          title: "Event Volunteer Shifts",
+          description: "Assign portal invitations and track event shift commitments.",
+          href: "/portal/staff/event-volunteers",
+          icon: CalendarDays,
+        }]
+      : []),
     {
       title: "Internal Safe Haven Clinic Application",
       description: "Open the internal clinic application form.",
-      href: "https://airtable.com/app3AcoD2G64aMsEz/pagX1oaNR64Qt8mqC/form",
+      href: clinicApplicationFormUrl,
       icon: ClipboardPlus,
     },
     {

@@ -122,20 +122,14 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     );
     if (duplicate) return;
 
-    // Check all submitted and scheduled preferences, not just the current veterinarian's.
-    const preferences = await airtableList(TABLES.vetClinicPreferences);
-    const conflict = preferences.some((record) => {
-      const fields = record.fields;
-      const status = String(fields["Preference Status"] || "Submitted");
-      if (status === "Withdrawn" || String(fields["Preferred Clinic Date"] || "").slice(0, 10) !== preferredDate) return false;
-      const otherType = String(fields["Preferred Clinic Type"] || "Full Day");
-      const otherStart = String(fields["Preferred Start Time"] || "");
-      const otherEnd = String(fields["Preferred End Time"] || "");
-      return date.getDay() !== 6 || preferredClinicType === "Full Day" || otherType === "Full Day" ||
-        !/^\d{2}:\d{2}$/.test(otherStart) || !/^\d{2}:\d{2}$/.test(otherEnd) ||
-        otherStart >= otherEnd || (startTime < otherEnd && otherStart < endTime);
-    });
-    if (conflict) throw new Error("This clinic date or session overlaps an existing veterinarian assignment. Choose another available session.");
+    const scheduledPreferences = await airtableList(TABLES.vetClinicPreferences, [
+      "Veterinarian", "Preferred Clinic Date", "Preference Status",
+    ]);
+    const dateAlreadyAssigned = scheduledPreferences.some((record) =>
+      String(record.fields["Preference Status"] || "") !== "Withdrawn" &&
+      String(record.fields["Preferred Clinic Date"] || "").slice(0, 10) === preferredDate
+    );
+    if (dateAlreadyAssigned) throw new Error("This clinic date already has a veterinarian preference. Choose another date.");
 
     await airtableCreate(TABLES.vetClinicPreferences, {
       Veterinarian: [latest.member.id],
@@ -277,8 +271,8 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
       "Preferred Vendor": formText(formData, "vendor"),
       "Purchase URL": formText(formData, "purchaseUrl"),
       ...(optionalNumber(formData, "unitCost") !== undefined ? { "Typical Unit Cost": optionalNumber(formData, "unitCost") } : {}),
-      "Responsible Person": formText(formData, "responsiblePerson") || "Sam Smith",
-      "Responsible Email": formText(formData, "responsibleEmail") || "sa7smith@msn.com",
+      "Responsible Person": formText(formData, "responsiblePerson") || current.displayName,
+      "Responsible Email": formText(formData, "responsibleEmail") || current.email,
       "Track Lot / Expiration": formData.get("trackLot") === "on",
       Notes: formText(formData, "notes"),
       Active: true,
@@ -496,7 +490,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                   Training Resources
                 </Link>
               )}
-              {(context.isAdministrator || ["jenpopp@hotmail.com", "rachelyn001@yahoo.com"].includes(context.email.toLowerCase())) && (
+              {(context.isAdministrator || context.roles.some((role) => ["Staff", "Volunteer Coordinator", "Shelter Manager", "Executive Director"].includes(role))) && (
                 <Link href="/portal/clinic/surgical-capacity" className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-primary/90">
                   <CalendarCheck className="h-5 w-5" />
                   Surgical Capacity Planner
@@ -528,8 +522,8 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                     <label className="text-xs font-medium">Preferred vendor<input name="vendor" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                     <label className="text-xs font-medium">Purchase URL<input name="purchaseUrl" type="url" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                     <label className="text-xs font-medium">Typical unit cost<input name="unitCost" type="number" min="0" step="0.01" placeholder="Optional" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                    <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue="Sam Smith" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                    <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue="sa7smith@msn.com" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <label className="text-xs font-medium">Responsible person<input name="responsiblePerson" defaultValue={context.displayName} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                    <label className="text-xs font-medium">Responsible email<input name="responsibleEmail" type="email" defaultValue={context.email} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                     <label className="flex items-center gap-2 text-sm"><input name="trackLot" type="checkbox" /> Track lot / expiration</label>
                     <label className="text-xs font-medium sm:col-span-2">Notes<textarea name="notes" rows={2} placeholder="Optional notes about this supply" className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                     <button className="w-fit rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white sm:col-span-2">Add supply</button>
@@ -795,7 +789,7 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
                       <p><span className="font-semibold text-foreground">Full-day clinics:</span> Check-in starts at 8:00 AM. The clinic day ends at approximately 6:00 PM.</p>
                       <p><span className="font-semibold text-foreground">Half-day clinics:</span> 5 hours from check-in to check out, typically 9:00 AM–2:00 PM.</p>
                       <p>Wednesdays are always half days.</p>
-                      <p>Saturdays may be scheduled as either full or half days, and a Saturday may also be shared by two veterinarians with separate morning (7:00 AM–11:00 AM) and afternoon (11:00 AM–5:00 PM) half-day coverage.</p>
+                      <p>Only one veterinarian may schedule each clinic date. Saturday clinic dates cannot be split between two veterinarians.</p>
                     </div>
   
                     <VeterinarianDateForm action={submitVeterinarianPreference} />
