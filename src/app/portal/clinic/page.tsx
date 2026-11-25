@@ -122,6 +122,21 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
     );
     if (duplicate) return;
 
+    // Check all submitted and scheduled preferences, not just the current veterinarian's.
+    const preferences = await airtableList(TABLES.vetClinicPreferences);
+    const conflict = preferences.some((record) => {
+      const fields = record.fields;
+      const status = String(fields["Preference Status"] || "Submitted");
+      if (status === "Withdrawn" || String(fields["Preferred Clinic Date"] || "").slice(0, 10) !== preferredDate) return false;
+      const otherType = String(fields["Preferred Clinic Type"] || "Full Day");
+      const otherStart = String(fields["Preferred Start Time"] || "");
+      const otherEnd = String(fields["Preferred End Time"] || "");
+      return date.getDay() !== 6 || preferredClinicType === "Full Day" || otherType === "Full Day" ||
+        !/^\d{2}:\d{2}$/.test(otherStart) || !/^\d{2}:\d{2}$/.test(otherEnd) ||
+        otherStart >= otherEnd || (startTime < otherEnd && otherStart < endTime);
+    });
+    if (conflict) throw new Error("This clinic date or session overlaps an existing veterinarian assignment. Choose another available session.");
+
     await airtableCreate(TABLES.vetClinicPreferences, {
       Veterinarian: [latest.member.id],
       "Preferred Clinic Date": preferredDate,
