@@ -6,10 +6,12 @@ import { AdoptionStoryForm, OptimizedStoryForm, StoryAnimalPicker, type StoryAni
 import { EventDateFields } from "./event-date-fields";
 import { EventLifecycleFields } from "./event-lifecycle-fields";
 import { AnnouncementForm } from "./announcement-form";
+import { ShelterHoursSection } from "./shelter-hours-section";
 import { chicagoLocalToIso, eventEndTimestamp, parseEventDateRange } from "@/lib/event-dates";
 import { releaseEventCapacity } from "@/lib/event-capacity";
 import { getSafeHavenAirtableConfig } from "@/lib/airtable-config";
 import { canManagePublicContent, getAnnouncementState, isValidAnnouncementWindow } from "@/lib/announcement-policy";
+import { validateWeeklySchedule } from "@/lib/shelter-hours-policy.js";
 import {
   airtableCreate, airtableList, airtableUpdate, airtableUploadAttachment,
   asText, asStrings, requirePortalRole, TABLES,
@@ -87,7 +89,7 @@ export default async function WebsiteContentManagementPage(){
   const context=await requirePortalRole("Staff");
   const canPublish=canManagePublicContent(context);
   if(!canPublish)return <main className="container-custom py-10"><Link href="/portal/staff">Staff Portal</Link><h1 className="mt-4 text-2xl font-bold">Events & Website Content</h1><p className="mt-2">Website content is managed by authorized shelter leadership.</p></main>;
-  const [events,testimonials,animals,announcements]=await Promise.all([
+  const [events,testimonials,animals,announcements,weeklySchedules,hoursExceptions]=await Promise.all([
     airtableList(TABLES.events,[
       "Event Name","Event Status","Event Type","Start Date & Time","End Date & Time","All Day Event",
       "Location Name","Street Address","City","State","ZIP","Event Description",
@@ -102,8 +104,19 @@ export default async function WebsiteContentManagementPage(){
       "Consent Confirmed By","Consent Confirmed At","Original Published By","Original Published At","Last Edited By","Last Edited At","Unpublished By","Unpublished At"
     ],{sort:[{field:"Display Order",direction:"asc"}]}),
     airtableList(TABLES.animals,["Animal ID","Pet Name","Species","Sex","Breed","Color / Markings","Adoption Status"],{sort:[{field:"Pet Name",direction:"asc"}]}),
-    airtableList(TABLES.publicAnnouncements,["Title","Notice Type","Public Message","Status","Display Start","Expires At","Priority","Created By","Created At","Last Edited By","Last Edited At","Unpublished By","Unpublished At"],{sort:[{field:"Display Start",direction:"desc"}]})
+    airtableList(TABLES.publicAnnouncements,["Title","Notice Type","Public Message","Status","Display Start","Expires At","Priority","Created By","Created At","Last Edited By","Last Edited At","Unpublished By","Unpublished At"],{sort:[{field:"Display Start",direction:"desc"}]}),
+    airtableList(TABLES.publicShelterHours,["Schedule","Weekly Hours JSON","Last Edited By","Last Edited At"]),
+    airtableList(TABLES.publicHoursExceptions,["Exception","Type","Start Date","End Date","Mode","Open Intervals JSON","Status","Public Message","Linked Announcement","Created By","Created At","Last Edited By","Last Edited At","Cancelled By","Cancelled At","Submission Key"],{sort:[{field:"Start Date",direction:"desc"}]})
   ]);
+  const defaultWeekly:{timezone:string;days:Record<string,{start:string;end:string}[]>}={timezone:"America/Chicago",days:{Monday:[{start:"10:00",end:"15:00"}],Tuesday:[{start:"10:00",end:"15:00"}],Wednesday:[{start:"10:00",end:"15:00"}],Thursday:[{start:"10:00",end:"15:00"}],Friday:[{start:"10:00",end:"15:00"}],Saturday:[{start:"10:00",end:"15:00"}],Sunday:[]}};
+  let weeklyHours:typeof defaultWeekly=defaultWeekly;
+  const scheduleId=weeklySchedules[0]?.id||"";
+  try{if(weeklySchedules[0])weeklyHours=validateWeeklySchedule(JSON.parse(asText(weeklySchedules[0].fields["Weekly Hours JSON"]))) as typeof defaultWeekly}catch(error){console.error("Could not parse the weekly shelter-hours schedule",error)}
+  const hoursExceptionItems=hoursExceptions.map(row=>{
+    let intervals:{start:string;end:string}[]=[];
+    try{const parsed=JSON.parse(asText(row.fields["Open Intervals JSON"])||"[]");if(Array.isArray(parsed))intervals=parsed.filter(item=>item&&typeof item.start==="string"&&typeof item.end==="string")}catch{}
+    return{id:row.id,name:asText(row.fields.Exception),type:asText(row.fields.Type),startDate:asText(row.fields["Start Date"]),endDate:asText(row.fields["End Date"]),mode:asText(row.fields.Mode),intervals,status:asText(row.fields.Status),message:asText(row.fields["Public Message"]),lastEditedBy:asText(row.fields["Last Edited By"]),lastEditedAt:fmt(row.fields["Last Edited At"],true)}
+  });
   const now=Date.now();
   const publishedEvents=events.filter(r=>Boolean(r.fields["Publish on Website"])&&asText(r.fields["Event Status"])==="Published"&&eventEndTimestamp(r.fields)>=now);
   const drafts=events.filter(r=>asText(r.fields["Event Status"])==="Draft");
@@ -486,6 +499,7 @@ export default async function WebsiteContentManagementPage(){
           })}
         </div>
       </details>
+      <ShelterHoursSection weekly={weeklyHours} scheduleId={scheduleId} exceptions={hoursExceptionItems} />
     </div>
   </div></main>
 }
