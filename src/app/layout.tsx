@@ -6,6 +6,7 @@ import ClientBody from "./ClientBody";
 import Script from "next/script";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
+import { PublicAnnouncements } from "@/components/public-announcements";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,6 +40,7 @@ export default function RootLayout({
         <ClerkProvider>
           <ClientBody>
           <Navigation />
+          <PublicAnnouncements />
           <main className="min-h-screen">{children}</main>
           <Footer />
           </ClientBody>

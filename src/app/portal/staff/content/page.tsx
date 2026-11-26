@@ -1,13 +1,15 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { revalidatePath } from "next/cache";
-import { ArrowLeft, CalendarDays, Quote, ChevronDown } from "lucide-react";
+import { ArrowLeft, CalendarDays, Quote, ChevronDown, Megaphone } from "lucide-react";
 import { AdoptionStoryForm, OptimizedStoryForm, StoryAnimalPicker, type StoryAnimalOption } from "./adoption-story-form";
 import { EventDateFields } from "./event-date-fields";
 import { EventLifecycleFields } from "./event-lifecycle-fields";
+import { AnnouncementForm } from "./announcement-form";
 import { chicagoLocalToIso, eventEndTimestamp, parseEventDateRange } from "@/lib/event-dates";
 import { releaseEventCapacity } from "@/lib/event-capacity";
 import { getSafeHavenAirtableConfig } from "@/lib/airtable-config";
+import { canManagePublicContent, getAnnouncementState, isValidAnnouncementWindow } from "@/lib/announcement-policy";
 import {
   airtableCreate, airtableList, airtableUpdate, airtableUploadAttachment,
   asText, asStrings, requirePortalRole, TABLES,
@@ -21,7 +23,7 @@ function fmt(v:unknown,withTime=false){const s=asText(v);if(!s)return"";const d=
 function localInput(v:unknown){const s=asText(v);if(!s)return"";const d=new Date(s);if(Number.isNaN(d.getTime()))return"";const parts=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23",timeZone:"America/Chicago"}).formatToParts(d);const get=(t:string)=>parts.find(p=>p.type===t)?.value||"";return get("year")+"-"+get("month")+"-"+get("day")+"T"+get("hour")+":"+get("minute")}
 function Status({children}:{children:ReactNode}){return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children}</span>}
 
-async function requireContentPublisher(){const context=await requirePortalRole("Staff","write");if(!context.isAdministrator&&!context.roles.includes("Shelter Manager")&&!context.roles.includes("Executive Director"))throw new Error("Only authorized content managers can change public website content.");return context;}
+async function requireContentPublisher(){const context=await requirePortalRole("Staff","write");if(!canManagePublicContent(context))throw new Error("Only authorized content managers can change public website content.");return context;}
 
 function volunteerShiftSegments(startIso:string,endIso:string){
   const start=Date.parse(startIso),end=Date.parse(endIso),hours=(end-start)/3_600_000;
@@ -83,9 +85,9 @@ async function syncEventVolunteerShifts(input:{eventId:string;eventName:string;s
 
 export default async function WebsiteContentManagementPage(){
   const context=await requirePortalRole("Staff");
-  const canPublish=context.isAdministrator||context.roles.includes("Shelter Manager")||context.roles.includes("Executive Director");
+  const canPublish=canManagePublicContent(context);
   if(!canPublish)return <main className="container-custom py-10"><Link href="/portal/staff">Staff Portal</Link><h1 className="mt-4 text-2xl font-bold">Events & Website Content</h1><p className="mt-2">Website content is managed by authorized shelter leadership.</p></main>;
-  const [events,testimonials,animals]=await Promise.all([
+  const [events,testimonials,animals,announcements]=await Promise.all([
     airtableList(TABLES.events,[
       "Event Name","Event Status","Event Type","Start Date & Time","End Date & Time","All Day Event",
       "Location Name","Street Address","City","State","ZIP","Event Description",
@@ -99,7 +101,8 @@ export default async function WebsiteContentManagementPage(){
       "Website Permission","Approved for Website","Featured","Display Order","Animal","Legacy Animal Name","Animal Photo",
       "Consent Confirmed By","Consent Confirmed At","Original Published By","Original Published At","Last Edited By","Last Edited At","Unpublished By","Unpublished At"
     ],{sort:[{field:"Display Order",direction:"asc"}]}),
-    airtableList(TABLES.animals,["Animal ID","Pet Name","Species","Sex","Breed","Color / Markings","Adoption Status"],{sort:[{field:"Pet Name",direction:"asc"}]})
+    airtableList(TABLES.animals,["Animal ID","Pet Name","Species","Sex","Breed","Color / Markings","Adoption Status"],{sort:[{field:"Pet Name",direction:"asc"}]}),
+    airtableList(TABLES.publicAnnouncements,["Title","Notice Type","Public Message","Status","Display Start","Expires At","Priority","Created By","Created At","Last Edited By","Last Edited At","Unpublished By","Unpublished At"],{sort:[{field:"Display Start",direction:"desc"}]})
   ]);
   const now=Date.now();
   const publishedEvents=events.filter(r=>Boolean(r.fields["Publish on Website"])&&asText(r.fields["Event Status"])==="Published"&&eventEndTimestamp(r.fields)>=now);
@@ -107,10 +110,55 @@ export default async function WebsiteContentManagementPage(){
   const scheduled=events.filter(r=>asText(r.fields["Event Status"])==="Draft"&&Date.parse(asText(r.fields["Scheduled Publish At"]))>now);
   const cancelled=events.filter(r=>asText(r.fields["Event Status"])==="Cancelled"&&Date.parse(asText(r.fields["Cancellation Notice Through"]))>=now);
   const publishedStories=testimonials.filter(r=>Boolean(r.fields["Approved for Website"])&&asText(r.fields["Website Permission"])==="Granted");
+  const announcementState=(row:{fields:Record<string,unknown>})=>getAnnouncementState(row.fields,now);
+  const liveAnnouncements=announcements.filter(r=>announcementState(r)==="Published");
+  const scheduledAnnouncements=announcements.filter(r=>announcementState(r)==="Scheduled");
+  const expiredAnnouncements=announcements.filter(r=>announcementState(r)==="Expired");
+  const draftAnnouncements=announcements.filter(r=>announcementState(r)==="Draft");
+  const archivedAnnouncements=announcements.filter(r=>["Cancelled","Unpublished","Needs schedule","Needs attention"].includes(announcementState(r)));
   const storyAnimals:StoryAnimalOption[]=animals.map(a=>({
     id:a.id,name:asText(a.fields["Pet Name"]),animalId:asText(a.fields["Animal ID"]),species:asText(a.fields.Species),
     sex:asText(a.fields.Sex),breed:asText(a.fields.Breed),color:asText(a.fields["Color / Markings"])
   })).filter(a=>a.name);
+
+  async function saveAnnouncement(formData:FormData){
+    "use server";
+    const context=await requireContentPublisher();
+    const id=field(formData,"announcementId"),title=field(formData,"noticeTitle"),message=field(formData,"message");
+    const type=field(formData,"noticeType"),priority=field(formData,"priority"),status=field(formData,"status");
+    if(!title)throw new Error("Add a short announcement title.");
+    if(title.length>120)throw new Error("Keep the announcement title under 120 characters.");
+    if(!message)throw new Error("Add the public message.");
+    if(message.length>4000)throw new Error("Keep the public message under 4,000 characters.");
+    if(!["Holiday Closure","Weather Closure","Urgent Notice","Service Interruption","General"].includes(type))throw new Error("Choose a valid notice type.");
+    if(!["Urgent","High","Normal"].includes(priority))throw new Error("Choose a valid priority.");
+    if(!["Draft","Published"].includes(status))throw new Error("Choose Draft or Published.");
+    const displayStart=chicagoLocalToIso(field(formData,"displayStart"));
+    const expiresAt=field(formData,"expiresAt")?chicagoLocalToIso(field(formData,"expiresAt")):"";
+    if(!isValidAnnouncementWindow(displayStart,expiresAt))throw new Error(expiresAt?"Expiration must be a valid time after the display start.":"Choose a valid display start time.");
+    const nowIso=new Date().toISOString(),identity=`${context.displayName} (${context.email})`;
+    const fields:Record<string,unknown>={Title:title,"Notice Type":type,"Public Message":message,Status:status,"Display Start":displayStart,"Expires At":expiresAt||null,Priority:priority,"Last Edited By":identity,"Last Edited At":nowIso};
+    if(id){
+      const existing=await airtableList(TABLES.publicAnnouncements,["Title"]);
+      if(!existing.some(row=>row.id===id))throw new Error("This announcement could not be found. Refresh the page and try again.");
+      await airtableUpdate(TABLES.publicAnnouncements,id,fields,true);
+    }else{
+      await airtableCreate(TABLES.publicAnnouncements,{...fields,"Created By":identity,"Created At":nowIso},true);
+    }
+    revalidatePath("/portal/staff/content");revalidatePath("/api/announcements");revalidatePath("/");
+  }
+
+  async function changeAnnouncementStatus(formData:FormData){
+    "use server";
+    const context=await requireContentPublisher();
+    const id=field(formData,"announcementId"),status=field(formData,"nextStatus");
+    if(!id||!["Unpublished","Cancelled"].includes(status))throw new Error("Choose a valid announcement action.");
+    const rows=await airtableList(TABLES.publicAnnouncements,["Title"]);
+    if(!rows.some(row=>row.id===id))throw new Error("This announcement could not be found. Refresh the page and try again.");
+    const nowIso=new Date().toISOString(),identity=`${context.displayName} (${context.email})`;
+    await airtableUpdate(TABLES.publicAnnouncements,id,{Status:status,"Unpublished By":identity,"Unpublished At":nowIso,"Last Edited By":identity,"Last Edited At":nowIso},true);
+    revalidatePath("/portal/staff/content");revalidatePath("/api/announcements");revalidatePath("/");
+  }
 
   async function createEvent(formData:FormData){
     "use server";await requireContentPublisher();
@@ -327,6 +375,20 @@ export default async function WebsiteContentManagementPage(){
     revalidatePath("/portal/staff/content");revalidatePath("/api/testimonials");revalidatePath("/");
   }
 
+  const announcementFormFields=(row?:{id:string;fields:Record<string,unknown>})=>{
+    const values=row?.fields||{};
+    return <div className="grid gap-4 sm:grid-cols-2">
+      {row&&<input type="hidden" name="announcementId" value={row.id}/>}
+      <label className="block text-sm font-medium sm:col-span-2">Title<input name="noticeTitle" required maxLength={120} defaultValue={asText(values.Title)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
+      <label className="block text-sm font-medium">Notice type<select name="noticeType" defaultValue={asText(values["Notice Type"])||"General"} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["General","Holiday Closure","Weather Closure","Urgent Notice","Service Interruption"].map(type=><option key={type}>{type}</option>)}</select></label>
+      <label className="block text-sm font-medium">Priority<select name="priority" defaultValue={asText(values.Priority)||"Normal"} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option>Urgent</option><option>High</option><option>Normal</option></select></label>
+      <label className="block text-sm font-medium">Display start (Central Time)<input name="displayStart" type="datetime-local" required defaultValue={row?localInput(values["Display Start"]):localInput(new Date().toISOString())} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/><span className="mt-1 block text-xs font-normal text-muted-foreground">The notice appears at this time. Choose now to publish immediately.</span></label>
+      <label className="block text-sm font-medium">Expiration (optional, Central Time)<input name="expiresAt" type="datetime-local" defaultValue={localInput(values["Expires At"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/><span className="mt-1 block text-xs font-normal text-muted-foreground">Expired notices leave the public site automatically and remain here for history.</span></label>
+      <label className="block text-sm font-medium sm:col-span-2">Public message<textarea name="message" required maxLength={4000} rows={4} defaultValue={asText(values["Public Message"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
+      <label className="block text-sm font-medium sm:col-span-2">Publication status<select name="status" defaultValue={asText(values.Status)==="Published"?"Published":"Draft"} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="Draft">Draft</option><option value="Published">Published or scheduled</option></select><span className="mt-1 block text-xs font-normal text-muted-foreground">A future display start schedules the notice. No administrator approval is required.</span></label>
+    </div>
+  };
+
   return <main className="min-h-screen bg-slate-50"><div className="container-custom py-10 md:py-12">
     <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft className="h-4 w-4"/> Staff Portal</Link>
     <header className="mb-8"><p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Public Content</p><h1 className="text-4xl font-bold tracking-tight md:text-5xl">Events & Website Content</h1></header>
@@ -369,6 +431,28 @@ export default async function WebsiteContentManagementPage(){
           <button className="w-full rounded-full bg-primary px-5 py-3 font-semibold text-white sm:col-span-2 sm:mx-auto sm:max-w-sm">Create Event</button>
         </div>
       </form></details></div></details>
+
+      <details name="public-content" className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <summary className="flex cursor-pointer list-none items-center gap-4"><Megaphone className="h-6 w-6 text-primary"/><div className="flex-1"><h2 className="text-2xl font-bold">Announcements</h2><p className="text-sm text-muted-foreground">{liveAnnouncements.length} live · {scheduledAnnouncements.length} scheduled · {draftAnnouncements.length} drafts · {expiredAnnouncements.length} expired · {archivedAnnouncements.length} archived</p></div><ChevronDown className="h-5 w-5"/></summary>
+        <div className="mt-5 space-y-4">
+          <details className="rounded-2xl border bg-slate-50 p-5">
+            <summary className="cursor-pointer font-semibold text-primary">+ Create announcement</summary>
+            <div className="mt-4"><AnnouncementForm action={saveAnnouncement} submitLabel="Save announcement">{announcementFormFields()}</AnnouncementForm></div>
+          </details>
+          {announcements.map(row=>{
+            const status=announcementState(row),scheduledNotice=status==="Scheduled";
+            return <details key={row.id} className="rounded-2xl border p-5">
+              <summary className="cursor-pointer list-none"><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{asText(row.fields.Title)}</h3><p className="mt-1 text-sm text-muted-foreground">{asText(row.fields["Notice Type"])} · Starts {fmt(row.fields["Display Start"],true)} · {asText(row.fields.Priority)||"Normal"} priority</p></div><Status>{status}</Status></div></summary>
+              <div className="mt-5 space-y-4 border-t pt-5">
+                <AnnouncementForm action={saveAnnouncement} submitLabel="Save changes">{announcementFormFields(row)}</AnnouncementForm>
+                {asText(row.fields.Status)==="Published"&&<form action={changeAnnouncementStatus}><input type="hidden" name="announcementId" value={row.id}/><input type="hidden" name="nextStatus" value={scheduledNotice?"Cancelled":"Unpublished"}/><button className="rounded-full border border-red-300 px-4 py-2 text-sm font-semibold text-red-700">{scheduledNotice?"Cancel scheduled notice":"Unpublish notice"}</button></form>}
+                <p className="text-xs text-muted-foreground">Created by {asText(row.fields["Created By"])||"not recorded"} · {fmt(row.fields["Created At"],true)||"date not recorded"}{asText(row.fields["Last Edited At"])&&<> · Last edited {fmt(row.fields["Last Edited At"],true)}</>}{asText(row.fields["Unpublished At"])&&<> · Unpublished {fmt(row.fields["Unpublished At"],true)}</>}</p>
+              </div>
+            </details>
+          })}
+          {announcements.length===0&&<p className="rounded-xl bg-slate-50 p-4 text-sm text-muted-foreground">No announcements yet. Create a notice to share it on the public website.</p>}
+        </div>
+      </details>
 
       <details name="public-content" className="rounded-3xl border bg-white p-6 shadow-sm md:p-8"><summary className="flex cursor-pointer list-none items-center gap-4"><Quote className="h-6 w-6 text-primary"/><div className="flex-1"><h2 className="text-2xl font-bold">Real Families, Real Second Chances</h2><p className="text-sm text-muted-foreground">{publishedStories.length} published · {testimonials.length-publishedStories.length} unpublished · {publishedStories.length>=20?"20 shown publicly":"up to 20 shown publicly"}</p></div><ChevronDown className="h-5 w-5"/></summary>
         <AdoptionStoryForm animals={storyAnimals} action={createTestimonial} initialDate={new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago"}).format(new Date())} existingStoryAnimalIds={testimonials.flatMap(row=>asStrings(row.fields.Animal))}/>
