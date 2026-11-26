@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { orderPublicAdoptionStories } from "@/lib/adoption-story-display"
 
 const AIRTABLE_BASE_ID = "app2vpch2JJVrP9pu"
 const AIRTABLE_TESTIMONIALS_TABLE_ID = "tbl8npkpyXTkOdS6V"
@@ -10,7 +11,7 @@ const PUBLIC_FIELDS = [
   "Animal Photo",
   "Website Permission",
   "Approved for Website",
-  "Featured",
+  "Original Published At",
   "Display Order",
   "Display Animal Name",
 ]
@@ -58,11 +59,13 @@ export async function GET() {
     const params = new URLSearchParams()
     params.set(
       "filterByFormula",
-      'AND({Website Permission}="Granted",{Approved for Website}=1,{Featured}=1)'
+      'AND({Website Permission}="Granted",{Approved for Website}=1)'
     )
-    params.append("sort[0][field]", "Display Order")
-    params.append("sort[0][direction]", "asc")
-    params.set("pageSize", "12")
+    params.append("sort[0][field]", "Original Published At")
+    params.append("sort[0][direction]", "desc")
+    params.append("sort[1][field]", "Display Order")
+    params.append("sort[1][direction]", "asc")
+    params.set("pageSize", "100")
     for (const field of PUBLIC_FIELDS) params.append("fields[]", field)
 
     const response = await fetch(
@@ -79,7 +82,7 @@ export async function GET() {
       return NextResponse.json({ error: "We could not load adoption stories right now." }, { status: 502 })
     }
 
-    const testimonials = ((result.records || []) as AirtableRecord[]).map((record) => {
+    const testimonials = orderPublicAdoptionStories(((result.records || []) as AirtableRecord[]).map((record) => {
       const fields = record.fields
       return {
         id: record.id,
@@ -89,8 +92,9 @@ export async function GET() {
         relationshipLabel: text(fields["Relationship Label"]),
         image: firstAttachment(fields["Animal Photo"]),
         displayOrder: number(fields["Display Order"]),
+        publishedAt: text(fields["Original Published At"]),
       }
-    })
+    }))
 
     return NextResponse.json(
       { testimonials },
