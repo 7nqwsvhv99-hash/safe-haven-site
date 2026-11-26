@@ -125,7 +125,7 @@ export function UpcomingEvents({ fullPage = false }: { fullPage?: boolean }) {
                     <Button asChild variant="outline" className="mt-6 w-full">
                       {event.hasRegistrationOptions ? (
                         <a href={`/events/${event.id}`}>
-                          {["Purchase tickets","Register and pay"].includes(event.visitorAction)?"Register & pay fee":event.visitorAction==="RSVP for free"?"RSVP for free":event.ctaLabel || (event.hasPaidReservations ? "Register & pay fee" : "RSVP for free")}
+                          {["Purchase tickets","Register and pay"].includes(event.visitorAction)?"Buy tickets":event.visitorAction==="RSVP for free"?"RSVP for free":event.ctaLabel || (event.hasPaidReservations ? "Buy tickets" : "RSVP for free")}
                         </a>
                       ) : (
                         <a href={event.registrationUrl || event.ctaUrl} target="_blank" rel="noopener noreferrer">

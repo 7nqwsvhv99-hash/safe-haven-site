@@ -206,6 +206,8 @@ export default async function VolunteerPortalPage() {
             <div className="space-y-8">
               {context.isBoard && !data.volunteer && <div className="rounded-2xl border border-primary/15 bg-primary/5 p-5 text-sm"><strong>Board View:</strong> This account is not linked to a volunteer profile. Shared announcements, current needs, and the volunteer interface are available below. Personalized schedules and hour history appear only for an active volunteer.</div>}
 
+              <details className="rounded-2xl border bg-white p-5 shadow-sm"><summary className="cursor-pointer font-semibold text-primary">Quick guide for event volunteers</summary><div className="mt-4 space-y-2 text-sm text-slate-700"><p>Review the event, shift time, location, and open places before signing up.</p><p>Respond to invitations in this portal. If you can no longer attend an accepted shift, release it as soon as possible so another volunteer can take the place.</p><p>If an event is rescheduled, review the updated time and location and reconfirm only if you can still attend. Contact the Volunteer Coordinator if you need help.</p></div></details>
+
               {data.announcements.length > 0 && (
                 <section className="rounded-3xl border bg-white p-7 shadow-sm">
                   <div className="mb-5 flex items-center gap-3">

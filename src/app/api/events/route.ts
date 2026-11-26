@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { eventEndTimestamp } from "@/lib/event-dates"
 import { getSafeHavenAirtableConfig } from "@/lib/airtable-config"
+import { paidEventRegistrationEnabled } from "@/lib/paypal"
 
 type AirtableAttachment = {
   url?: string
@@ -119,7 +120,7 @@ export async function GET(request: Request) {
         const effectiveEnd = eventEndTimestamp(fields)
         const action = text(fields["Visitor Action"])
         const configuredOptions = optionsByEvent.get(record.id) || []
-        const activeOptions = action === "RSVP for free" ? configuredOptions.filter(option => option.price === 0) : ["Purchase tickets", "Register and pay"].includes(action) ? configuredOptions.filter(option => option.price > 0) : configuredOptions
+        const activeOptions = action === "RSVP for free" ? configuredOptions.filter(option => option.price === 0) : ["Purchase tickets", "Register and pay"].includes(action) ? paidEventRegistrationEnabled() ? configuredOptions.filter(option => option.price > 0) : [] : configuredOptions
         const paidOptions = activeOptions.filter(option => option.price > 0)
         const admissionPrices = paidOptions.filter(option => !/sponsor/i.test(option.type)).map(option => option.price)
         const hasFreeOption = activeOptions.some(option => option.price === 0)

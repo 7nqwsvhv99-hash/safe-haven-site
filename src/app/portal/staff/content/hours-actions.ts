@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { chicagoLocalToIso } from "@/lib/event-dates"
 import { canManagePublicContent } from "@/lib/announcement-policy"
-import { DAYS, findExceptionOverlap, isDate, parseIntervals, validateWeeklySchedule } from "@/lib/shelter-hours-policy.js"
+import { DAYS, findExceptionOverlap, isDate, parseIntervals, parseReplacementIntervals, validateWeeklySchedule } from "@/lib/shelter-hours-policy.js"
 import { airtableCreate, airtableList, airtableUpdate, asStrings, asText, requirePortalRole, TABLES } from "@/lib/portal"
 
 export type HoursActionState = { status: "idle" | "success" | "error"; message: string }
@@ -103,7 +103,7 @@ export async function saveHoursException(_previous: HoursActionState = idle, for
     if (!isDate(startDate) || !isDate(endDate) || startDate > endDate) throw new Error("Choose valid start and end dates, with the end on or after the start.")
     if (!["Closed", "Replace"].includes(mode)) throw new Error("Choose whether the exception closes the shelter or replaces its hours.")
     if (!message || message.length > 1000) throw new Error("Add a public notice (1,000 characters or fewer).")
-    const intervals = mode === "Closed" ? [] : parseIntervals(formText(form, "intervals"))
+    const intervals = mode === "Closed" ? [] : parseReplacementIntervals(formText(form, "intervals"))
     if (mode === "Replace" && intervals.length === 0) throw new Error("Enter replacement opening hours for every date in this range.")
     if (!id && !submissionKey) throw new Error("Refresh the page and submit the exception again.")
 

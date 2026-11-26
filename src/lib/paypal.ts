@@ -8,6 +8,10 @@ export function paypalConfigured() {
   return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
 }
 
+export function paidEventRegistrationEnabled() {
+  return process.env.SAFE_HAVEN_EVENT_PAYMENTS_ENABLED === "true" && paypalConfigured();
+}
+
 export async function paypalAccessToken() {
   const clientId = process.env.PAYPAL_CLIENT_ID;
   const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
