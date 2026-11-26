@@ -14,6 +14,14 @@ type Exception = {
 type Action = (previous: HoursActionState, form: FormData) => Promise<HoursActionState>
 
 function intervalText(intervals: Interval[]) { return intervals.map((item) => `${item.start}-${item.end}`).join(", ") }
+function standardTime(value: string) {
+  const [hours, minutes] = value.split(":").map(Number)
+  const suffix = hours >= 12 ? "PM" : "AM"
+  return `${hours % 12 || 12}:${String(minutes).padStart(2, "0")} ${suffix}`
+}
+function replacementIntervalText(intervals: Interval[]) {
+  return intervals.map((item) => `${standardTime(item.start)}-${standardTime(item.end)}`).join(", ")
+}
 function fmtDate(value: string) {
   if (!value) return "Date not set"
   return new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", year: "numeric" }).format(new Date(`${value}T12:00:00Z`))
@@ -55,7 +63,7 @@ function ExceptionFields({ item, newKey }: { item?: Exception; newKey?: string }
       <label className="text-sm font-medium">End date<input required type="date" name="endDate" defaultValue={item?.endDate || item?.startDate || ""} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
       <label className="text-sm font-medium">Hours for these dates<select name="mode" defaultValue={item?.mode || "Closed"} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="Closed">Closed</option><option value="Replace">Replace regular hours</option></select></label>
       <label className="text-sm font-medium">When should this appear?<select name="status" aria-describedby={publicationHelpId} defaultValue={item?.status === "Published" ? "Published" : "Draft"} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="Draft">Keep as a draft (staff only)</option><option value="Published">Publish now or on the start date</option></select><span id={publicationHelpId} className="mt-1 block text-xs font-normal text-muted-foreground">Drafts and their notices stay private. Publishing shows the exception in upcoming public hours. The hours change and linked announcement begin on the start date; if that date is today or earlier, they take effect now. They end after the end date.</span></label>
-      <label className="text-sm font-medium md:col-span-2">Replacement opening intervals <span className="font-normal text-slate-500">(only for “Replace”; Central Time)</span><input name="intervals" defaultValue={intervalText(item?.intervals || [])} placeholder="12:00-15:00, 16:00-18:00" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs font-normal text-muted-foreground">Use 24-hour HH:mm-HH:mm intervals separated by commas. Every day in a date range uses these intervals.</span></label>
+      <label className="text-sm font-medium md:col-span-2">Replacement opening intervals <span className="font-normal text-slate-500">(only for “Replace”; Central Time)</span><input name="intervals" defaultValue={replacementIntervalText(item?.intervals || [])} placeholder="12:00 PM-3:00 PM, 4:00 PM-6:00 PM" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs font-normal text-muted-foreground">Use standard time with AM or PM, for example 12:00 PM-3:00 PM, 4:00 PM-6:00 PM. Every date in this range uses the same hours. If hours differ by date, create a separate one-day exception for each date.</span></label>
       <label className="text-sm font-medium md:col-span-2">Public notice<textarea required maxLength={1000} rows={3} name="message" defaultValue={item?.message || ""} placeholder="The shelter will be closed for the holiday." className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
     </div>
   </>

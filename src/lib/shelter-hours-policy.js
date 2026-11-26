@@ -21,6 +21,23 @@ function parseIntervals(value) {
   return intervals
 }
 
+function parseReplacementIntervals(value) {
+  const raw = typeof value === "string" ? value.trim() : ""
+  if (!raw) return []
+  const intervals24 = raw.split(",").map((item) => {
+    const match = item.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+    if (!match) throw new Error("Enter each replacement interval as h:mm AM-h:mm PM. Include AM or PM for both times.")
+    const to24Hour = (hourText, minuteText, period) => {
+      const hour = Number(hourText), minute = Number(minuteText)
+      if (hour < 1 || hour > 12 || minute > 59) throw new Error("Use valid 12-hour times, such as 9:00 AM or 4:30 PM.")
+      const converted = hour % 12 + (period.toUpperCase() === "PM" ? 12 : 0)
+      return `${String(converted).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+    }
+    return `${to24Hour(match[1], match[2], match[3])}-${to24Hour(match[4], match[5], match[6])}`
+  }).join(", ")
+  return parseIntervals(intervals24)
+}
+
 function isTime(value) {
   const match = value.match(/^(\d{2}):(\d{2})$/)
   return Boolean(match && Number(match[1]) <= 23 && Number(match[2]) <= 59)
@@ -90,6 +107,6 @@ function formatIntervals(intervals) {
 
 module.exports = {
   DAYS, TIME_ZONE, exceptionRangeOverlaps, findExceptionOverlap, formatIntervals,
-  formatTime, getCentralDate, isDate, parseIntervals, resolveHoursForDate,
+  formatTime, getCentralDate, isDate, parseIntervals, parseReplacementIntervals, resolveHoursForDate,
   validateWeeklySchedule, weekdayName,
 }

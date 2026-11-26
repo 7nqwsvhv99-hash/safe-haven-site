@@ -1,7 +1,7 @@
 const test = require("node:test")
 const assert = require("node:assert/strict")
 const {
-  findExceptionOverlap, formatIntervals, getCentralDate, parseIntervals,
+  findExceptionOverlap, formatIntervals, getCentralDate, parseIntervals, parseReplacementIntervals,
   resolveHoursForDate, validateWeeklySchedule,
 } = require("../src/lib/shelter-hours-policy.js")
 
@@ -18,6 +18,18 @@ test("validates multiple daily intervals and rejects malformed, reversed, and ov
   assert.throws(() => parseIntervals("10:00-12:00, 11:30-15:00"), /cannot overlap/)
   assert.throws(() => parseIntervals("15:00-10:00"), /end after the start/)
   assert.throws(() => parseIntervals("24:00-25:00"), /end after the start/)
+})
+
+test("parses replacement hours in standard AM/PM time", () => {
+  assert.deepEqual(parseReplacementIntervals("9:00 AM-12:00 PM, 1:30 PM-5:00 PM"), [
+    { start: "09:00", end: "12:00" },
+    { start: "13:30", end: "17:00" },
+  ])
+  assert.deepEqual(parseReplacementIntervals("12:00 AM-12:00 PM"), [
+    { start: "00:00", end: "12:00" },
+  ])
+  assert.throws(() => parseReplacementIntervals("9:00-12:00"), /Include AM or PM/)
+  assert.throws(() => parseReplacementIntervals("1:00 PM-12:00 PM"), /end after the start/)
 })
 
 test("weekly hours apply unless a single published exception overrides them", () => {

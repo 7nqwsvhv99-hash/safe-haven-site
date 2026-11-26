@@ -3,7 +3,7 @@ import {
   airtableCreate, airtableGet, capacityForOption, eventIsEligible, findByRequestKey,
   newConfirmationNumber, readText, reservationTables, ReservationError, validateReservationInput,
 } from "@/lib/event-reservation-service";
-import { createPayPalOrder, getPayPalOrder, paypalConfigured } from "@/lib/paypal";
+import { createPayPalOrder, getPayPalOrder, paidEventRegistrationEnabled } from "@/lib/paypal";
 import { markEventCapacitySaved, releaseEventCapacity, reserveEventCapacity } from "@/lib/event-capacity";
 
 function chicagoToday() {
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       const confirmationNumber = readText(prior[0].fields["Confirmation Number"]);
       const orderId = readText(prior[0].fields["PayPal Order ID"]);
       if (readText(prior[0].fields["Registration Type"]) === "Free RSVP") return NextResponse.json({ free: true, confirmationNumber });
+      if (!paidEventRegistrationEnabled()) throw new ReservationError("Paid event registration is not currently available.", 503);
       if (orderId) {
         const order = await getPayPalOrder(orderId);
         const approvalUrl = order.links?.find((link) => link.rel === "approve")?.href;
@@ -41,6 +42,7 @@ export async function POST(request: Request) {
     if (!eventIsEligible(event)) throw new ReservationError("This event is no longer accepting reservations.", 409);
     const visitorAction = readText(event.fields["Visitor Action"]);
     if (!["RSVP for free", "Purchase tickets", "Register and pay"].includes(visitorAction)) throw new ReservationError("This event is not configured to accept online registrations.", 409);
+    if (["Purchase tickets", "Register and pay"].includes(visitorAction) && !paidEventRegistrationEnabled()) throw new ReservationError("Paid event registration is not currently available.", 503);
     const capacityBaselineAt = Date.now();
 
     const selected = await Promise.all(input.lines.map(async (line) => {
@@ -69,7 +71,6 @@ export async function POST(request: Request) {
     let approvalUrl = "";
 
     if (!free) {
-      if (!paypalConfigured()) throw new ReservationError("Online payment is temporarily unavailable. Please contact Safe Haven to register.", 503);
       const origin = new URL(request.url).origin;
       const order = await createPayPalOrder({
         requestKey: input.requestKey,

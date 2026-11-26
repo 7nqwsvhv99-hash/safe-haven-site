@@ -3,6 +3,7 @@ import { CalendarDays, MapPin } from "lucide-react";
 import { EventReservationForm } from "./reservation-form";
 import { eventEndTimestamp } from "@/lib/event-dates";
 import { getSafeHavenAirtableConfig } from "@/lib/airtable-config";
+import { paidEventRegistrationEnabled } from "@/lib/paypal";
 
 type RecordRow={id:string;fields:Record<string,unknown>};
 function text(v:unknown){return typeof v==="string"?v:"";}
@@ -59,7 +60,8 @@ export default async function EventDetailPage({params}:{params:Promise<{eventId:
  if(cancelled?(!Number.isFinite(cancellationEnd)||cancellationEnd<Date.now()):(text(event.fields["Event Status"])!=="Published"||!Number.isFinite(end)||end<Date.now()))notFound();
  const visitorAction=text(event.fields["Visitor Action"]);
  const registrationAllowed=!visitorAction||["RSVP for free","Purchase tickets","Register and pay"].includes(visitorAction);
- const options=cancelled||!registrationAllowed?[]:await fetchOptions(eventId,visitorAction);
+ const paidAction=["Purchase tickets","Register and pay"].includes(visitorAction);
+ const options=cancelled||!registrationAllowed||(paidAction&&!paidEventRegistrationEnabled())?[]:await fetchOptions(eventId,visitorAction);
  const start=text(event.fields["Start Date & Time"]);
  const allDay=Boolean(event.fields["All Day Event"]);
  const date=start?new Intl.DateTimeFormat("en-US",{timeZone:"America/Chicago",weekday:"long",month:"long",day:"numeric",year:"numeric",...(allDay?{}:{hour:"numeric",minute:"2-digit"})}).format(new Date(start)):"";
