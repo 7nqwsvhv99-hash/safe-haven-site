@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarDays, Quote, ChevronDown } from "lucide-react";
-import { legacyAdoptionStories } from "@/lib/legacy-adoption-stories";
+import { AdoptionStoryForm, OptimizedStoryForm, StoryAnimalPicker, relationshipDefault, type StoryAnimalOption } from "./adoption-story-form";
 import { EventDateFields } from "./event-date-fields";
 import { EventLifecycleFields } from "./event-lifecycle-fields";
 import { chicagoLocalToIso, eventEndTimestamp, parseEventDateRange } from "@/lib/event-dates";
@@ -95,9 +95,10 @@ export default async function WebsiteContentManagementPage(){
     ],{sort:[{field:"Start Date & Time",direction:"asc"}]}),
     airtableList(TABLES.testimonials,[
       "Quote","Person / Family Name","Relationship Label","Received Date",
-      "Website Permission","Approved for Website","Featured","Display Order"
+      "Website Permission","Approved for Website","Featured","Display Order","Animal","Legacy Animal Name","Animal Photo",
+      "Consent Confirmed By","Consent Confirmed At","Original Published By","Original Published At","Last Edited By","Last Edited At","Unpublished By","Unpublished At"
     ],{sort:[{field:"Display Order",direction:"asc"}]}),
-    airtableList(TABLES.animals,["Animal ID","Pet Name","Adoption Status"],{sort:[{field:"Pet Name",direction:"asc"}]})
+    airtableList(TABLES.animals,["Animal ID","Pet Name","Species","Sex","Breed","Color / Markings","Adoption Status"],{sort:[{field:"Pet Name",direction:"asc"}]})
   ]);
   const now=Date.now();
   const publishedEvents=events.filter(r=>Boolean(r.fields["Publish on Website"])&&asText(r.fields["Event Status"])==="Published"&&eventEndTimestamp(r.fields)>=now);
@@ -105,6 +106,10 @@ export default async function WebsiteContentManagementPage(){
   const scheduled=events.filter(r=>asText(r.fields["Event Status"])==="Draft"&&Date.parse(asText(r.fields["Scheduled Publish At"]))>now);
   const cancelled=events.filter(r=>asText(r.fields["Event Status"])==="Cancelled"&&Date.parse(asText(r.fields["Cancellation Notice Through"]))>=now);
   const publishedStories=testimonials.filter(r=>Boolean(r.fields["Approved for Website"])&&asText(r.fields["Website Permission"])==="Granted");
+  const storyAnimals:StoryAnimalOption[]=animals.map(a=>({
+    id:a.id,name:asText(a.fields["Pet Name"]),animalId:asText(a.fields["Animal ID"]),species:asText(a.fields.Species),
+    sex:asText(a.fields.Sex),breed:asText(a.fields.Breed),color:asText(a.fields["Color / Markings"])
+  })).filter(a=>a.name);
 
   async function createEvent(formData:FormData){
     "use server";await requireContentPublisher();
@@ -229,35 +234,96 @@ export default async function WebsiteContentManagementPage(){
   }
 
   async function createTestimonial(formData:FormData){
-    "use server";await requireContentPublisher();
-    const quote=field(formData,"quote");if(!quote)return;
-
-    const animalSearch=field(formData,"animalSearch");
-    let animalId="";
-    if(animalSearch){
-      const latestAnimals=await airtableList(TABLES.animals,["Animal ID","Pet Name"]);
-      const target=animalSearch.toLowerCase();
-      const match=latestAnimals.find(a=>{
-        const name=asText(a.fields["Pet Name"]);
-        const id=asText(a.fields["Animal ID"]);
-        return [name,id,`${name} · ${id}`].some(value=>value.toLowerCase()===target);
-      });
-      if(!match)throw Error("Choose an animal from the search suggestions so the story is linked to the correct record.");
-      animalId=match.id;
-    }
-
+    "use server";
+    const context=await requireContentPublisher();
+    const quote=field(formData,"quote"),animalId=field(formData,"animalId"),legacyName=field(formData,"legacyAnimalName");
+    if(!quote)throw new Error("Add the approved story text before publishing.");
+    if(formData.get("consentConfirmed")!=="on")throw new Error("Confirm the adopter’s permission before publishing this story.");
+    if(!["Adopter","Adoptive family"].includes(field(formData,"relationshipLabel")))throw new Error("Choose Adopter or Adoptive family.");
+    const file=formData.get("photo");
+    if(!(file instanceof File)||!file.size)throw new Error("Add an animal photo before publishing this story.");
+    const latestAnimals=await airtableList(TABLES.animals,["Pet Name"]);
+    if(animalId&&!latestAnimals.some(a=>a.id===animalId))throw new Error("The selected animal could not be verified. Search again and choose the matching animal.");
+    if(!animalId&&(!legacyName||formData.get("legacyStory")!=="on"))throw new Error("Choose an animal, or mark this as a legacy story without an animal record.");
+    const now=new Date().toISOString(),identity=`${context.displayName} (${context.email})`;
     const record=await airtableCreate(TABLES.testimonials,{
       Quote:quote,"Person / Family Name":field(formData,"personName"),
-      "Relationship Label":field(formData,"relationshipLabel"),
-      ...(field(formData,"receivedDate")?{"Received Date":field(formData,"receivedDate")}:{ }),
-      ...(animalId?{Animal:[animalId]}:{ }),
-      "Website Permission":field(formData,"permission")||"Not Requested",
-      "Approved for Website":formData.get("approved")==="on",
-      Featured:formData.get("featured")==="on",
-      ...(optionalNumber(formData,"displayOrder")!==undefined?{"Display Order":optionalNumber(formData,"displayOrder")}:{ }),
+      "Relationship Label":field(formData,"relationshipLabel"),"Received Date":field(formData,"receivedDate"),
+      Animal:animalId?[animalId]:[],"Legacy Animal Name":animalId?"":legacyName,
+      "Website Permission":"Not Requested","Approved for Website":false,
+      "Consent Confirmed By":identity,"Consent Confirmed At":now,
+      "Created By":identity,"Original Published By":"","Original Published At":""
     },true);
-    const file=formData.get("photo");if(record&&file instanceof File&&file.size)await airtableUploadAttachment(record.id,getSafeHavenAirtableConfig().fields.testimonialPhoto,file,true);
-    revalidatePath("/portal/staff/content");revalidatePath("/");
+    if(!record)throw new Error("The story could not be saved.");
+    await airtableUploadAttachment(record.id,getSafeHavenAirtableConfig().fields.testimonialPhoto,file);
+    // Publish only after the record and optional image upload both succeed.
+    await airtableUpdate(TABLES.testimonials,record.id,{
+      "Website Permission":"Granted","Approved for Website":true,
+      "Original Published By":identity,"Original Published At":now,
+      "Last Edited By":identity,"Last Edited At":now
+    },true);
+    revalidatePath("/portal/staff/content");revalidatePath("/api/testimonials");revalidatePath("/");
+  }
+
+  async function updateTestimonial(formData:FormData){
+    "use server";
+    const context=await requireContentPublisher(),id=field(formData,"storyId");
+    const quote=field(formData,"quote"),animalId=field(formData,"animalId"),legacyName=field(formData,"legacyAnimalName");
+    if(!id||!quote)throw new Error("Story details are incomplete.");
+    if(!["Adopter","Adoptive family"].includes(field(formData,"relationshipLabel")))throw new Error("Choose Adopter or Adoptive family.");
+    const [records,latestAnimals]=await Promise.all([
+      airtableList(TABLES.testimonials,["Website Permission","Approved for Website","Original Published By","Original Published At","Animal Photo"]),
+      airtableList(TABLES.animals,["Pet Name"])
+    ]);
+    const current=records.find(r=>r.id===id);if(!current)throw new Error("This story could not be found. Refresh the page and try again.");
+    if(animalId&&!latestAnimals.some(a=>a.id===animalId))throw new Error("The selected animal could not be verified. Search again and choose the matching animal.");
+    if(!animalId&&(!legacyName||formData.get("legacyStory")!=="on"))throw new Error("Choose an animal, or mark this as a legacy story without an animal record.");
+    const identity=`${context.displayName} (${context.email})`,now=new Date().toISOString();
+    const file=formData.get("photo");
+    const hasExistingPhoto=Array.isArray(current.fields["Animal Photo"])&&(current.fields["Animal Photo"] as unknown[]).length>0;
+    if(formData.get("consentConfirmed")==="on"&&!(file instanceof File&&file.size>0)&&!hasExistingPhoto)throw new Error("Add an animal photo before publishing this story.");
+    await airtableUpdate(TABLES.testimonials,id,{
+      Quote:quote,"Person / Family Name":field(formData,"personName"),"Relationship Label":field(formData,"relationshipLabel"),
+      "Received Date":field(formData,"receivedDate")||null,Animal:animalId?[animalId]:[],"Legacy Animal Name":animalId?"":legacyName,
+      "Last Edited By":identity,"Last Edited At":now
+    },true);
+    if(file instanceof File&&file.size>0){
+      try{
+        await airtableUploadAttachment(id,getSafeHavenAirtableConfig().fields.testimonialPhoto,file);
+        const withPhotos=await airtableList(TABLES.testimonials,["Animal Photo"]);
+        const updated=withPhotos.find(r=>r.id===id),photos=updated?.fields["Animal Photo"];
+        if(Array.isArray(photos)&&photos.length>1){
+          const newPhoto=photos[photos.length-1] as {id?:string};
+          await airtableUpdate(TABLES.testimonials,id,{"Animal Photo":[newPhoto,...photos.slice(0,-1)]},true);
+        }
+      }catch{
+        throw new Error("Story text was saved, but the photo could not be replaced. The current public photo remains available. Please try the photo upload again.");
+      }
+    }
+    if(formData.get("consentConfirmed")==="on"){
+      const identity=`${context.displayName} (${context.email})`,now=new Date().toISOString();
+      await airtableUpdate(TABLES.testimonials,id,{
+        "Website Permission":"Granted","Approved for Website":true,
+        "Consent Confirmed By":identity,"Consent Confirmed At":now,
+        ...(!asText(current.fields["Original Published By"])?{"Original Published By":identity}:{}),
+        ...(!asText(current.fields["Original Published At"])?{"Original Published At":now}:{}),
+        "Last Edited By":identity,"Last Edited At":now
+      },true);
+    }
+    revalidatePath("/portal/staff/content");revalidatePath("/api/testimonials");revalidatePath("/");
+  }
+
+  async function unpublishTestimonial(formData:FormData){
+    "use server";
+    const context=await requireContentPublisher(),id=field(formData,"storyId"),withdraw=formData.get("withdrawConsent")==="on";
+    if(!id)throw new Error("Choose a story to unpublish.");
+    const now=new Date().toISOString(),identity=`${context.displayName} (${context.email})`;
+    await airtableUpdate(TABLES.testimonials,id,{
+      "Approved for Website":false,"Unpublished By":identity,"Unpublished At":now,
+      "Last Edited By":identity,"Last Edited At":now,
+      ...(withdraw?{"Website Permission":"Not Granted"}:{})
+    },true);
+    revalidatePath("/portal/staff/content");revalidatePath("/api/testimonials");revalidatePath("/");
   }
 
   return <main className="min-h-screen bg-slate-50"><div className="container-custom py-10 md:py-12">
@@ -303,51 +369,37 @@ export default async function WebsiteContentManagementPage(){
         </div>
       </form></details></div></details>
 
-      <details name="public-content" className="rounded-3xl border bg-white p-6 shadow-sm md:p-8"><summary className="flex cursor-pointer list-none items-center gap-4"><Quote className="h-6 w-6 text-primary"/><div className="flex-1"><h2 className="text-2xl font-bold">Real Families, Real Second Chances</h2><p className="text-sm text-muted-foreground">{publishedStories.length + legacyAdoptionStories.length} published stories</p></div><ChevronDown className="h-5 w-5"/></summary>
-
-        <form action={createTestimonial} className="mx-auto mt-5 max-w-5xl space-y-4 rounded-2xl bg-slate-50 p-5 md:p-6">
-          <h3 className="font-bold">Add Story</h3>
-
-          <label className="block text-sm font-medium">
-            Animal
-            <input
-              name="animalSearch"
-              list="testimonial-animals"
-              placeholder="Search by animal name or ID"
-              autoComplete="off"
-              className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"
-            />
-            <datalist id="testimonial-animals">
-              {animals.map(a=>{
-                const name=asText(a.fields["Pet Name"]);
-                const id=asText(a.fields["Animal ID"]);
-                return <option key={a.id} value={`${name} · ${id}`}/>;
-              })}
-            </datalist>
-            <span className="mt-1 block text-xs font-normal text-muted-foreground">Start typing a name or animal ID, then choose the matching animal.</span>
-          </label>
-
-          <label className="block text-sm font-medium">
-            Story / testimonial
-            <textarea name="quote" rows={5} required placeholder="Approved testimonial text" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/>
-          </label>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block text-sm font-medium">Person / family name<input name="personName" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
-            <label className="block text-sm font-medium">Relationship label<input name="relationshipLabel" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
-            <label className="block text-sm font-medium">Date received<input name="receivedDate" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
-            <label className="block text-sm font-medium">Website permission<select name="permission" defaultValue="Not Requested" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Granted","Not Granted","Not Requested"].map(x=><option key={x}>{x}</option>)}</select></label>
-            <label className="block text-sm font-medium">Display order<input name="displayOrder" type="number" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
-            <label className="block text-sm font-medium">Animal photo<input name="photo" type="file" accept="image/*" className="mt-2 block w-full text-sm"/></label>
-          </div>
-
-          <div className="flex flex-wrap gap-5 text-sm">
-            <label><input name="approved" type="checkbox" className="mr-2"/>Approved for website</label>
-            <label><input name="featured" type="checkbox" className="mr-2"/>Featured</label>
-          </div>
-
-          <button className="rounded-full bg-primary px-6 py-3 font-semibold text-white">Add Story</button>
-        </form>
+      <details name="public-content" className="rounded-3xl border bg-white p-6 shadow-sm md:p-8"><summary className="flex cursor-pointer list-none items-center gap-4"><Quote className="h-6 w-6 text-primary"/><div className="flex-1"><h2 className="text-2xl font-bold">Real Families, Real Second Chances</h2><p className="text-sm text-muted-foreground">{publishedStories.length} published · {testimonials.length-publishedStories.length} unpublished · {publishedStories.length>=20?"20 shown publicly":"up to 20 shown publicly"}</p></div><ChevronDown className="h-5 w-5"/></summary>
+        <AdoptionStoryForm animals={storyAnimals} action={createTestimonial} initialDate={new Intl.DateTimeFormat("en-CA",{timeZone:"America/Chicago"}).format(new Date())} existingStoryAnimalIds={testimonials.flatMap(row=>asStrings(row.fields.Animal))}/>
+        <div className="mt-6 space-y-4">
+          {testimonials.map(r=>{
+            const animalIds=asStrings(r.fields.Animal),photo=Array.isArray(r.fields["Animal Photo"])?(r.fields["Animal Photo"] as {url?:string;filename?:string}[])[0]:undefined;
+            const isPublished=Boolean(r.fields["Approved for Website"])&&asText(r.fields["Website Permission"])==="Granted";
+            const storyAnimalName=animalIds.map(id=>storyAnimals.find(a=>a.id===id)?.name).filter(Boolean).join(", ")||asText(r.fields["Legacy Animal Name"]);
+            return <details key={r.id} className="rounded-2xl border bg-white p-4 md:p-5">
+              <summary className="flex cursor-pointer list-none flex-wrap items-center gap-3">
+                {photo?.url&&<img src={photo.url} alt={photo.filename||storyAnimalName||"Adoption story photo"} className="h-14 w-14 rounded-lg bg-slate-100 object-contain"/>}
+                <span className="min-w-0 flex-1"><span className="block font-semibold">{storyAnimalName||"Story without an animal record"}</span><span className="block truncate text-sm text-muted-foreground">{asText(r.fields.Quote)}</span></span>
+                <Status>{isPublished?"Published":"Unpublished / archived"}</Status>
+              </summary>
+              <OptimizedStoryForm action={updateTestimonial} submitLabel="Save Story" className="mt-4 grid gap-4 border-t pt-4 sm:grid-cols-2">
+                <input type="hidden" name="storyId" value={r.id}/>
+                <div className="sm:col-span-2"><StoryAnimalPicker animals={storyAnimals} initialAnimalId={animalIds[0]} initialLegacyName={asText(r.fields["Legacy Animal Name"])}/></div>
+                <label className="block text-sm font-medium sm:col-span-2">Story / testimonial<textarea name="quote" rows={4} required defaultValue={asText(r.fields.Quote)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
+                <label className="block text-sm font-medium">Person / family name<input name="personName" defaultValue={asText(r.fields["Person / Family Name"])} placeholder="Sarah, The Miller Family, or leave blank for anonymity" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5 placeholder:text-slate-400"/></label>
+                <label className="block text-sm font-medium">Relationship<select name="relationshipLabel" defaultValue={relationshipDefault(asText(r.fields["Relationship Label"]))} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option>Adopter</option><option>Adoptive family</option></select></label>
+                <label className="block text-sm font-medium">Date received<input name="receivedDate" type="date" defaultValue={asText(r.fields["Received Date"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label>
+                <label className="block text-sm font-medium">Replace public photo <span className="font-normal text-slate-500">(optional)</span><input name="photo" type="file" accept="image/*" className="mt-2 block w-full text-sm"/><span className="mt-1 block text-xs font-normal text-muted-foreground">New photo becomes the public image; the prior file remains in Airtable history.</span></label>
+                <label className="flex items-start gap-2 rounded-xl border border-orange-200 bg-white p-4 text-sm leading-6 sm:col-span-2"><input name="consentConfirmed" type="checkbox" className="mt-1"/><span>To publish or republish this story, confirm: “By adding this story, you confirm that the adopter has given Safe Haven permission to share the story and photograph publicly.”</span></label>
+              </OptimizedStoryForm>
+              {isPublished&&<div className="mt-4 flex flex-wrap gap-3 border-t pt-4">
+                <form action={unpublishTestimonial}><input type="hidden" name="storyId" value={r.id}/><button className="rounded-full border px-4 py-2 text-sm">Unpublish / archive</button></form>
+                <form action={unpublishTestimonial} className="flex flex-wrap items-center gap-3"><input type="hidden" name="storyId" value={r.id}/><label className="text-sm"><input name="withdrawConsent" type="checkbox" required className="mr-2"/>Consent has been withdrawn</label><button className="rounded-full border border-red-300 px-4 py-2 text-sm text-red-700">Unpublish immediately</button></form>
+              </div>}
+              <p className="mt-3 text-xs text-muted-foreground">Permission: {asText(r.fields["Website Permission"])||"Not recorded"} · Consent confirmation: {asText(r.fields["Consent Confirmed At"])||"not recorded for this historical story"} · Original publication: {asText(r.fields["Original Published At"])||"not recorded"}</p>
+            </details>;
+          })}
+        </div>
       </details>
     </div>
   </div></main>
