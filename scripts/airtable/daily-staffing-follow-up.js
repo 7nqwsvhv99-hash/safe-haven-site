@@ -21,7 +21,11 @@ for(const clinic of dateRecords) {
   const stage=clinic.getCellValueAsString('Scheduling Stage');
   if(!date||date<today||['Cancelled','Completed'].includes(stage))continue;
   const session=clinic.getCellValueAsString('ClinicDay Session Type');
-  const label=date+(session?' ('+session+')':'');
+  const prefs=clinic.getCellValue('Veterinarian Preference')||[];
+  const pref=prefs.length===1?await base.getTable('Veterinarian Clinic Preferences').selectRecordAsync(prefs[0].id):null;
+  const start=pref?.getCellValueAsString('Preferred Start Time');
+  const end=pref?.getCellValueAsString('Preferred End Time');
+  const label=date+(start&&end?' ('+start+' – '+end+' Central Time)':session?' ('+session+')':'');
   const days=Math.round((Date.parse(date+'T12:00:00Z')-Date.parse(today+'T12:00:00Z'))/86400000);
   const rows=responseRecords.filter(r=>(r.getCellValue('Clinic Date')||[]).some(x=>x.id===clinic.id));
   const attending=rows.filter(r=>r.getCellValueAsString('Computed Attendance Plan')==='Attending');
@@ -75,7 +79,7 @@ for(const clinic of dateRecords) {
       await queue(key+'|reconfirm|'+String(initialAt||'')+'|'+today,email,'Please reconfirm clinic attendance: '+label,`Your assigned clinic ${label} is ${days===0?'today':`in ${days} day(s)`}. Please reconfirm your attendance, including if you signed up within the last week.\n\n${portal}`);
     }
   }
-  if(vets.length>1)missing.push('Exactly one veterinarian per clinic date');
+  if(vets.length>1)missing.push('Exactly one veterinarian per clinic session');
   const ready=vets.length===1&&techs.length>=1&&volunteers.length>=6&&!missing.length&&!clinic.getCellValue('Patient Follow-Up Required');
   const next=vets.length>1?'At Risk':ready?'Staffed':vets.length?(techs.length?(volunteers.length?'Staffing In Progress':'Awaiting Volunteers'):'Awaiting Vet Tech'):(stage==='Proposed'?'Proposed':'At Risk');
   if(next!==stage||clinic.getCellValue('Volunteer Target')!==6)await dates.updateRecordAsync(clinic.id,{'Scheduling Stage':{name:next},'Volunteer Target':6});
