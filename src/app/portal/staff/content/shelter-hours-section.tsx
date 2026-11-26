@@ -45,6 +45,7 @@ function ActionForm({ action, submitLabel, children, className = "" }: { action:
 }
 
 function ExceptionFields({ item, newKey }: { item?: Exception; newKey?: string }) {
+  const publicationHelpId = useId()
   return <>
     {item ? <input type="hidden" name="exceptionId" value={item.id} /> : <input type="hidden" name="submissionKey" value={newKey} />}
     <div className="grid gap-4 md:grid-cols-2">
@@ -53,7 +54,7 @@ function ExceptionFields({ item, newKey }: { item?: Exception; newKey?: string }
       <label className="text-sm font-medium">Start date<input required type="date" name="startDate" defaultValue={item?.startDate || ""} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
       <label className="text-sm font-medium">End date<input required type="date" name="endDate" defaultValue={item?.endDate || item?.startDate || ""} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
       <label className="text-sm font-medium">Hours for these dates<select name="mode" defaultValue={item?.mode || "Closed"} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="Closed">Closed</option><option value="Replace">Replace regular hours</option></select></label>
-      <label className="text-sm font-medium">Publication<select name="status" defaultValue={item?.status === "Published" ? "Published" : "Draft"} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="Draft">Save as draft</option><option value="Published">Publish (or schedule for start date)</option></select></label>
+      <label className="text-sm font-medium">When should this appear?<select name="status" aria-describedby={publicationHelpId} defaultValue={item?.status === "Published" ? "Published" : "Draft"} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="Draft">Keep as a draft (staff only)</option><option value="Published">Publish now or on the start date</option></select><span id={publicationHelpId} className="mt-1 block text-xs font-normal text-muted-foreground">Drafts and their notices stay private. Publishing shows the exception in upcoming public hours. The hours change and linked announcement begin on the start date; if that date is today or earlier, they take effect now. They end after the end date.</span></label>
       <label className="text-sm font-medium md:col-span-2">Replacement opening intervals <span className="font-normal text-slate-500">(only for “Replace”; Central Time)</span><input name="intervals" defaultValue={intervalText(item?.intervals || [])} placeholder="12:00-15:00, 16:00-18:00" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs font-normal text-muted-foreground">Use 24-hour HH:mm-HH:mm intervals separated by commas. Every day in a date range uses these intervals.</span></label>
       <label className="text-sm font-medium md:col-span-2">Public notice<textarea required maxLength={1000} rows={3} name="message" defaultValue={item?.message || ""} placeholder="The shelter will be closed for the holiday." className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
     </div>
