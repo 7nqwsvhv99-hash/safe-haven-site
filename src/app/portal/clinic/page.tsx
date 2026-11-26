@@ -1,3 +1,4 @@
+import { getDatabase } from "@netlify/database";
 import { InventoryItemEditor, type InventorySaveResult } from "@/components/inventory-item-editor";
 import Link from "next/link";
 import { splitSubmittedDates, isAssignedVeterinarian } from "@/lib/portal-participation";
@@ -117,38 +118,49 @@ export default async function ClinicPortalPage({ searchParams }: { searchParams:
       if (toMinutes(endTime) - toMinutes(startTime) !== 300) return;
     }
 
-    const duplicate = latest.vetPreferences.some(
-      (item) => item.preferredDate === preferredDate && item.status !== "Withdrawn"
-    );
-    if (duplicate) return;
-
-    const scheduledPreferences = await airtableList(TABLES.vetClinicPreferences, [
-      "Veterinarian", "Preferred Clinic Date", "Preference Status", "Preferred Clinic Type", "Preferred Start Time", "Preferred End Time",
-    ]);
-    const validTime = (value: string) => /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
-    if (!validTime(startTime) || !validTime(endTime)) return;
-    const conflict = scheduledPreferences.some(({fields}) => {
-      if (String(fields["Preference Status"] || "") === "Withdrawn" ||
-          String(fields["Preferred Clinic Date"] || "").slice(0, 10) !== preferredDate) return false;
-      const otherStart = String(fields["Preferred Start Time"] || "");
-      const otherEnd = String(fields["Preferred End Time"] || "");
-      return date.getDay() !== 6 || preferredClinicType !== "Half Day" ||
-        String(fields["Preferred Clinic Type"]) !== "Half Day" ||
-        !validTime(otherStart) || !validTime(otherEnd) || otherStart >= otherEnd ||
-        (startTime < otherEnd && otherStart < endTime);
-    });
-    if (conflict) throw new Error("This clinic session overlaps an existing veterinarian assignment. Choose another available session.");
-
-    await airtableCreate(TABLES.vetClinicPreferences, {
-      Veterinarian: [latest.member.id],
-      "Preferred Clinic Date": preferredDate,
-      "Preferred Clinic Type": preferredClinicType,
-      "Preferred Start Time": startTime,
-      "Preferred End Time": endTime,
-      "Preference Status": "Submitted",
-      Notes: notes,
-      "Submitted At": new Date().toISOString(),
-    });
+    // Serialize all portal submissions for the same date across server instances.
+    // Keep the lock through the authoritative Airtable read and write.
+    const client = await getDatabase().pool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SET LOCAL lock_timeout = '10s'");
+      await client.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`clinic-date:${preferredDate}`]);
+      const scheduledPreferences = await airtableList(TABLES.vetClinicPreferences, [
+        "Veterinarian", "Preferred Clinic Date", "Preference Status", "Preferred Clinic Type", "Preferred Start Time", "Preferred End Time",
+      ]);
+      const validTime = (value: string) => /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+      if (!validTime(startTime) || !validTime(endTime)) throw new Error("Invalid clinic operating hours.");
+      const sameDate = scheduledPreferences.filter(({fields}) => String(fields["Preference Status"] || "") !== "Withdrawn" && String(fields["Preferred Clinic Date"] || "").slice(0, 10) === preferredDate);
+      if (sameDate.length >= 2 || sameDate.some(({fields}) => Array.isArray(fields.Veterinarian) && fields.Veterinarian.includes(latest.member!.id))) throw new Error("This clinic date is already reserved or has both sessions filled.");
+      const conflict = sameDate.some(({fields}) => {
+        if (String(fields["Preference Status"] || "") === "Withdrawn" ||
+            String(fields["Preferred Clinic Date"] || "").slice(0, 10) !== preferredDate) return false;
+        const otherStart = String(fields["Preferred Start Time"] || "");
+        const otherEnd = String(fields["Preferred End Time"] || "");
+        return date.getDay() !== 6 || preferredClinicType !== "Half Day" ||
+          String(fields["Preferred Clinic Type"]) !== "Half Day" ||
+          !validTime(otherStart) || !validTime(otherEnd) || otherStart >= otherEnd ||
+          (startTime < otherEnd && otherStart < endTime);
+      });
+      if (conflict) throw new Error("This clinic session overlaps an existing veterinarian assignment. Choose another available session.");
+  
+      await airtableCreate(TABLES.vetClinicPreferences, {
+        Veterinarian: [latest.member.id],
+        "Preferred Clinic Date": preferredDate,
+        "Preferred Clinic Type": preferredClinicType,
+        "Preferred Start Time": startTime,
+        "Preferred End Time": endTime,
+        "Preference Status": "Submitted",
+        Notes: notes,
+        "Submitted At": new Date().toISOString(),
+      });
+      await client.query("COMMIT");
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
 
     revalidatePath("/portal/clinic");
   }
