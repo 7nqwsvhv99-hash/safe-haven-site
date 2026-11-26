@@ -222,4 +222,3 @@ export function OptimizedStoryForm({
   return <form onSubmit={submit} className={className}>{children}{message&&<p role="status" aria-live="polite" className="text-sm text-slate-700">{message}</p>}<button disabled={busy} className="w-fit rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary disabled:opacity-60">{busy?"Saving…":submitLabel}</button></form>
 }
 
-export { relationshipDefault }
