@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { revalidatePath } from "next/cache";
 import { ArrowLeft, CalendarDays, Quote, ChevronDown } from "lucide-react";
-import { AdoptionStoryForm, OptimizedStoryForm, StoryAnimalPicker, relationshipDefault, type StoryAnimalOption } from "./adoption-story-form";
+import { AdoptionStoryForm, OptimizedStoryForm, StoryAnimalPicker, type StoryAnimalOption } from "./adoption-story-form";
 import { EventDateFields } from "./event-date-fields";
 import { EventLifecycleFields } from "./event-lifecycle-fields";
 import { chicagoLocalToIso, eventEndTimestamp, parseEventDateRange } from "@/lib/event-dates";
@@ -16,6 +16,7 @@ import {
 
 function field(f:FormData,n:string){return String(f.get(n)||"").trim()}
 function optionalNumber(f:FormData,n:string){const v=field(f,n);if(!v)return undefined;const x=Number(v);return Number.isFinite(x)?x:undefined}
+function relationshipDefault(value:string){return /family/i.test(value)?"Adoptive family":"Adopter"}
 function fmt(v:unknown,withTime=false){const s=asText(v);if(!s)return"";const d=new Date(s);if(Number.isNaN(d.getTime()))return s;return new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",year:"numeric",...(withTime?{hour:"numeric",minute:"2-digit"}:{}),timeZone:"America/Chicago"}).format(d)}
 function localInput(v:unknown){const s=asText(v);if(!s)return"";const d=new Date(s);if(Number.isNaN(d.getTime()))return"";const parts=new Intl.DateTimeFormat("en-CA",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23",timeZone:"America/Chicago"}).formatToParts(d);const get=(t:string)=>parts.find(p=>p.type===t)?.value||"";return get("year")+"-"+get("month")+"-"+get("day")+"T"+get("hour")+":"+get("minute")}
 function Status({children}:{children:ReactNode}){return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children}</span>}
