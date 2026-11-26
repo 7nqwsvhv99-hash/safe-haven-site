@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { MapPin, Phone, Mail, Facebook } from "lucide-react"
 import { NewsletterSignup } from "@/components/newsletter-signup"
+import { ShelterHoursDisplay } from "@/components/shelter-hours-display"
 
 export function Footer() {
   return (
@@ -80,8 +81,7 @@ export function Footer() {
 
             <div className="mt-5 text-sm">
               <h4 className="font-semibold mb-2">Shelter Hours</h4>
-              <p className="text-muted-foreground">Monday–Saturday: 10 AM–3 PM</p>
-              <p className="text-muted-foreground">Sunday: Closed</p>
+              <ShelterHoursDisplay />
             </div>
 
             {/* Social Media */}

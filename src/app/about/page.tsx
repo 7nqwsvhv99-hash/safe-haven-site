@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { ShelterHoursDisplay } from "@/components/shelter-hours-display"
 import {
   MapPin,
   Phone,
@@ -254,16 +255,7 @@ export default function AboutPage() {
               </div>
               <div>
                 <h3 className="font-bold text-xl">Shelter Hours</h3>
-                <dl className="space-y-3 text-sm mt-3">
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Monday through Saturday</dt>
-                    <dd className="font-semibold whitespace-nowrap">10 AM to 3 PM</dd>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Sunday</dt>
-                    <dd className="font-semibold">Closed</dd>
-                  </div>
-                </dl>
+                <div className="mt-3"><ShelterHoursDisplay /></div>
               </div>
             </Card>
 
