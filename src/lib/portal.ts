@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 13470)
+Total output lines: 1302
+
 import "server-only";
 import { hasGeneralVolunteerParticipation, isAssignedVeterinarian } from "./portal-participation";
 import {canManageOnboarding} from "./onboarding-policy";
@@ -6,7 +9,7 @@ import { getSafeHavenAirtableConfig } from "./airtable-config";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 
-const TABLE_KEYS = ["portalAccess","announcements","currentNeeds","volunteers","volunteerHours","volunteerShifts","volunteerOpportunityRequests","clinicMembers","clinicDates","clinicResponses","vetClinicPreferences","inventory","events","eventTicketOptions","eventReservations","eventVolunteerInvitations","volunteerApplications","fosterApplications","fosterPlacements","animals","medicalRecords","fosterResources","fosterUpdates","housingLocations","dailyCare","adoptionApplications","adoptions","documents","animalIntakes","surrenderRequests","inventoryTransactions","staffTasks","staffSchedule","recurringShifts","scheduleRequests","scheduleExceptions","coverageOffers","timeEntries","shiftChecklist","contactMessages","testimonials","newsletterSubscribers","donations","donors","people","contactLog","publishedTrainingMaterial"] as const;
+const TABLE_KEYS = ["portalAccess","announcements","publicAnnouncements","currentNeeds","volunteers","volunteerHours","volunteerShifts","volunteerOpportunityRequests","clinicMembers","clinicDates","clinicResponses","vetClinicPreferences","inventory","events","eventTicketOptions","eventReservations","eventVolunteerInvitations","volunteerApplications","fosterApplications","fosterPlacements","animals","medicalRecords","fosterResources","fosterUpdates","housingLocations","dailyCare","adoptionApplications","adoptions","documents","animalIntakes","surrenderRequests","inventoryTransactions","staffTasks","staffSchedule","recurringShifts","scheduleRequests","scheduleExceptions","coverageOffers","timeEntries","shiftChecklist","contactMessages","testimonials","newsletterSubscribers","donations","donors","people","contactLog","publishedTrainingMaterial"] as const;
 type TableKey = typeof TABLE_KEYS[number];
 const TABLES = new Proxy({} as Record<TableKey,string>, { get: (_target,key) => {
   if (typeof key !== "string" || !TABLE_KEYS.includes(key as TableKey)) return undefined;
@@ -576,171 +579,7 @@ export async function getFosterPortalData(email: string) {
             needsStaffAttention: Boolean(update.fields["Needs Staff Attention"]),
             priority: asText(update.fields.Priority),
             photos: Array.isArray(update.fields.Photos)
-              ? (update.fields.Photos as { url?: unknown; filename?: unknown }[])
-                  .map((photo) => ({
-                    url: typeof photo.url === "string" ? photo.url : "",
-                    filename: typeof photo.filename === "string" ? photo.filename : "Foster update photo",
-                  }))
-                  .filter((photo) => photo.url)
-              : [],
-            staffResponse: asText(update.fields["Staff Response"]),
-            resolutionStatus: asText(update.fields["Resolution Status"]),
-          })),
-      };
-    });
-
-  return {
-    foster: {
-      id: application.id,
-      name: [asText(application.fields["First Name"]), asText(application.fields["Last Name"])].filter(Boolean).join(" "),
-      email: asText(application.fields.Email),
-      phone: asText(application.fields.Phone),
-      preferredContact: asText(application.fields["Preferred Contact"]),
-    },
-    placements: fosterPlacements,
-    announcements,
-    resources: resources
-      .filter((record) => Boolean(record.fields.Active))
-      .map((record) => ({
-        id: record.id,
-        title: asText(record.fields.Title),
-        category: asText(record.fields.Category),
-        description: asText(record.fields.Description),
-        linkLabel: asText(record.fields["Link Label"]),
-        linkUrl: asText(record.fields["Link URL"]),
-      })),
-  };
-}
-
-export async function getClinicPortalData(email: string) {
-  const members = await airtableList(TABLES.clinicMembers, [
-    "Team Member Name",
-    "Role",
-    "Email",
-    "Active",
-    "Volunteer Skills",
-  ]);
-  const member = members.find(
-    (record) =>
-      normalizeEmail(asText(record.fields.Email)) === normalizeEmail(email) &&
-      Boolean(record.fields.Active)
-  );
-
-  if (!member) {
-    return { member: null, dates: [], vetPreferences: [], teamDates: [], announcements: [], inventory: [], trainingResources: [] };
-  }
-
-  const [dates, responses, announcements, inventory, vetPreferences, trainingResources] = await Promise.all([
-    airtableList(
-      TABLES.clinicDates,
-      ["Clinic Date", "Clinic Type", "ClinicDay Session Type", "Scheduling Stage", "Volunteer Target", "Confirmed Veterinarians", "Confirmed Vet Techs", "Confirmed Clinic Volunteers", "Staffing Alert", "Veterinarian Preference"],
-      { sort: [{ field: "Clinic Date", direction: "asc" }] }
-    ),
-    airtableList(TABLES.clinicResponses, [
-      "Clinic Date",
-      "Team Member",
-      "Team Member Name",
-      "Initial Response",
-      "One-Week Reconfirmation",
-      "Final Attendance Plan",
-      "Confirmed Vet Score",
-      "Confirmed Vet Tech Score",
-      "Confirmed Volunteer Score",
-      "Availability Clinic Date",
-      "Computed Attendance Plan",
-      "Clinic Assignment",
-      "Clinic Assignments",
-      "Notes",
-    ]),
-    getPortalAnnouncements(["Clinic Team"]),
-    airtableList(TABLES.inventory, [
-      "Item Name",
-      "Area",
-      "Category",
-      "Unit of Measure",
-      "Reorder Point",
-      "Target Quantity",
-      "Suggested Reorder Quantity",
-      "Preferred Vendor",
-      "Purchase URL",
-      "Typical Unit Cost",
-      "Responsible Person",
-      "Responsible Email",
-      "Track Lot / Expiration",
-      "Last Counted At",
-      "Last Counted By",
-      "Recommended Reorder Quantity",
-      "Notes",
-      "Current Quantity",
-      "Inventory Status",
-      "Reorder Request Status",
-      "Reorder Requested At",
-      "Reorder Requested By",
-      "Reorder Reason",
-      "Active",
-    ]),
-    airtableList(
-      TABLES.vetClinicPreferences,
-      ["Veterinarian", "Preferred Clinic Date", "Preferred Clinic Type", "Preferred Start Time", "Preferred End Time", "Preference Status", "Notes", "Submitted At", "Clinic Staffing Date"],
-      { sort: [{ field: "Preferred Clinic Date", direction: "asc" }] }
-    ),
-    airtableList(
-      TABLES.publishedTrainingMaterial,
-      ["Title", "Resource Type", "Clinic Role/Category", "Description", "Video or Document URL", "Display Order", "Published"],
-      { sort: [{ field: "Display Order", direction: "asc" }] }
-    ),
-  ]);
-
-  const vetPreferenceById = new Map(
-    vetPreferences.map((record) => [
-      record.id,
-      {
-        startTime: asText(record.fields["Preferred Start Time"]),
-        endTime: asText(record.fields["Preferred End Time"]),
-      },
-    ])
-  );
-
-  function clinicTimes(record: AirtableRecord) {
-    const preferenceId = asStrings(record.fields["Veterinarian Preference"])[0];
-    const preference = preferenceId ? vetPreferenceById.get(preferenceId) : undefined;
-    if (preference?.startTime && preference?.endTime) return preference;
-
-    const type = asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]);
-    return type === "Full Day"
-      ? { startTime: "08:00", endTime: "18:00" }
-      : { startTime: "09:00", endTime: "14:00" };
-  }
-
-  const dateById = new Map(
-    dates.map((record) => {
-      const times = clinicTimes(record);
-      return [
-        record.id,
-        {
-          id: record.id,
-          date: safeDate(record.fields["Clinic Date"]),
-          type: asText(record.fields["ClinicDay Session Type"]) || asText(record.fields["Clinic Type"]),
-          stage: asText(record.fields["Scheduling Stage"]),
-          alert: asText(record.fields["Staffing Alert"]),
-          startTime: times.startTime,
-          endTime: times.endTime,
-        },
-      ];
-    })
-  );
-  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Chicago", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-
-  const confirmedNamesByDate = new Map<string, {
-    veterinarians: string[];
-    vetTechs: string[];
-    assignments: Record<string, string[]>;
-  }>();
-  const notesByDate = new Map<string, { name: string; text: string }[]>();
-  const volunteerMemberIds = new Set(members
-    .filter((record) => asText(record.fields.Role) === "Clinic Volunteer")
-    .map((record) => record.id));
-  responses.forEach((response) => {
+              ? (update.fields.Photos as { url?: unknown; filename?: unknown…1470 tokens truncated…responses.forEach((response) => {
     const names = asStrings(response.fields["Team Member Name"]);
     if (!names.length) return;
 
