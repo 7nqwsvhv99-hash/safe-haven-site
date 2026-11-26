@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 13029)
-Total output lines: 491
-
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { revalidatePath } from "next/cache";
@@ -272,7 +269,63 @@ export default async function WebsiteContentManagementPage(){
     await airtableUpdate(TABLES.events,id,{"Event Image":images.filter(item=>item?.id!==imageId).map(item=>({id:item.id}))});
     revalidatePath("/portal/staff/content");revalidatePath("/events");revalidatePath("/");revalidatePath("/events/"+id);
   }
-…1029 tokens truncated…tAnimals.some(a=>a.id===animalId))throw new Error("The selected animal could not be verified. Search again and choose the matching animal.");
+
+  async function setPrimaryEventImage(formData:FormData){
+    "use server";await requireContentPublisher();
+    const id=field(formData,"eventId"),imageId=field(formData,"imageId");
+    const rows=await airtableList(TABLES.events,["Event Image"]);
+    const source=rows.find(row=>row.id===id);if(!source)throw new Error("Event not found.");
+    const images=source.fields["Event Image"];
+    if(!Array.isArray(images)||!images.some(item=>item?.id===imageId))throw new Error("Image not found.");
+    const ordered=[...images].sort((a,b)=>a.id===imageId?-1:b.id===imageId?1:0);
+    await airtableUpdate(TABLES.events,id,{"Event Image":ordered.map(item=>({id:item.id}))});
+    revalidatePath("/portal/staff/content");revalidatePath("/events");revalidatePath("/");revalidatePath("/events/"+id);
+  }
+
+  async function createTestimonial(formData:FormData){
+    "use server";
+    const context=await requireContentPublisher();
+    const quote=field(formData,"quote"),animalId=field(formData,"animalId"),legacyName=field(formData,"legacyAnimalName");
+    if(!quote)throw new Error("Add the approved story text before publishing.");
+    if(formData.get("consentConfirmed")!=="on")throw new Error("Confirm the adopter’s permission before publishing this story.");
+    if(!["Adopter","Adoptive family"].includes(field(formData,"relationshipLabel")))throw new Error("Choose Adopter or Adoptive family.");
+    const file=formData.get("photo");
+    if(!(file instanceof File)||!file.size)throw new Error("Add an animal photo before publishing this story.");
+    const latestAnimals=await airtableList(TABLES.animals,["Pet Name"]);
+    if(animalId&&!latestAnimals.some(a=>a.id===animalId))throw new Error("The selected animal could not be verified. Search again and choose the matching animal.");
+    if(!animalId&&(!legacyName||formData.get("legacyStory")!=="on"))throw new Error("Choose an animal, or mark this as a legacy story without an animal record.");
+    const now=new Date().toISOString(),identity=`${context.displayName} (${context.email})`;
+    const record=await airtableCreate(TABLES.testimonials,{
+      Quote:quote,"Person / Family Name":field(formData,"personName"),
+      "Relationship Label":field(formData,"relationshipLabel"),"Received Date":field(formData,"receivedDate"),
+      Animal:animalId?[animalId]:[],"Legacy Animal Name":animalId?"":legacyName,
+      "Website Permission":"Not Requested","Approved for Website":false,
+      "Consent Confirmed By":identity,"Consent Confirmed At":now,
+      "Created By":identity,"Original Published By":"","Original Published At":""
+    },true);
+    if(!record)throw new Error("The story could not be saved.");
+    await airtableUploadAttachment(record.id,getSafeHavenAirtableConfig().fields.testimonialPhoto,file);
+    // Publish only after the record and optional image upload both succeed.
+    await airtableUpdate(TABLES.testimonials,record.id,{
+      "Website Permission":"Granted","Approved for Website":true,
+      "Original Published By":identity,"Original Published At":now,
+      "Last Edited By":identity,"Last Edited At":now
+    },true);
+    revalidatePath("/portal/staff/content");revalidatePath("/api/testimonials");revalidatePath("/");
+  }
+
+  async function updateTestimonial(formData:FormData){
+    "use server";
+    const context=await requireContentPublisher(),id=field(formData,"storyId");
+    const quote=field(formData,"quote"),animalId=field(formData,"animalId"),legacyName=field(formData,"legacyAnimalName");
+    if(!id||!quote)throw new Error("Story details are incomplete.");
+    if(!["Adopter","Adoptive family"].includes(field(formData,"relationshipLabel")))throw new Error("Choose Adopter or Adoptive family.");
+    const [records,latestAnimals]=await Promise.all([
+      airtableList(TABLES.testimonials,["Website Permission","Approved for Website","Original Published By","Original Published At","Animal Photo"]),
+      airtableList(TABLES.animals,["Pet Name"])
+    ]);
+    const current=records.find(r=>r.id===id);if(!current)throw new Error("This story could not be found. Refresh the page and try again.");
+    if(animalId&&!latestAnimals.some(a=>a.id===animalId))throw new Error("The selected animal could not be verified. Search again and choose the matching animal.");
     if(!animalId&&(!legacyName||formData.get("legacyStory")!=="on"))throw new Error("Choose an animal, or mark this as a legacy story without an animal record.");
     const identity=`${context.displayName} (${context.email})`,now=new Date().toISOString();
     const file=formData.get("photo");
