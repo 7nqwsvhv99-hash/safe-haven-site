@@ -7,12 +7,12 @@ import {
   ClipboardCheck,
   Cat,
   Dog,
-  HeartPulse,
   MapPin,
   Plus,
 } from "lucide-react";
 import HousingBoard from "./housing-board";
 import MoveAnimalForm from "./move-animal-form";
+import HousingLocationManager from "./housing-location-manager";
 import {
   airtableCreate,
   airtableList,
@@ -395,39 +395,32 @@ export default async function CareAndHousingPage({
           </p>
         )}
 
-        <section className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <BedDouble className="mb-3 h-5 w-5 text-primary" />
-            <p className="text-3xl font-bold">{inShelter.length}</p>
+        <section className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+          <div className="rounded-2xl border bg-white p-4 shadow-sm">
+            <BedDouble className="mb-2 h-4 w-4 text-primary" />
+            <p className="text-2xl font-bold">{inShelter.length}</p>
             <p className="mt-1 text-sm text-muted-foreground">Animals in shelter</p>
           </div>
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <Dog className="mb-3 h-5 w-5 text-primary" />
-            <p className="text-3xl font-bold">{dogsInShelter.length}</p>
+          <div className="rounded-2xl border bg-white p-4 shadow-sm">
+            <Dog className="mb-2 h-4 w-4 text-primary" />
+            <p className="text-2xl font-bold">{dogsInShelter.length}</p>
             <p className="mt-1 text-sm text-muted-foreground">Dogs in shelter</p>
           </div>
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <Cat className="mb-3 h-5 w-5 text-primary" />
-            <p className="text-3xl font-bold">{catsInShelter.length}</p>
+          <div className="rounded-2xl border bg-white p-4 shadow-sm">
+            <Cat className="mb-2 h-4 w-4 text-primary" />
+            <p className="text-2xl font-bold">{catsInShelter.length}</p>
             <p className="mt-1 text-sm text-muted-foreground">Cats in shelter</p>
           </div>
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <BedDouble className="mb-3 h-5 w-5 text-primary" />
-            <p className="text-3xl font-bold">{dogVacancies ?? "—"}</p>
+          <div className="rounded-2xl border bg-white p-4 shadow-sm">
+            <BedDouble className="mb-2 h-4 w-4 text-primary" />
+            <p className="text-2xl font-bold">{dogVacancies ?? "—"}</p>
             <p className="mt-1 text-sm text-muted-foreground">Open dog kennel spaces</p>
           </div>
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
-            <BedDouble className="mb-3 h-5 w-5 text-primary" />
-            <p className="text-3xl font-bold">{catVacancies ?? "—"}</p>
+          <div className="rounded-2xl border bg-white p-4 shadow-sm">
+            <BedDouble className="mb-2 h-4 w-4 text-primary" />
+            <p className="text-2xl font-bold">{catVacancies ?? "—"}</p>
             <p className="mt-1 text-sm text-muted-foreground">Open cat condo spaces</p>
           </div>
-          {openAlerts.length > 0 && (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
-              <HeartPulse className="mb-3 h-5 w-5 text-primary" />
-              <p className="text-3xl font-bold">{openAlerts.length}</p>
-              <p className="mt-1 text-sm text-muted-foreground">Care follow-ups</p>
-            </div>
-          )}
         </section>
         <p className="mb-8 text-xs text-muted-foreground">Vacancies use active locations with capacity entered. Cat openings count condos, since cats also have room assignments. A dash means no capacity is configured for that housing type.</p>
 
@@ -573,32 +566,20 @@ export default async function CareAndHousingPage({
             </section>
 
             <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-              <div className="mb-5"><h2 className="text-2xl font-bold">Housing Locations</h2><p className="mt-2 text-sm text-muted-foreground">Create and maintain cat condos and rooms, dog kennels, and shared isolation, medical, or recovery spaces.</p></div>
-              <form action={createLocation} className="space-y-4 rounded-2xl bg-slate-50 p-5">
-                <h3 className="font-bold">Add location</h3>
-                <label className="block text-sm font-medium">Location name<input name="name" required className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Location type<select name="type" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select type</option>{["Cat Room","Cat Condo","Dog Kennel","Isolation","Medical","Recovery","Other"].map((value)=><option key={value}>{value}</option>)}</select></label>
-                <label className="block text-sm font-medium">Capacity<input name="capacity" type="number" min="0" step="1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Notes<textarea name="notes" rows={2} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                <button className="rounded-full border border-primary px-5 py-2.5 font-semibold text-primary">Add Housing Location</button>
-              </form>
-
-              <div className="mt-5 space-y-3">
-                {locations.map((location) => (
-                  <details key={location.id} className="rounded-2xl border p-4">
-                    <summary className="cursor-pointer font-semibold">{asText(location.fields["Location Name"])} <span className="ml-2 text-xs font-normal text-muted-foreground">{Boolean(location.fields.Active) ? "Active" : "Inactive"}</span></summary>
-                    <form action={updateLocation} className="mt-4 space-y-3">
-                      <input type="hidden" name="locationId" value={location.id} />
-                      <input name="name" defaultValue={asText(location.fields["Location Name"])} required className="w-full rounded-xl border px-3 py-2.5" />
-                      <select name="type" defaultValue={normalizedLocationType(location.fields["Location Type"])} className="w-full rounded-xl border bg-white px-3 py-2.5">{["Cat Room","Cat Condo","Dog Kennel","Isolation","Medical","Recovery","Other"].map((value)=><option key={value}>{value}</option>)}</select>
-                      <input name="capacity" type="number" min="0" step="1" defaultValue={asNumber(location.fields.Capacity) ?? ""} placeholder="Capacity" className="w-full rounded-xl border px-3 py-2.5" />
-                      <textarea name="notes" rows={2} defaultValue={asText(location.fields.Notes)} className="w-full rounded-xl border px-3 py-2.5" />
-                      <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked={Boolean(location.fields.Active)} disabled={(occupancyByLocation.get(location.id) || 0) > 0} /> Active location</label>{(occupancyByLocation.get(location.id) || 0) > 0 && <p className="text-xs text-muted-foreground">Move all animals out before deactivating this location.</p>}
-                      <button className="rounded-full border px-4 py-2 text-sm font-semibold">Save Location</button>
-                    </form>
-                  </details>
-                ))}
-              </div>
+              <div className="mb-5"><h2 className="text-2xl font-bold">Housing Locations</h2><p className="mt-2 text-sm text-muted-foreground">Add a new room, condo, or kennel, or select an existing location to update its capacity, notes, and active status.</p></div>
+              <HousingLocationManager
+                createAction={createLocation}
+                updateAction={updateLocation}
+                locations={locations.map((location) => ({
+                  id: location.id,
+                  name: asText(location.fields["Location Name"]),
+                  type: normalizedLocationType(location.fields["Location Type"]),
+                  capacity: asNumber(location.fields.Capacity)?.toString() || "",
+                  notes: asText(location.fields.Notes),
+                  active: Boolean(location.fields.Active),
+                  occupied: (occupancyByLocation.get(location.id) || 0) > 0,
+                }))}
+              />
             </section>
           </div>
         </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ChevronDown, ClipboardPlus, Inbox, PawPrint, Search } from "lucide-react";
+import { ArrowLeft, ChevronDown, ClipboardPlus, Inbox, Search } from "lucide-react";
 import IntakeRecordForm from "./intake-record-form";
 import {
   airtableCreate,
@@ -91,17 +91,12 @@ const REQUEST_FIELDS = [
 export default async function IntakeManagementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; new?: string; surrenderRequest?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; urgent?: string; new?: string; surrenderRequest?: string }>;
 }) {
   await requirePortalRole("Staff");
   const query = await searchParams;
-  const [requests, intakes, animals, fosterApplications, housingLocations] = await Promise.all([
+  const [requests, animals, fosterApplications, housingLocations] = await Promise.all([
     airtableList(TABLES.surrenderRequests, REQUEST_FIELDS, { sort: [{ field: "Submitted At", direction: "desc" }] }),
-    airtableList(TABLES.animalIntakes, [
-      "Animal", "Intake Date", "Intake Type", "Related Surrender Request", "Source Person / Organization",
-      "Source Phone", "Source Email", "Found / Origin Location", "Condition at Intake", "Weight at Intake (lb)",
-      "Intake Notes", "Pet Name", "Species", "Animal Creation Status",
-    ], { sort: [{ field: "Intake Date", direction: "desc" }] }),
     airtableList(TABLES.animals, [
       "Animal ID", "Pet Name", "Species", "Sex", "Breed", "Color / Markings", "Date of Birth",
       "Estimated Date of Birth", "Microchip Number", "Adoption Status", "Housing Type", "Current Housing Location",
@@ -110,7 +105,6 @@ export default async function IntakeManagementPage({
     airtableList(TABLES.housingLocations, ["Location Name", "Location Type", "Active"], { sort: [{ field: "Location Name", direction: "asc" }] }),
   ]);
 
-  const animalById = new Map(animals.map((record) => [record.id, record]));
   const approvedFosters = fosterApplications.filter((record) => asText(record.fields.Status) === "Approved");
   const activeLocations = housingLocations.filter((record) => Boolean(record.fields.Active));
   const q = (query.q || "").trim().toLowerCase();
@@ -120,7 +114,9 @@ export default async function IntakeManagementPage({
       asText(record.fields.Email), asText(record.fields.Phone), asText(record.fields["Animal Name"]),
       asText(record.fields.Species), asText(record.fields["Breed / Mix"]), asText(record.fields.Urgency),
     ].join(" ").toLowerCase();
-    return (!q || haystack.includes(q)) && (!query.status || asText(record.fields.Status) === query.status);
+    const status = asText(record.fields.Status);
+    const isActiveUrgent = asText(record.fields.Urgency) === "Urgent" && !["Declined", "Withdrawn", "Completed"].includes(status);
+    return (!q || haystack.includes(q)) && (!query.status || status === query.status) && (query.urgent !== "1" || isActiveUrgent);
   });
   const pending = requests.filter((record) => ["New", "Under Review", "Contacted", "Waitlist"].includes(asText(record.fields.Status)));
   const approved = requests.filter((record) => asText(record.fields.Status) === "Approved for Intake" && asStrings(record.fields["Animal Intakes"]).length === 0);
@@ -331,19 +327,21 @@ export default async function IntakeManagementPage({
         </header>
 
         <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {[["Requests to review", pending.length, Inbox], ["Urgent requests", urgent.length, Search], ["Approved for intake", approved.length, ClipboardPlus]].map(([label, count, Icon]) => {
-            const MetricIcon = Icon as typeof PawPrint;
-            return <div key={String(label)} className="rounded-2xl border bg-white p-5 shadow-sm"><MetricIcon className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{String(count)}</p><p className="mt-1 text-sm text-muted-foreground">{String(label)}</p></div>;
-          })}
+          <div className="rounded-2xl border bg-white p-5 shadow-sm"><Inbox className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{pending.length}</p><p className="mt-1 text-sm text-muted-foreground">Requests to review</p></div>
+          <Link href="/portal/staff/intake?urgent=1#owner-surrender-queue" className="rounded-2xl border bg-white p-5 shadow-sm transition hover:border-primary hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary" aria-label={`Show ${urgent.length} urgent surrender requests`}>
+            <Search className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{urgent.length}</p><p className="mt-1 text-sm text-muted-foreground">Urgent requests · view queue</p>
+          </Link>
+          <div className="rounded-2xl border bg-white p-5 shadow-sm"><ClipboardPlus className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{approved.length}</p><p className="mt-1 text-sm text-muted-foreground">Approved for intake</p></div>
         </section>
 
-        <section className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="owner-surrender-queue" className="mb-8 scroll-mt-36 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div><h2 className="text-2xl font-bold">Owner Surrender Queue</h2><p className="mt-2 text-sm text-muted-foreground">Requests entered through the surrender-request process appear here. Review and approve a request before recording intake.</p></div>
             <form className="grid w-full gap-3 md:w-auto md:grid-cols-[minmax(260px,1fr)_210px_auto]">
               <input name="q" defaultValue={query.q || ""} placeholder="Search owner, animal, contact, or breed" className="rounded-xl border px-3 py-2.5" />
               <select name="status" defaultValue={query.status || ""} className="rounded-xl border bg-white px-3 py-2.5"><option value="">All statuses</option>{["New", "Under Review", "Contacted", "Waitlist", "Approved for Intake", "Declined", "Withdrawn", "Completed"].map((status) => <option key={status}>{status}</option>)}</select>
               <button className="rounded-xl border px-5 py-2.5 font-semibold">Filter</button>
+              <label className="flex items-center gap-2 text-sm font-medium md:col-span-3"><input type="checkbox" name="urgent" value="1" defaultChecked={query.urgent === "1"} className="h-4 w-4 accent-orange-500" />Urgent requests only</label>
             </form>
           </div>
           <div className="mt-5 space-y-3">
@@ -437,11 +435,14 @@ export default async function IntakeManagementPage({
           </div>
         </section>
 
-        <section id="record-intake" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="record-intake" className="mb-8 rounded-3xl border bg-white shadow-sm">
           <details open={query.new === "1" || Boolean(selectedRequest)}>
-            <summary className="cursor-pointer list-none"><div><h2 className="text-2xl font-bold">Record an Intake</h2><p className="mt-2 text-sm text-muted-foreground">{selectedRequest ? `Approved surrender request for ${asText(selectedRequest.fields["Animal Name"]) || "this animal"}. Request details have been carried into the form.` : "Use this form for approved owner surrenders and other accepted entry types."}</p></div></summary>
+            <summary className="group flex cursor-pointer list-none items-center justify-between gap-4 rounded-3xl p-6 transition hover:bg-orange-50/60 hover:shadow-[0_0_0_2px_rgba(249,115,22,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary md:p-8">
+              <div><h2 className="text-2xl font-bold">Record an Intake</h2><p className="mt-2 text-sm text-muted-foreground">{selectedRequest ? `Approved surrender request for ${asText(selectedRequest.fields["Animal Name"]) || "this animal"}. Request details have been carried into the form.` : "Use this form for approved owner surrenders and other accepted entry types."}</p></div>
+              <span className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-sm transition group-hover:bg-orange-600">Record intake<ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" /></span>
+            </summary>
             {selectedRequest && <div className="mt-4 rounded-2xl bg-primary/5 p-4 text-sm"><strong>Request context:</strong> {ownerName || "Owner name not provided"} · {[asText(selectedRequest.fields.Species), asText(selectedRequest.fields.Sex), asText(selectedRequest.fields["Breed / Mix"])].filter(Boolean).join(" · ") || "Animal details incomplete"}<p className="mt-2 whitespace-pre-line text-muted-foreground">{requestNotes || "No surrender reason, behavior, or medical details were provided."}</p></div>}
-            <div className="mt-6">
+            <div className="px-6 pb-6 md:px-8 md:pb-8">
               <IntakeRecordForm
                 action={recordIntake}
                 animals={animals.map((record) => ({
@@ -483,17 +484,6 @@ export default async function IntakeManagementPage({
           </details>
         </section>
 
-        <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-          <h2 className="text-2xl font-bold">Recent Intakes</h2>
-          <div className="mt-4 divide-y">
-            {intakes.slice(0, 12).map((record) => {
-              const animalId = asStrings(record.fields.Animal)[0];
-              const animal = animalById.get(animalId);
-              return <Link key={record.id} href={animal ? `/portal/staff/animals/${animal.id}` : "/portal/staff/animals"} className="flex flex-wrap items-center justify-between gap-2 py-4 hover:text-primary"><span><strong>{asText(animal?.fields["Pet Name"]) || asText(record.fields["Pet Name"]) || "Animal"}</strong><span className="ml-2 text-sm text-muted-foreground">{asText(animal?.fields["Animal ID"])}</span></span><span className="text-sm text-muted-foreground">{asText(record.fields["Intake Type"])} · {formatDate(record.fields["Intake Date"])}</span></Link>;
-            })}
-            {!intakes.length && <p className="py-4 text-sm text-muted-foreground">No intakes have been recorded yet.</p>}
-          </div>
-        </section>
       </div>
     </main>
   );
