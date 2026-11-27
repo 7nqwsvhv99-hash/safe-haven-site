@@ -1,9 +1,6 @@
 import Link from "next/link";
-import AddAnimalPlacementGate from "./add-animal-placement-gate";
-import { redirect } from "next/navigation";
 import { PawPrint, Plus, Search, ArrowLeft, MapPin } from "lucide-react";
 import {
-  airtableCreate,
   airtableList,
   asStrings,
   asText,
@@ -11,7 +8,6 @@ import {
   TABLES,
 } from "@/lib/portal";
 
-const ANIMAL_INTAKES = "tblkcwdDABVsxtaJH";
 const HOUSING_LOCATIONS = "tblmwvODdr1Iuvy72";
 
 function asNumber(value: unknown) {
@@ -24,60 +20,10 @@ function photoUrl(value: unknown) {
   return typeof first?.url === "string" ? first.url : "";
 }
 
-function currentYearChicago() {
-  return new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "America/Chicago" }).format(new Date());
-}
-
-function nextAnimalId(records: Awaited<ReturnType<typeof airtableList>>, species: string) {
-  const prefix = species === "Dog" ? "DOG" : "CAT";
-  const year = currentYearChicago();
-  const matcher = new RegExp(`^${prefix}-${year}-(\\d+)$`);
-  const max = records.reduce((current, record) => {
-    const match = asText(record.fields["Animal ID"]).match(matcher);
-    return match ? Math.max(current, Number(match[1])) : current;
-  }, 0);
-  return `${prefix}-${year}-${String(max + 1).padStart(3, "0")}`;
-}
-
-function field(form: FormData, name: string) {
-  return String(form.get(name) || "").trim();
-}
-
-function optionalNumber(form: FormData, name: string) {
-  const value = field(form, name);
-  if (!value) return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function Select({
-  name,
-  label,
-  options,
-  required = false,
-  defaultValue = "",
-}: {
-  name: string;
-  label: string;
-  options: string[];
-  required?: boolean;
-  defaultValue?: string;
-}) {
-  return (
-    <label className="block text-sm font-medium">
-      {label}
-      <select name={name} required={required} defaultValue={defaultValue} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
-        {!defaultValue && <option value="">Select</option>}
-        {options.map((option) => <option key={option}>{option}</option>)}
-      </select>
-    </label>
-  );
-}
-
 export default async function AnimalManagementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; species?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; species?: string; status?: string; group?: string }>;
 }) {
   await requirePortalRole("Staff");
   const query = await searchParams;
@@ -98,6 +44,8 @@ export default async function AnimalManagementPage({
         "Current Housing Location",
         "Public Listing",
         "Website Listing Readiness",
+        "Bonded Pair?",
+        "Bonded With",
         "Medical Summary",
       ],
       { sort: [{ field: "Pet Name", direction: "asc" }] }
@@ -114,6 +62,8 @@ export default async function AnimalManagementPage({
   const filtered = animals.filter((record) => {
     const species = asText(record.fields.Species);
     const status = asText(record.fields["Adoption Status"]);
+    const housingType = asText(record.fields["Housing Type"]);
+    const bonded = asText(record.fields["Bonded Pair?"]) === "Yes" || asStrings(record.fields["Bonded With"]).length > 0;
     const haystack = [
       asText(record.fields["Animal ID"]),
       asText(record.fields["Pet Name"]),
@@ -123,82 +73,13 @@ export default async function AnimalManagementPage({
     ].join(" ").toLowerCase();
     return (!q || haystack.includes(q)) &&
       (!query.species || species === query.species) &&
-      (!query.status || status === query.status);
+      (!query.status || status === query.status) &&
+      (!query.group || (query.group === "foster" ? housingType === "Foster Home" : query.group === "bonded" ? bonded : true));
   });
 
-  async function createAnimal(formData: FormData) {
-    "use server";
-    await requirePortalRole("Staff", "write");
-
-    if (field(formData, "placementPath") !== "shelter") return;
-
-    const species = field(formData, "species");
-    const petName = field(formData, "petName");
-    const sex = field(formData, "sex");
-    if (!["Cat", "Dog"].includes(species) || !petName || !sex) return;
-
-    const existing = await airtableList(TABLES.animals, ["Animal ID"]);
-    const animalId = nextAnimalId(existing, species);
-    const adoptionStatus = field(formData, "adoptionStatus") || "Getting Ready for Adoption";
-    const housingType = "In Shelter";
-    const housingLocation = field(formData, "housingLocation");
-    const microchipStatus = field(formData, "microchipStatus") || "Unknown";
-    const dateOfBirth = field(formData, "dateOfBirth");
-    const estimatedDateOfBirth = field(formData, "estimatedDateOfBirth");
-    if (!dateOfBirth && !estimatedDateOfBirth) return;
-
-    const animal = await airtableCreate(
-      TABLES.animals,
-      {
-        "Animal ID": animalId,
-        "Pet Name": petName,
-        Species: species,
-        "Adoption Status": adoptionStatus,
-        Sex: sex,
-        ...(dateOfBirth ? { "Date of Birth": dateOfBirth } : {}),
-        ...(!dateOfBirth && estimatedDateOfBirth ? { "Estimated Date of Birth": estimatedDateOfBirth } : {}),
-        ...(field(formData, "breed") ? { Breed: field(formData, "breed") } : {}),
-        ...(field(formData, "color") ? { "Color / Markings": field(formData, "color") } : {}),
-        ...(optionalNumber(formData, "intakeWeight") !== undefined ? { "Weight (lb)": optionalNumber(formData, "intakeWeight") } : {}),
-        "Housing Type": housingType,
-        ...(housingLocation ? { "Current Housing Location": [housingLocation] } : {}),
-        ...(field(formData, "microchipNumber") ? { "Microchip Number": field(formData, "microchipNumber") } : {}),
-        "Microchip Registration Status": microchipStatus,
-        "Public Listing": false,
-      },
-      true
-    );
-
-    if (!animal) return;
-
-    await airtableCreate(
-      ANIMAL_INTAKES,
-      {
-        Animal: [animal.id],
-        "Intake Date": field(formData, "intakeDate") || new Intl.DateTimeFormat("en-CA", {
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-          timeZone: "America/Chicago",
-        }).format(new Date()),
-        "Intake Type": field(formData, "intakeType") || "Other",
-        ...(field(formData, "source") ? { "Source Person / Organization": field(formData, "source") } : {}),
-        ...(field(formData, "sourcePhone") ? { "Source Phone": field(formData, "sourcePhone") } : {}),
-        ...(field(formData, "sourceEmail") ? { "Source Email": field(formData, "sourceEmail") } : {}),
-        ...(field(formData, "origin") ? { "Found / Origin Location": field(formData, "origin") } : {}),
-        "Condition at Intake": field(formData, "condition") || "Unable to assess",
-        ...(optionalNumber(formData, "intakeWeight") !== undefined ? { "Weight at Intake (lb)": optionalNumber(formData, "intakeWeight") } : {}),
-        ...(field(formData, "intakeNotes") ? { "Intake Notes": field(formData, "intakeNotes") } : {}),
-      },
-      true
-    );
-
-    redirect(`/portal/staff/animals/${animal.id}?created=1`);
-  }
-
-  const activeCount = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted").length;
-  const fosterCount = animals.filter((record) => asText(record.fields["Housing Type"]) === "Foster Home").length;
-  const readyCount = animals.filter((record) => asText(record.fields["Website Listing Readiness"]) === "Ready").length;
+  const shelterCount = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted" && asText(record.fields["Housing Type"]) === "In Shelter").length;
+  const fosterCount = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted" && asText(record.fields["Housing Type"]) === "Foster Home").length;
+  const readyCount = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted" && asText(record.fields["Website Listing Readiness"]) === "Ready").length;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -215,26 +96,27 @@ export default async function AnimalManagementPage({
               Add animals, update shelter records, and open one unified profile for medical, foster, adoption, timeline, documents, and photos.
             </p>
           </div>
-          <a href="#add-animal" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">
+          <Link href="/portal/staff/intake?new=1#record-intake" className="inline-flex items-center justify-center gap-2 rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">
             <Plus className="h-4 w-4" /> Add Animal
-          </a>
+          </Link>
         </header>
 
         <section className="mb-8 grid gap-4 sm:grid-cols-3">
           {[
-            ["Active care", activeCount],
-            ["In foster", fosterCount],
-            ["Website ready", readyCount],
-          ].map(([label, value]) => (
+            ["In shelter", shelterCount, "Currently assigned to shelter care"],
+            ["In foster", fosterCount, "Currently placed with an approved foster"],
+            ["Listing details complete", readyCount, "Required details are filled in for public listing review"],
+          ].map(([label, value, description]) => (
             <div key={String(label)} className="rounded-2xl border bg-white p-5 shadow-sm">
               <p className="text-3xl font-bold">{String(value)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{String(label)}</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{String(label)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{String(description)}</p>
             </div>
           ))}
         </section>
 
         <section className="mb-8 rounded-3xl border bg-white p-6 shadow-sm">
-          <form className="grid gap-3 lg:grid-cols-[1fr_180px_230px_auto]">
+          <form className="grid gap-3 xl:grid-cols-[1fr_160px_210px_200px_auto]">
             <label className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <input name="q" defaultValue={query.q || ""} placeholder="Search name, ID, breed, or status" className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3" />
@@ -250,6 +132,11 @@ export default async function AnimalManagementPage({
               <option>Available</option>
               <option>Pending</option>
               <option>Adopted</option>
+            </select>
+            <select name="group" defaultValue={query.group || ""} className="rounded-xl border bg-white px-3 py-2.5" aria-label="Filter by placement or bond">
+              <option value="">All animals</option>
+              <option value="foster">In foster</option>
+              <option value="bonded">Bonded pairs</option>
             </select>
             <button className="rounded-xl border px-5 py-2.5 font-semibold hover:bg-slate-50">Filter</button>
           </form>
@@ -297,70 +184,6 @@ export default async function AnimalManagementPage({
           {!filtered.length && <p className="rounded-2xl border bg-white p-6 text-muted-foreground">No animals match those filters.</p>}
         </section>
 
-        <section id="add-animal" className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold">Add Animal</h2>
-          </div>
-          <form action={createAnimal} className="space-y-8">
-            <AddAnimalPlacementGate>
-            <div>
-              <h3 className="mb-4 font-semibold">Animal details</h3>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <label className="block text-sm font-medium">Pet name<input name="petName" required className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <Select name="species" label="Species" options={["Cat", "Dog"]} required />
-                <Select name="sex" label="Sex" options={["Female", "Male", "Unknown"]} required />
-                <label className="block text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Estimated date of birth, if exact date is unknown<input name="estimatedDateOfBirth" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Enter one birth date. Current age is calculated automatically.</span></label>
-                <label className="block text-sm font-medium">Breed<input name="breed" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Color / markings<input name="color" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="mb-4 font-semibold">Placement</h3>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="block text-sm font-medium">
-                  Shelter location, if assigned
-                  <select name="housingLocation" defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
-                    <option value="">Choose later</option>
-                    {locations.filter((record) => Boolean(record.fields.Active)).map((record) => (
-                      <option key={record.id} value={record.id}>{asText(record.fields["Location Name"])}</option>
-                    ))}
-                  </select>
-                  <span className="mt-1 block text-xs text-muted-foreground">You can assign a room or kennel later if one has not been chosen yet.</span>
-                </label>
-              </div>
-            </div>
-
-            <div>
-              <h3 className="mb-4 font-semibold">Intake</h3>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <label className="block text-sm font-medium">Intake date<input name="intakeDate" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-                <Select name="intakeType" label="Intake type" options={["Owner Surrender", "Stray", "Transfer In", "Adoption Return", "Born in Care", "Other"]} defaultValue="Other" />
-                <Select name="condition" label="Observed condition at intake" options={["Stable, no concern observed", "Minor concern, routine review", "Illness or injury, veterinary review needed", "Urgent concern, immediate veterinary review", "Unable to assess"]} defaultValue="Unable to assess" />
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">Choose the closest observed level, then record specific signs in intake notes. Do not enter a diagnosis.</p>
-              <label className="mt-4 block text-sm font-medium">Intake notes<textarea name="intakeNotes" rows={3} placeholder="Record only information important to care, safety, or placement." className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <details className="mt-4 rounded-2xl bg-slate-50 p-4">
-                <summary className="cursor-pointer text-sm font-semibold">Additional intake & identification details</summary>
-                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  <label className="block text-sm font-medium">Source person / organization<input name="source" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                  <label className="block text-sm font-medium">Source phone<input name="sourcePhone" type="tel" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                  <label className="block text-sm font-medium">Source email<input name="sourceEmail" type="email" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                  <label className="block text-sm font-medium">Found / origin location<input name="origin" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                  <label className="block text-sm font-medium">Weight at intake (lb)<input name="intakeWeight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Saved as both the intake weight and the animal’s starting current weight.</span></label>
-                  <label className="block text-sm font-medium">Microchip number<input name="microchipNumber" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                  <Select name="microchipStatus" label="Microchip registration" options={["No Microchip", "Needs Registration", "Registered to Safe Haven", "Transferred to Adopter", "Unknown"]} defaultValue="Unknown" />
-                </div>
-              </details>
-            </div>
-
-            <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90">
-              <Plus className="h-4 w-4" /> Create Animal
-            </button>
-            </AddAnimalPlacementGate>
-          </form>
-        </section>
       </div>
     </main>
   );
