@@ -26,6 +26,8 @@ export default function HousingBoard({ locations }: { locations: HousingLocation
   const [species, setSpecies] = useState<"Cat" | "Dog">("Cat");
 
   const visibleLocations = locations.filter((location) => {
+    const isDogIsolationKennel = location.type === "Isolation" && /kennel/i.test(location.name);
+    if (species === "Cat" && isDogIsolationKennel) return false;
     if (SHARED_TYPES.has(location.type)) return true;
     if (species === "Cat") return ["Cat Condo", "Cat Room"].includes(location.type);
     return location.type === "Dog Kennel";
