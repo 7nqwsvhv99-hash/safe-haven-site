@@ -13,7 +13,7 @@ function responseError(message: string, status = 400) {
 
 export async function POST(request: Request) {
   try {
-    const token = process.env.AIRTABLE_ACCESS_TOKEN;
+    const token = process.env.OWNER_SURRENDER_AIRTABLE_TOKEN || process.env.AIRTABLE_ACCESS_TOKEN;
     if (!token) return responseError("The request form is temporarily unavailable. Please call Safe Haven.", 500);
 
     const body = await request.json();
