@@ -46,6 +46,7 @@ export default async function AnimalManagementPage({
         "Website Listing Readiness",
         "Bonded Pair?",
         "Bonded With",
+        "From field: Bonded With",
         "Medical Summary",
       ],
       { sort: [{ field: "Pet Name", direction: "asc" }] }
@@ -58,12 +59,27 @@ export default async function AnimalManagementPage({
   ]);
 
   const locationById = new Map(locations.map((record) => [record.id, asText(record.fields["Location Name"])]));
+  const bondedIdsByAnimal = new Map<string, Set<string>>();
+  for (const record of animals) {
+    for (const linkedId of [
+      ...asStrings(record.fields["Bonded With"]),
+      ...asStrings(record.fields["From field: Bonded With"]),
+    ]) {
+      if (linkedId === record.id) continue;
+      const ownLinks = bondedIdsByAnimal.get(record.id) || new Set<string>();
+      ownLinks.add(linkedId);
+      bondedIdsByAnimal.set(record.id, ownLinks);
+      const companionLinks = bondedIdsByAnimal.get(linkedId) || new Set<string>();
+      companionLinks.add(record.id);
+      bondedIdsByAnimal.set(linkedId, companionLinks);
+    }
+  }
   const q = (query.q || "").trim().toLowerCase();
   const filtered = animals.filter((record) => {
     const species = asText(record.fields.Species);
     const status = asText(record.fields["Adoption Status"]);
     const housingType = asText(record.fields["Housing Type"]);
-    const bonded = asText(record.fields["Bonded Pair?"]) === "Yes" || asStrings(record.fields["Bonded With"]).length > 0;
+    const bonded = asText(record.fields["Bonded Pair?"]) === "Yes" || (bondedIdsByAnimal.get(record.id)?.size || 0) > 0;
     const haystack = [
       asText(record.fields["Animal ID"]),
       asText(record.fields["Pet Name"]),
@@ -168,6 +184,11 @@ export default async function AnimalManagementPage({
                       </div>
                       <p className="mt-2 text-sm">{asText(record.fields.Species)} · {asText(record.fields.Sex)} · {asText(record.fields["Current Age Display"]) || "Age not entered"}</p>
                       <p className="mt-1 truncate text-sm text-muted-foreground">{asText(record.fields.Breed) || "Breed not entered"}</p>
+                      {(bondedIdsByAnimal.get(record.id)?.size || 0) > 0 && (
+                        <p className="mt-1 text-sm font-medium text-primary">
+                          Bonded · {[...(bondedIdsByAnimal.get(record.id) || [])].map((id) => asText(animals.find((animal) => animal.id === id)?.fields["Pet Name"])).filter(Boolean).join(", ") || "companion linked"}
+                        </p>
+                      )}
                       <div className="mt-3 flex flex-wrap gap-2 text-xs">
                         <span className="rounded-full bg-slate-100 px-2.5 py-1">{asText(record.fields["Adoption Status"])}</span>
                         {readiness && <span className="rounded-full bg-slate-100 px-2.5 py-1">{readiness}</span>}

@@ -137,9 +137,9 @@ export default async function IntakeManagementPage({
     if (!["shelter", "foster"].includes(placementPath)) return;
 
     const [latestAnimals, latestRequests, latestLocations, latestFosters] = await Promise.all([
-      airtableList(TABLES.animals, ["Animal ID"]),
+      airtableList(TABLES.animals, ["Animal ID", "Species", "Adoption Status", "Current Housing Location"]),
       airtableList(TABLES.surrenderRequests, REQUEST_FIELDS),
-      airtableList(TABLES.housingLocations, ["Location Name", "Active"]),
+      airtableList(TABLES.housingLocations, ["Location Name", "Location Type", "Capacity", "Active"]),
       airtableList(TABLES.fosterApplications, ["First Name", "Last Name", "Status"]),
     ]);
     const request = requestId ? latestRequests.find((record) => record.id === requestId) : undefined;
@@ -147,13 +147,13 @@ export default async function IntakeManagementPage({
     if (!requestId && !["Stray", "Transfer In", "Adoption Return", "Born in Care", "Other"].includes(value(formData, "intakeType"))) return;
     const locationId = value(formData, "housingLocationId");
     const fosterId = value(formData, "fosterApplicationId");
-    if (placementPath === "shelter" && !latestLocations.some((record) => record.id === locationId && Boolean(record.fields.Active))) return;
+    const activeLocation = (id: string) => latestLocations.find((record) => record.id === id && Boolean(record.fields.Active));
     if (placementPath === "foster" && !latestFosters.some((record) => record.id === fosterId && asText(record.fields.Status) === "Approved")) return;
 
     let animalId = value(formData, "existingAnimalId");
     const existingAnimal = animalId ? latestAnimals.find((record) => record.id === animalId) : undefined;
     if (animalId && !existingAnimal) return;
-    let species = value(formData, "species");
+    let species = asText(existingAnimal?.fields.Species) || value(formData, "species");
     let petName = value(formData, "petName");
     let sex = value(formData, "sex") || "Unknown";
     let breed = value(formData, "breed");
@@ -167,9 +167,38 @@ export default async function IntakeManagementPage({
       sex = asText(request.fields.Sex) || sex;
       breed = asText(request.fields["Breed / Mix"]) || breed;
     }
+    let currentHousing: string[] = [];
+    if (placementPath === "shelter") {
+      if (species === "Cat") {
+        const condoId = value(formData, "catCondoId");
+        const roomId = value(formData, "catRoomId");
+        const condo = activeLocation(condoId);
+        const room = activeLocation(roomId);
+        if (!condo || asText(condo.fields["Location Type"]) !== "Cat Condo" || !room || asText(room.fields["Location Type"]) !== "Cat Room") return;
+        currentHousing = [condoId, roomId];
+      } else if (species === "Dog") {
+        const location = activeLocation(locationId);
+        const type = asText(location?.fields["Location Type"]);
+        const name = asText(location?.fields["Location Name"]);
+        const compatible = type === "Dog Kennel" || (["Isolation", "Medical", "Recovery", "Other"].includes(type) && (type !== "Isolation" || /kennel/i.test(name)));
+        if (!location || !compatible) return;
+        currentHousing = [locationId];
+      } else return;
+
+      const occupied = latestAnimals.filter((record) =>
+        record.id !== animalId && asText(record.fields["Adoption Status"]) !== "Adopted" &&
+        currentHousing.some((id) => asStrings(record.fields["Current Housing Location"]).includes(id))
+      );
+      for (const id of currentHousing) {
+        const location = activeLocation(id);
+        const capacity = typeof location?.fields.Capacity === "number" ? location.fields.Capacity : null;
+        const occupants = occupied.filter((record) => asStrings(record.fields["Current Housing Location"]).includes(id)).length;
+        if (capacity !== null && occupants >= capacity) return;
+      }
+    }
     const intakeWeight = numberValue(formData, "intakeWeight");
     const intakeDate = value(formData, "intakeDate") || todayChicago();
-    const currentHousing = placementPath === "shelter" ? [locationId] : [];
+    if (placementPath === "foster") currentHousing = [];
 
     if (!animalId) {
       if (!["Cat", "Dog"].includes(species) || !petName) return;
@@ -258,8 +287,8 @@ export default async function IntakeManagementPage({
           <p className="mt-4 max-w-3xl text-muted-foreground">Review surrender requests, then record every accepted animal through one intake workflow.</p>
         </header>
 
-        <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[["Requests to review", pending.length, Inbox], ["Approved for intake", approved.length, ClipboardPlus], ["Urgent requests", urgent.length, Search], ["Recorded intakes", intakes.length, PawPrint]].map(([label, count, Icon]) => {
+        <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[["Requests to review", pending.length, Inbox], ["Urgent requests", urgent.length, Search], ["Approved for intake", approved.length, ClipboardPlus]].map(([label, count, Icon]) => {
             const MetricIcon = Icon as typeof PawPrint;
             return <div key={String(label)} className="rounded-2xl border bg-white p-5 shadow-sm"><MetricIcon className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{String(count)}</p><p className="mt-1 text-sm text-muted-foreground">{String(label)}</p></div>;
           })}
@@ -312,6 +341,7 @@ export default async function IntakeManagementPage({
                 animals={animals.map((record) => ({
                   id: record.id,
                   label: `${asText(record.fields["Pet Name"]) || "Unnamed animal"} · ${asText(record.fields["Animal ID"])}`,
+                  species: asText(record.fields.Species),
                   details: [
                     asText(record.fields["Animal ID"]), asText(record.fields.Species), asText(record.fields.Sex),
                     asText(record.fields.Breed), asText(record.fields["Adoption Status"]),
@@ -319,7 +349,17 @@ export default async function IntakeManagementPage({
                   ].filter(Boolean).join(" · "),
                 }))}
                 fosters={approvedFosters.map((record) => ({ id: record.id, label: `${asText(record.fields["First Name"])} ${asText(record.fields["Last Name"])}`.trim() }))}
-                locations={activeLocations.map((record) => ({ id: record.id, label: `${asText(record.fields["Location Name"])}${asText(record.fields["Location Type"]) ? ` · ${asText(record.fields["Location Type"])}` : ""}` }))}
+                locations={activeLocations.map((record) => {
+                  const occupants = animals
+                    .filter((animal) => asText(animal.fields["Adoption Status"]) !== "Adopted" && asStrings(animal.fields["Current Housing Location"]).includes(record.id))
+                    .map((animal) => asText(animal.fields["Pet Name"]))
+                    .filter(Boolean);
+                  const type = asText(record.fields["Location Type"]);
+                  const occupancy = ["Cat Room", "Cat Condo"].includes(type)
+                    ? ` · Cats: ${occupants.length ? occupants.join(", ") : "none assigned"}`
+                    : "";
+                  return { id: record.id, type, label: `${asText(record.fields["Location Name"])}${type ? ` · ${type}` : ""}${occupancy}` };
+                })}
                 defaults={selectedRequest ? {
                   requestId: selectedRequest.id,
                   petName: asText(selectedRequest.fields["Animal Name"]),
