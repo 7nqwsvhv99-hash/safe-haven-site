@@ -4,7 +4,6 @@ import {
   ExternalLink,
   HeartHandshake,
   House,
-  Mail,
   PawPrint,
   Phone,
   Stethoscope,
@@ -188,22 +187,13 @@ export default function ResourcesPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button asChild variant="outline">
+                <Button asChild size="lg">
+                  <Link href="/surrender">Request Surrender Review</Link>
+                </Button>
+                <Button asChild variant="outline" size="lg">
                   <a href="tel:815-858-2265"><Phone className="h-4 w-4 mr-2" />Call Safe Haven</a>
                 </Button>
-                <Button asChild variant="outline">
-                  <a href="mailto:safehaven1471@gmail.com?subject=Pet%20Owner%20Resources"><Mail className="h-4 w-4 mr-2" />Email Safe Haven</a>
-                </Button>
               </div>
-              <Card className="space-y-3 border-primary/20 bg-primary/5 p-5">
-                <h3 className="font-bold text-lg">Ask Safe Haven to consider accepting your pet</h3>
-                <p className="text-sm text-muted-foreground">
-                  Submit an owner surrender request for staff review. A request is not confirmation of acceptance; please wait for Safe Haven to contact you before bringing an animal to the shelter.
-                </p>
-                <Button asChild className="w-full sm:w-fit">
-                  <Link href="/surrender">Submit an Owner Surrender Request</Link>
-                </Button>
-              </Card>
             </div>
 
             <Card className="p-7 md:p-8 border-primary/20 bg-primary/5 space-y-5">
