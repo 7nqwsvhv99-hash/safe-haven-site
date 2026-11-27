@@ -9,6 +9,7 @@ import {
   MapPin,
   Plus,
 } from "lucide-react";
+import HousingBoard from "./housing-board";
 import {
   airtableCreate,
   airtableList,
@@ -21,9 +22,25 @@ import {
 } from "@/lib/portal";
 
 const CARE_PHOTO_FIELD_ID = "fldr0uzypmyE1XdAK";
+const LOCATION_TYPES = ["Cat Room", "Cat Condo", "Dog Kennel", "Isolation", "Medical", "Recovery", "Other"];
 
 function asNumber(value: unknown) {
   return typeof value === "number" ? value : null;
+}
+
+function normalizedLocationType(value: unknown) {
+  const type = asText(value);
+  return type === "Cat Cage" ? "Cat Condo" : type;
+}
+
+function isLocationCompatible(speciesValue: unknown, locationTypeValue: unknown) {
+  const species = asText(speciesValue).toLowerCase();
+  const locationType = normalizedLocationType(locationTypeValue);
+  const sharedTypes = ["Isolation", "Medical", "Recovery", "Other"];
+  if (sharedTypes.includes(locationType)) return true;
+  if (species === "cat" || species === "cats") return ["Cat Condo", "Cat Room"].includes(locationType);
+  if (species === "dog" || species === "dogs") return locationType === "Dog Kennel";
+  return false;
 }
 
 function field(form: FormData, name: string) {
@@ -104,6 +121,23 @@ export default async function CareAndHousingPage({
   const activeAnimals = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted");
   const inShelter = activeAnimals.filter((record) => asText(record.fields["Housing Type"]) === "In Shelter");
   const unassigned = inShelter.filter((record) => asStrings(record.fields["Current Housing Location"]).length === 0);
+  const boardLocations = locations
+    .filter((record) => Boolean(record.fields.Active))
+    .map((location) => ({
+      id: location.id,
+      name: asText(location.fields["Location Name"]),
+      type: normalizedLocationType(location.fields["Location Type"]),
+      capacity: asNumber(location.fields.Capacity),
+      notes: asText(location.fields.Notes),
+      occupants: inShelter
+        .filter((animal) => asStrings(animal.fields["Current Housing Location"]).includes(location.id))
+        .map((animal) => ({
+          id: animal.id,
+          petName: asText(animal.fields["Pet Name"]),
+          animalId: asText(animal.fields["Animal ID"]),
+          species: asText(animal.fields.Species),
+        })),
+    }));
 
   const occupancyByLocation = new Map<string, number>();
   for (const animal of inShelter) {
@@ -124,7 +158,7 @@ export default async function CareAndHousingPage({
     await requirePortalRole("Staff", "write");
     const name = field(formData, "name");
     const type = field(formData, "type");
-    if (!name || !type) return;
+    if (!name || !LOCATION_TYPES.includes(type)) return;
 
     await airtableCreate(
       TABLES.housingLocations,
@@ -148,12 +182,20 @@ export default async function CareAndHousingPage({
     "use server";
     await requirePortalRole("Staff", "write");
     const id = field(formData, "locationId");
-    const latest = await airtableList(TABLES.housingLocations, ["Location Name"]);
+    const latest = await airtableList(TABLES.housingLocations, ["Location Name", "Location Type"]);
     if (!latest.some((record) => record.id === id)) return;
 
     const active = formData.get("active") === "on";
+    const nextType = field(formData, "type");
+    if (!LOCATION_TYPES.includes(nextType)) return;
+    const latestAnimals = await airtableList(TABLES.animals, ["Current Housing Location", "Adoption Status", "Species"]);
+    const occupants = latestAnimals.filter(
+      (record) =>
+        asText(record.fields["Adoption Status"]) !== "Adopted" &&
+        asStrings(record.fields["Current Housing Location"]).includes(id)
+    );
+    if (occupants.some((animal) => !isLocationCompatible(animal.fields.Species, nextType))) return;
     if (!active) {
-      const latestAnimals = await airtableList(TABLES.animals, ["Current Housing Location", "Adoption Status"]);
       const occupied = latestAnimals.some(
         (record) =>
           asText(record.fields["Adoption Status"]) !== "Adopted" &&
@@ -186,8 +228,8 @@ export default async function CareAndHousingPage({
     const locationId = field(formData, "locationId");
 
     const [latestAnimals, latestLocations] = await Promise.all([
-      airtableList(TABLES.animals, ["Pet Name", "Housing Type", "Current Housing Location", "Adoption Status"]),
-      airtableList(TABLES.housingLocations, ["Location Name", "Capacity", "Active"]),
+      airtableList(TABLES.animals, ["Pet Name", "Species", "Housing Type", "Current Housing Location", "Adoption Status"]),
+      airtableList(TABLES.housingLocations, ["Location Name", "Location Type", "Capacity", "Active"]),
     ]);
 
     const animal = latestAnimals.find((record) => record.id === animalId);
@@ -200,7 +242,7 @@ export default async function CareAndHousingPage({
       }, true);
     } else {
       const location = latestLocations.find((record) => record.id === locationId && Boolean(record.fields.Active));
-      if (!location) return;
+      if (!location || !isLocationCompatible(animal.fields.Species, location.fields["Location Type"])) return;
 
       const occupants = latestAnimals.filter((record) =>
         asStrings(record.fields["Current Housing Location"]).includes(locationId) &&
@@ -309,26 +351,25 @@ export default async function CareAndHousingPage({
           </p>
         )}
 
-        <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            ["Animals in shelter", inShelter.length, BedDouble],
-            ["Housing locations", locations.filter((record) => Boolean(record.fields.Active)).length, MapPin],
-            ["Unassigned housing", unassigned.length, AlertTriangle],
-            ["Care follow-ups", openAlerts.length, HeartPulse],
-          ].map(([label, value, Icon]) => {
-            const MetricIcon = Icon as typeof BedDouble;
-            return (
-              <div key={String(label)} className="rounded-2xl border bg-white p-5 shadow-sm">
-                <MetricIcon className="mb-3 h-5 w-5 text-primary" />
-                <p className="text-3xl font-bold">{String(value)}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{String(label)}</p>
-              </div>
-            );
-          })}
+        <section className="mb-8 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <BedDouble className="mb-3 h-5 w-5 text-primary" />
+            <p className="text-3xl font-bold">{inShelter.length}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Animals in shelter</p>
+          </div>
+          {openAlerts.length > 0 && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+              <HeartPulse className="mb-3 h-5 w-5 text-primary" />
+              <p className="text-3xl font-bold">{openAlerts.length}</p>
+              <p className="mt-1 text-sm text-muted-foreground">Care follow-ups</p>
+            </div>
+          )}
         </section>
 
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
+
+
             <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
               <div className="mb-5 flex items-center gap-3">
                 <MapPin className="h-6 w-6 text-primary" />
@@ -340,42 +381,11 @@ export default async function CareAndHousingPage({
 
               {!locations.length && (
                 <p className="mb-5 rounded-2xl bg-amber-50 p-4 text-sm text-amber-900">
-                  No housing locations have been created yet. Add your cat rooms, cages, dog kennels, isolation, medical, and recovery spaces below.
+                  No active housing locations yet. Add cat condos or rooms, dog kennels, or shared isolation, medical, and recovery spaces below.
                 </p>
               )}
 
-              <div className="grid gap-4 md:grid-cols-2">
-                {locations.filter((record) => Boolean(record.fields.Active)).map((location) => {
-                  const occupants = inShelter.filter((animal) =>
-                    asStrings(animal.fields["Current Housing Location"]).includes(location.id)
-                  );
-                  const capacity = asNumber(location.fields.Capacity);
-                  const full = capacity !== null && occupants.length >= capacity;
-                  return (
-                    <article key={location.id} className="rounded-2xl border p-5">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-bold">{asText(location.fields["Location Name"])}</h3>
-                          <p className="mt-1 text-xs text-muted-foreground">{asText(location.fields["Location Type"])}</p>
-                        </div>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${full ? "bg-amber-100 text-amber-900" : "bg-slate-100"}`}>
-                          {occupants.length}{capacity !== null ? ` / ${capacity}` : ""}
-                        </span>
-                      </div>
-                      <div className="mt-4 space-y-2">
-                        {occupants.map((animal) => (
-                          <Link key={animal.id} href={`/portal/staff/animals/${animal.id}`} className="block rounded-xl bg-slate-50 px-3 py-2 text-sm hover:bg-slate-100">
-                            <strong>{asText(animal.fields["Pet Name"])}</strong>
-                            <span className="ml-2 text-muted-foreground">{asText(animal.fields["Animal ID"])}</span>
-                          </Link>
-                        ))}
-                        {!occupants.length && <p className="text-sm text-muted-foreground">No animals assigned.</p>}
-                      </div>
-                      {asText(location.fields.Notes) && <p className="mt-4 text-sm text-muted-foreground">{asText(location.fields.Notes)}</p>}
-                    </article>
-                  );
-                })}
-              </div>
+              <HousingBoard locations={boardLocations} />
 
               {unassigned.length > 0 && (
                 <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -447,12 +457,35 @@ export default async function CareAndHousingPage({
           </div>
 
           <div className="space-y-6">
+            {openAlerts.length > 0 && (
+            <section className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm md:p-8">
+              <div className="mb-5 flex items-center gap-3"><AlertTriangle className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Care Follow-Up</h2><p className="text-sm text-muted-foreground">Unresolved observations requiring staff attention.</p></div></div>
+              <div className="space-y-3">
+                {openAlerts.map((record) => {
+                  const animalId = asStrings(record.fields.Animal)[0];
+                  const animal = animalById.get(animalId);
+                  return (
+                    <form key={record.id} action={completeFollowUp} className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                      <input type="hidden" name="careId" value={record.id} />
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div><p className="font-semibold">{asText(animal?.fields["Pet Name"]) || "Animal"} · {asText(record.fields["Care Type"])}</p><p className="mt-1 text-xs text-muted-foreground">{formatDateTime(record.fields["Date / Time"])}</p></div>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold">{asText(record.fields["Alert Level"]) || "Follow-up"}</span>
+                      </div>
+                      {asText(record.fields["Notes / Observation"]) && <p className="mt-3 text-sm">{asText(record.fields["Notes / Observation"])}</p>}
+                      {asText(record.fields["Follow-Up Date"]) && <p className="mt-2 text-xs text-muted-foreground">Follow-up date: {asText(record.fields["Follow-Up Date"])}</p>}
+                      <button className="mt-4 rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm">Mark Follow-Up Complete</button>
+                    </form>
+                  );
+                })}
+              </div>
+            </section>
+            )}
             <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
               <div className="mb-5 flex items-center gap-3">
                 <Plus className="h-6 w-6 text-primary" />
                 <div>
                   <h2 id="record-care" className="scroll-mt-36 text-2xl font-bold">Record Daily Care</h2>
-                  <p className="text-sm text-muted-foreground">Capture routine care and observations at the point of work.</p>
+                  <p className="text-sm text-muted-foreground">Log completed routine care and noteworthy observations against an animal and its current housing space. Needs Attention or Urgent creates a staff follow-up.</p>
                 </div>
               </div>
               <form action={recordCare} className="space-y-4">
@@ -475,30 +508,7 @@ export default async function CareAndHousingPage({
             </section>
 
             <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-              <div className="mb-5 flex items-center gap-3"><AlertTriangle className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Care Follow-Up</h2><p className="text-sm text-muted-foreground">Unresolved observations requiring staff attention.</p></div></div>
-              <div className="space-y-3">
-                {openAlerts.map((record) => {
-                  const animalId = asStrings(record.fields.Animal)[0];
-                  const animal = animalById.get(animalId);
-                  return (
-                    <form key={record.id} action={completeFollowUp} className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                      <input type="hidden" name="careId" value={record.id} />
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div><p className="font-semibold">{asText(animal?.fields["Pet Name"]) || "Animal"} · {asText(record.fields["Care Type"])}</p><p className="mt-1 text-xs text-muted-foreground">{formatDateTime(record.fields["Date / Time"])}</p></div>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold">{asText(record.fields["Alert Level"]) || "Follow-up"}</span>
-                      </div>
-                      {asText(record.fields["Notes / Observation"]) && <p className="mt-3 text-sm">{asText(record.fields["Notes / Observation"])}</p>}
-                      {asText(record.fields["Follow-Up Date"]) && <p className="mt-2 text-xs text-muted-foreground">Follow-up date: {asText(record.fields["Follow-Up Date"])}</p>}
-                      <button className="mt-4 rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm">Mark Follow-Up Complete</button>
-                    </form>
-                  );
-                })}
-                {!openAlerts.length && <p className="text-sm text-muted-foreground">No care follow-ups need attention right now.</p>}
-              </div>
-            </section>
-
-            <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-              <div className="mb-5"><h2 className="text-2xl font-bold">Housing Locations</h2><p className="mt-2 text-sm text-muted-foreground">Create and maintain the shelter&apos;s rooms, cages, kennels, isolation, medical, and recovery spaces.</p></div>
+              <div className="mb-5"><h2 className="text-2xl font-bold">Housing Locations</h2><p className="mt-2 text-sm text-muted-foreground">Create and maintain cat condos and rooms, dog kennels, and shared isolation, medical, or recovery spaces.</p></div>
               <form action={createLocation} className="space-y-4 rounded-2xl bg-slate-50 p-5">
                 <h3 className="font-bold">Add location</h3>
                 <label className="block text-sm font-medium">Location name<input name="name" required className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
@@ -515,7 +525,7 @@ export default async function CareAndHousingPage({
                     <form action={updateLocation} className="mt-4 space-y-3">
                       <input type="hidden" name="locationId" value={location.id} />
                       <input name="name" defaultValue={asText(location.fields["Location Name"])} required className="w-full rounded-xl border px-3 py-2.5" />
-                      <select name="type" defaultValue={asText(location.fields["Location Type"])} className="w-full rounded-xl border bg-white px-3 py-2.5">{["Cat Room","Cat Condo","Dog Kennel","Isolation","Medical","Recovery","Other"].map((value)=><option key={value}>{value}</option>)}</select>
+                      <select name="type" defaultValue={normalizedLocationType(location.fields["Location Type"])} className="w-full rounded-xl border bg-white px-3 py-2.5">{["Cat Room","Cat Condo","Dog Kennel","Isolation","Medical","Recovery","Other"].map((value)=><option key={value}>{value}</option>)}</select>
                       <input name="capacity" type="number" min="0" step="1" defaultValue={asNumber(location.fields.Capacity) ?? ""} placeholder="Capacity" className="w-full rounded-xl border px-3 py-2.5" />
                       <textarea name="notes" rows={2} defaultValue={asText(location.fields.Notes)} className="w-full rounded-xl border px-3 py-2.5" />
                       <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked={Boolean(location.fields.Active)} disabled={(occupancyByLocation.get(location.id) || 0) > 0} /> Active location</label>{(occupancyByLocation.get(location.id) || 0) > 0 && <p className="text-xs text-muted-foreground">Move all animals out before deactivating this location.</p>}
