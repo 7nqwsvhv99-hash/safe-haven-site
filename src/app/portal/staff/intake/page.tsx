@@ -1,8 +1,8 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { ArrowLeft, ClipboardPlus, Inbox, PawPrint, Search } from "lucide-react";
+import IntakeRecordForm from "./intake-record-form";
 import {
   airtableCreate,
   airtableList,
@@ -20,80 +20,75 @@ function numberValue(form: FormData, name: string) {
   const raw = value(form, name);
   if (!raw) return undefined;
   const parsed = Number(raw);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
-function today() {
+function todayChicago() {
   return new Intl.DateTimeFormat("en-CA", {
     year: "numeric", month: "2-digit", day: "2-digit", timeZone: "America/Chicago",
   }).format(new Date());
 }
-function year() {
+function yearChicago() {
   return new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "America/Chicago" }).format(new Date());
 }
 function nextAnimalId(records: Awaited<ReturnType<typeof airtableList>>, species: string) {
   const prefix = species === "Dog" ? "DOG" : "CAT";
-  const matcher = new RegExp("^" + prefix + "-" + year() + "-(\\d+)$");
+  const matcher = new RegExp(`^${prefix}-${yearChicago()}-(\\d+)$`);
   const max = records.reduce((current, record) => {
     const match = asText(record.fields["Animal ID"]).match(matcher);
     return match ? Math.max(current, Number(match[1])) : current;
   }, 0);
-  return prefix + "-" + year() + "-" + String(max + 1).padStart(3, "0");
+  return `${prefix}-${yearChicago()}-${String(max + 1).padStart(3, "0")}`;
 }
 function nextPlacementId(records: Awaited<ReturnType<typeof airtableList>>) {
-  const matcher = new RegExp("^FOST-" + year() + "-(\\d+)$");
+  const matcher = new RegExp(`^FOST-${yearChicago()}-(\\d+)$`);
   const max = records.reduce((current, record) => {
     const match = asText(record.fields["Foster Placement ID"]).match(matcher);
     return match ? Math.max(current, Number(match[1])) : current;
   }, 0);
-  return "FOST-" + year() + "-" + String(max + 1).padStart(3, "0");
+  return `FOST-${yearChicago()}-${String(max + 1).padStart(3, "0")}`;
 }
 function formatDate(input: unknown) {
   const text = asText(input);
   if (!text) return "";
   const date = new Date(text);
   if (Number.isNaN(date.getTime())) return text;
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago",
-  }).format(date);
+  return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago" }).format(date);
 }
-function Status({ children }: { children: ReactNode }) {
-  return <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{children || "No status"}</span>;
-}
+
+const REQUEST_FIELDS = [
+  "Submitted At", "Status", "Owner First Name", "Owner Last Name", "Email", "Phone",
+  "Animal Name", "Species", "Sex", "Approximate Age", "Breed / Mix", "Reason for Surrender",
+  "Behavior / Safety Notes", "Medical Conditions / Medications", "Urgency", "Requested Surrender Date",
+  "Can Keep Animal Until", "Decision Date", "Staff Notes", "Follow-Up Status", "Animal Intakes",
+];
 
 export default async function IntakeManagementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; status?: string; new?: string; surrenderRequest?: string }>;
 }) {
   await requirePortalRole("Staff");
   const query = await searchParams;
-
-  const [requests, intakes, animals, fosterApplications] = await Promise.all([
-    airtableList(TABLES.surrenderRequests, [
-      "Submitted At","Status","Owner First Name","Owner Last Name","Email","Phone",
-      "Street Address","City","State","ZIP","Animal Name","Species","Sex","Approximate Age",
-      "Breed / Mix","Spay / Neuter Status","Microchip Known","Reason for Surrender",
-      "Behavior / Safety Notes","Medical Conditions / Medications","Current Veterinarian",
-      "Urgency","Requested Surrender Date","Can Keep Animal Until","Decision Date",
-      "Staff Notes","Follow-Up Status","Animal Intakes"
-    ], { sort: [{ field: "Submitted At", direction: "desc" }] }),
+  const [requests, intakes, animals, fosterApplications, housingLocations] = await Promise.all([
+    airtableList(TABLES.surrenderRequests, REQUEST_FIELDS, { sort: [{ field: "Submitted At", direction: "desc" }] }),
     airtableList(TABLES.animalIntakes, [
-      "Animal","Intake Date","Intake Type","Related Surrender Request","Source Person / Organization",
-      "Source Phone","Source Email","Found / Origin Location","Condition at Intake","Weight at Intake (lb)",
-      "Intake Notes","Pet Name","Species","Animal Creation Status"
+      "Animal", "Intake Date", "Intake Type", "Related Surrender Request", "Source Person / Organization",
+      "Source Phone", "Source Email", "Found / Origin Location", "Condition at Intake", "Weight at Intake (lb)",
+      "Intake Notes", "Pet Name", "Species", "Animal Creation Status",
     ], { sort: [{ field: "Intake Date", direction: "desc" }] }),
     airtableList(TABLES.animals, [
-      "Animal ID","Pet Name","Species","Adoption Status","Housing Type"
+      "Animal ID", "Pet Name", "Species", "Sex", "Breed", "Color / Markings", "Date of Birth",
+      "Estimated Date of Birth", "Microchip Number", "Adoption Status", "Housing Type", "Current Housing Location",
     ], { sort: [{ field: "Pet Name", direction: "asc" }] }),
-    airtableList(TABLES.fosterApplications, [
-      "First Name","Last Name","Status"
-    ], { sort: [{ field: "Last Name", direction: "asc" }] }),
+    airtableList(TABLES.fosterApplications, ["First Name", "Last Name", "Status"], { sort: [{ field: "Last Name", direction: "asc" }] }),
+    airtableList(TABLES.housingLocations, ["Location Name", "Location Type", "Active"], { sort: [{ field: "Location Name", direction: "asc" }] }),
   ]);
 
   const animalById = new Map(animals.map((record) => [record.id, record]));
   const approvedFosters = fosterApplications.filter((record) => asText(record.fields.Status) === "Approved");
+  const activeLocations = housingLocations.filter((record) => Boolean(record.fields.Active));
   const q = (query.q || "").trim().toLowerCase();
-  const filtered = requests.filter((record) => {
+  const filteredRequests = requests.filter((record) => {
     const haystack = [
       asText(record.fields["Owner First Name"]), asText(record.fields["Owner Last Name"]),
       asText(record.fields.Email), asText(record.fields.Phone), asText(record.fields["Animal Name"]),
@@ -101,17 +96,27 @@ export default async function IntakeManagementPage({
     ].join(" ").toLowerCase();
     return (!q || haystack.includes(q)) && (!query.status || asText(record.fields.Status) === query.status);
   });
-
-  const pending = requests.filter((r) => !["Declined","Withdrawn","Completed"].includes(asText(r.fields.Status)));
-  const approved = requests.filter((r) => asText(r.fields.Status) === "Approved for Intake");
-  const urgent = pending.filter((r) => asText(r.fields.Urgency) === "Urgent");
+  const pending = requests.filter((record) => ["New", "Under Review", "Contacted", "Waitlist"].includes(asText(record.fields.Status)));
+  const approved = requests.filter((record) => asText(record.fields.Status) === "Approved for Intake" && asStrings(record.fields["Animal Intakes"]).length === 0);
+  const urgent = requests.filter((record) => asText(record.fields.Urgency) === "Urgent" && !["Declined", "Withdrawn", "Completed"].includes(asText(record.fields.Status)));
+  const selectedRequest = query.surrenderRequest
+    ? requests.find((record) => record.id === query.surrenderRequest && asText(record.fields.Status) === "Approved for Intake" && asStrings(record.fields["Animal Intakes"]).length === 0)
+    : undefined;
+  const ownerName = selectedRequest
+    ? [asText(selectedRequest.fields["Owner First Name"]), asText(selectedRequest.fields["Owner Last Name"])].filter(Boolean).join(" ")
+    : "";
+  const requestNotes = selectedRequest ? [
+    asText(selectedRequest.fields["Reason for Surrender"]) ? `Surrender reason: ${asText(selectedRequest.fields["Reason for Surrender"])}` : "",
+    asText(selectedRequest.fields["Behavior / Safety Notes"]) ? `Behavior / safety: ${asText(selectedRequest.fields["Behavior / Safety Notes"])}` : "",
+    asText(selectedRequest.fields["Medical Conditions / Medications"]) ? `Medical history / medications: ${asText(selectedRequest.fields["Medical Conditions / Medications"])}` : "",
+  ].filter(Boolean).join("\n\n") : "";
 
   async function saveRequest(formData: FormData) {
     "use server";
     await requirePortalRole("Staff", "write");
     const requestId = value(formData, "requestId");
     const latest = await airtableList(TABLES.surrenderRequests, ["Status"]);
-    if (!latest.some((r) => r.id === requestId)) return;
+    if (!latest.some((record) => record.id === requestId)) return;
     const status = value(formData, "status");
     await airtableUpdate(TABLES.surrenderRequests, requestId, {
       Status: status,
@@ -119,290 +124,229 @@ export default async function IntakeManagementPage({
       "Staff Notes": value(formData, "staffNotes"),
       "Requested Surrender Date": value(formData, "requestedDate") || null,
       "Can Keep Animal Until": value(formData, "canKeepUntil") || null,
-      ...(["Approved for Intake","Declined","Withdrawn","Completed"].includes(status)
-        ? { "Decision Date": value(formData, "decisionDate") || today() } : {}),
+      ...(["Approved for Intake", "Declined", "Withdrawn", "Completed"].includes(status) ? { "Decision Date": todayChicago() } : {}),
     }, true);
     revalidatePath("/portal/staff/intake");
   }
 
-  async function acceptSurrender(formData: FormData) {
+  async function recordIntake(formData: FormData) {
     "use server";
     await requirePortalRole("Staff", "write");
     const requestId = value(formData, "requestId");
-    const latest = await airtableList(TABLES.surrenderRequests, [
-      "Status","Owner First Name","Owner Last Name","Email","Phone","Animal Name","Species","Sex",
-      "Approximate Age","Breed / Mix","Reason for Surrender","Behavior / Safety Notes",
-      "Medical Conditions / Medications","Animal Intakes"
+    const placementPath = value(formData, "placementPath");
+    if (!["shelter", "foster"].includes(placementPath)) return;
+
+    const [latestAnimals, latestRequests, latestLocations, latestFosters] = await Promise.all([
+      airtableList(TABLES.animals, ["Animal ID"]),
+      airtableList(TABLES.surrenderRequests, REQUEST_FIELDS),
+      airtableList(TABLES.housingLocations, ["Location Name", "Active"]),
+      airtableList(TABLES.fosterApplications, ["First Name", "Last Name", "Status"]),
     ]);
-    const request = latest.find((r) => r.id === requestId);
-    if (!request || asText(request.fields.Status) !== "Approved for Intake") return;
-    if (asStrings(request.fields["Animal Intakes"]).length) return;
-    const species = asText(request.fields.Species);
-    if (!["Cat","Dog"].includes(species)) return;
-    const initialPlacement = value(formData, "initialPlacement") || "In Shelter";
-    const fosterApplicationId = value(formData, "fosterApplicationId");
-    const dateOfBirth = value(formData, "dateOfBirth");
-    const estimatedDateOfBirth = value(formData, "estimatedDateOfBirth");
-    if (!dateOfBirth && !estimatedDateOfBirth) return;
-    if (initialPlacement === "Foster Home" && !approvedFosters.some((record) => record.id === fosterApplicationId)) return;
+    const request = requestId ? latestRequests.find((record) => record.id === requestId) : undefined;
+    if (requestId && (!request || asText(request.fields.Status) !== "Approved for Intake" || asStrings(request.fields["Animal Intakes"]).length > 0)) return;
+    if (!requestId && !["Stray", "Transfer In", "Adoption Return", "Born in Care", "Other"].includes(value(formData, "intakeType"))) return;
+    const locationId = value(formData, "housingLocationId");
+    const fosterId = value(formData, "fosterApplicationId");
+    if (placementPath === "shelter" && !latestLocations.some((record) => record.id === locationId && Boolean(record.fields.Active))) return;
+    if (placementPath === "foster" && !latestFosters.some((record) => record.id === fosterId && asText(record.fields.Status) === "Approved")) return;
 
-    const existingAnimals = await airtableList(TABLES.animals, ["Animal ID"]);
-    const animal = await airtableCreate(TABLES.animals, {
-      "Animal ID": nextAnimalId(existingAnimals, species),
-      "Pet Name": asText(request.fields["Animal Name"]) || "Unnamed",
-      Species: species,
-      Sex: asText(request.fields.Sex) || "Unknown",
-      ...(dateOfBirth ? { "Date of Birth": dateOfBirth } : {}),
-      ...(!dateOfBirth && estimatedDateOfBirth ? { "Estimated Date of Birth": estimatedDateOfBirth } : {}),
-      ...(numberValue(formData, "weight") !== undefined ? { "Weight (lb)": numberValue(formData, "weight") } : {}),
-      Breed: asText(request.fields["Breed / Mix"]),
-      "Adoption Status": "Getting Ready for Adoption",
-      "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
-      "Public Listing": false,
-      "Microchip Registration Status": "Unknown",
-    }, true);
-    if (!animal) return;
-
-    const owner = [asText(request.fields["Owner First Name"]), asText(request.fields["Owner Last Name"])].filter(Boolean).join(" ");
-    const notes = [
-      asText(request.fields["Reason for Surrender"]) ? "Reason: " + asText(request.fields["Reason for Surrender"]) : "",
-      asText(request.fields["Behavior / Safety Notes"]) ? "Behavior/safety: " + asText(request.fields["Behavior / Safety Notes"]) : "",
-      asText(request.fields["Medical Conditions / Medications"]) ? "Medical: " + asText(request.fields["Medical Conditions / Medications"]) : "",
-      value(formData, "intakeNotes"),
-    ].filter(Boolean).join("\\n\\n");
-
-    await airtableCreate(TABLES.animalIntakes, {
-      Animal: [animal.id],
-      "Intake Date": value(formData, "intakeDate") || today(),
-      "Intake Type": "Owner Surrender",
-      "Related Surrender Request": [requestId],
-      "Source Person / Organization": owner,
-      "Source Phone": asText(request.fields.Phone),
-      "Source Email": asText(request.fields.Email),
-      "Condition at Intake": value(formData, "condition") || "Unable to assess",
-      ...(numberValue(formData, "weight") !== undefined ? { "Weight at Intake (lb)": numberValue(formData, "weight") } : {}),
-      "Intake Notes": notes,
-    }, true);
-
-    if (initialPlacement === "Foster Home") {
-      const latestPlacements = await airtableList(TABLES.fosterPlacements, ["Foster Placement ID"]);
-      await airtableCreate(TABLES.fosterPlacements, {
-        "Foster Placement ID": nextPlacementId(latestPlacements),
-        Animal: [animal.id],
-        "Foster Application": [fosterApplicationId],
-        "Placement Status": "Active",
-        "Placement Type": value(formData, "placementType") || "Other",
-        "Start Date": value(formData, "intakeDate") || today(),
-        ...(value(formData, "nextCheckInDate") ? { "Next Check-In Date": value(formData, "nextCheckInDate"), "Check-In Status": "Not Due" } : {}),
-        ...(value(formData, "careInstructions") ? { "Care Instructions / Notes": value(formData, "careInstructions") } : {}),
-      }, true);
-    }
-
-    await airtableUpdate(TABLES.surrenderRequests, requestId, {
-      Status: "Completed",
-      "Decision Date": value(formData, "intakeDate") || today(),
-    }, true);
-
-    revalidatePath("/portal/staff/intake");
-    revalidatePath("/portal/staff/animals");
-    redirect("/portal/staff/animals/" + animal.id + "?created=1");
-  }
-
-  async function directIntake(formData: FormData) {
-    "use server";
-    await requirePortalRole("Staff", "write");
     let animalId = value(formData, "existingAnimalId");
-    const initialPlacement = value(formData, "initialPlacement") || "In Shelter";
-    const fosterApplicationId = value(formData, "fosterApplicationId");
-    if (initialPlacement === "Foster Home" && !approvedFosters.some((record) => record.id === fosterApplicationId)) return;
+    const existingAnimal = animalId ? latestAnimals.find((record) => record.id === animalId) : undefined;
+    if (animalId && !existingAnimal) return;
+    let species = value(formData, "species");
+    let petName = value(formData, "petName");
+    let sex = value(formData, "sex") || "Unknown";
+    let breed = value(formData, "breed");
+    let color = value(formData, "color");
+    let dateOfBirth = value(formData, "dateOfBirth");
+    let estimatedDateOfBirth = value(formData, "estimatedDateOfBirth");
+    let microchipNumber = value(formData, "microchipNumber");
+    if (request) {
+      species = asText(request.fields.Species);
+      petName = asText(request.fields["Animal Name"]) || petName;
+      sex = asText(request.fields.Sex) || sex;
+      breed = asText(request.fields["Breed / Mix"]) || breed;
+    }
+    const intakeWeight = numberValue(formData, "intakeWeight");
+    const intakeDate = value(formData, "intakeDate") || todayChicago();
+    const currentHousing = placementPath === "shelter" ? [locationId] : [];
+
     if (!animalId) {
-      const dateOfBirth = value(formData, "dateOfBirth");
-      const estimatedDateOfBirth = value(formData, "estimatedDateOfBirth");
-      if (!dateOfBirth && !estimatedDateOfBirth) return;
-      const species = value(formData, "species");
-      const petName = value(formData, "petName");
-      if (!["Cat","Dog"].includes(species) || !petName) return;
-      const existing = await airtableList(TABLES.animals, ["Animal ID"]);
+      if (!["Cat", "Dog"].includes(species) || !petName) return;
       const animal = await airtableCreate(TABLES.animals, {
-        "Animal ID": nextAnimalId(existing, species),
+        "Animal ID": nextAnimalId(latestAnimals, species),
         "Pet Name": petName,
         Species: species,
-        Sex: value(formData, "sex") || "Unknown",
+        Sex: sex,
         ...(dateOfBirth ? { "Date of Birth": dateOfBirth } : {}),
         ...(!dateOfBirth && estimatedDateOfBirth ? { "Estimated Date of Birth": estimatedDateOfBirth } : {}),
-        Breed: value(formData, "breed"),
-        "Color / Markings": value(formData, "color"),
+        ...(breed ? { Breed: breed } : {}),
+        ...(color ? { "Color / Markings": color } : {}),
+        ...(microchipNumber ? { "Microchip Number": microchipNumber } : {}),
+        ...(intakeWeight !== undefined ? { "Weight (lb)": intakeWeight } : {}),
         "Adoption Status": "Getting Ready for Adoption",
-        "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
+        "Housing Type": placementPath === "foster" ? "Foster Home" : "In Shelter",
+        "Current Housing Location": currentHousing,
+        "Microchip Registration Status": value(formData, "microchipStatus") || "Unknown",
         "Public Listing": false,
-        "Microchip Registration Status": "Unknown",
       }, true);
       if (!animal) return;
       animalId = animal.id;
+    } else {
+      const updated = await airtableUpdate(TABLES.animals, animalId, {
+        "Housing Type": placementPath === "foster" ? "Foster Home" : "In Shelter",
+        "Current Housing Location": currentHousing,
+        ...(intakeWeight !== undefined ? { "Weight (lb)": intakeWeight } : {}),
+      }, true);
+      if (!updated) return;
     }
-    await airtableUpdate(TABLES.animals, animalId, {
-      "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
-      "Current Housing Location": [],
-      ...(numberValue(formData, "weight") !== undefined ? { "Weight (lb)": numberValue(formData, "weight") } : {}),
-    }, true);
 
-    await airtableCreate(TABLES.animalIntakes, {
+    const ownerNameForIntake = request
+      ? [asText(request.fields["Owner First Name"]), asText(request.fields["Owner Last Name"])].filter(Boolean).join(" ")
+      : value(formData, "source");
+    const requestNotesForIntake = request ? [
+      asText(request.fields["Reason for Surrender"]) ? `Surrender reason: ${asText(request.fields["Reason for Surrender"])}` : "",
+      asText(request.fields["Behavior / Safety Notes"]) ? `Behavior / safety: ${asText(request.fields["Behavior / Safety Notes"])}` : "",
+      asText(request.fields["Medical Conditions / Medications"]) ? `Medical history / medications: ${asText(request.fields["Medical Conditions / Medications"])}` : "",
+      value(formData, "intakeNotes"),
+    ].filter(Boolean).join("\n\n") : value(formData, "intakeNotes");
+    const intake = await airtableCreate(TABLES.animalIntakes, {
       Animal: [animalId],
-      "Intake Date": value(formData, "intakeDate") || today(),
-      "Intake Type": value(formData, "intakeType") || "Other",
-      "Source Person / Organization": value(formData, "source"),
-      "Source Phone": value(formData, "sourcePhone"),
-      "Source Email": value(formData, "sourceEmail"),
-      "Found / Origin Location": value(formData, "origin"),
+      "Intake Date": intakeDate,
+      "Intake Type": request ? "Owner Surrender" : value(formData, "intakeType"),
+      ...(request ? { "Related Surrender Request": [request.id] } : {}),
+      ...(ownerNameForIntake ? { "Source Person / Organization": ownerNameForIntake } : {}),
+      ...((request ? asText(request.fields.Phone) : value(formData, "sourcePhone")) ? { "Source Phone": request ? asText(request.fields.Phone) : value(formData, "sourcePhone") } : {}),
+      ...((request ? asText(request.fields.Email) : value(formData, "sourceEmail")) ? { "Source Email": request ? asText(request.fields.Email) : value(formData, "sourceEmail") } : {}),
+      ...(!request && value(formData, "origin") ? { "Found / Origin Location": value(formData, "origin") } : {}),
       "Condition at Intake": value(formData, "condition") || "Unable to assess",
-      ...(numberValue(formData, "weight") !== undefined ? { "Weight at Intake (lb)": numberValue(formData, "weight") } : {}),
-      "Intake Notes": value(formData, "intakeNotes"),
+      ...(intakeWeight !== undefined ? { "Weight at Intake (lb)": intakeWeight } : {}),
+      ...(requestNotesForIntake ? { "Intake Notes": requestNotesForIntake } : {}),
     }, true);
-    if (initialPlacement === "Foster Home") {
-      const latestPlacements = await airtableList(TABLES.fosterPlacements, ["Foster Placement ID"]);
+    if (!intake) return;
+
+    if (placementPath === "foster") {
+      const placements = await airtableList(TABLES.fosterPlacements, ["Foster Placement ID"]);
       await airtableCreate(TABLES.fosterPlacements, {
-        "Foster Placement ID": nextPlacementId(latestPlacements),
+        "Foster Placement ID": nextPlacementId(placements),
         Animal: [animalId],
-        "Foster Application": [fosterApplicationId],
+        "Foster Application": [fosterId],
         "Placement Status": "Active",
         "Placement Type": value(formData, "placementType") || "Other",
-        "Start Date": value(formData, "intakeDate") || today(),
+        "Start Date": intakeDate,
         ...(value(formData, "nextCheckInDate") ? { "Next Check-In Date": value(formData, "nextCheckInDate"), "Check-In Status": "Not Due" } : {}),
         ...(value(formData, "careInstructions") ? { "Care Instructions / Notes": value(formData, "careInstructions") } : {}),
       }, true);
+    }
+    if (request) {
+      await airtableUpdate(TABLES.surrenderRequests, request.id, { Status: "Completed", "Decision Date": intakeDate }, true);
     }
 
     revalidatePath("/portal/staff/intake");
     revalidatePath("/portal/staff/animals");
     revalidatePath("/portal/staff/fosters");
-    redirect("/portal/staff/animals/" + animalId);
+    redirect(`/portal/staff/animals/${animalId}?created=1`);
   }
 
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="container-custom py-10 md:py-12">
-        <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-          <ArrowLeft className="h-4 w-4" /> Staff Portal
-        </Link>
-
+        <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft className="h-4 w-4" /> Staff Portal</Link>
         <header className="mb-8">
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Animal Entry</p>
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Intake & Owner Surrender</h1>
-          <p className="mt-4 max-w-3xl text-muted-foreground">
-            Review owner surrender requests before acceptance, convert approved requests into actual intakes, and record direct intakes for other entry paths.
-          </p>
+          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Intake &amp; Owner Surrender</h1>
+          <p className="mt-4 max-w-3xl text-muted-foreground">Review surrender requests, then record every accepted animal through one intake workflow.</p>
         </header>
 
         <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            ["Pending requests", pending.length, Inbox],
-            ["Approved for intake", approved.length, ClipboardPlus],
-            ["Urgent requests", urgent.length, Search],
-            ["Recorded intakes", intakes.length, PawPrint],
-          ].map(([label,count,Icon]) => {
+          {[["Requests to review", pending.length, Inbox], ["Approved for intake", approved.length, ClipboardPlus], ["Urgent requests", urgent.length, Search], ["Recorded intakes", intakes.length, PawPrint]].map(([label, count, Icon]) => {
             const MetricIcon = Icon as typeof PawPrint;
             return <div key={String(label)} className="rounded-2xl border bg-white p-5 shadow-sm"><MetricIcon className="mb-3 h-5 w-5 text-primary"/><p className="text-3xl font-bold">{String(count)}</p><p className="mt-1 text-sm text-muted-foreground">{String(label)}</p></div>;
           })}
         </section>
 
-        <section className="mb-8 rounded-3xl border bg-white p-6 shadow-sm">
-          <form className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
-            <input name="q" defaultValue={query.q || ""} placeholder="Search owner, animal, contact, breed, or urgency" className="rounded-xl border px-3 py-2.5"/>
-            <select name="status" defaultValue={query.status || ""} className="rounded-xl border bg-white px-3 py-2.5"><option value="">All statuses</option>{["New","Under Review","Contacted","Waitlist","Approved for Intake","Declined","Withdrawn","Completed"].map((s)=><option key={s}>{s}</option>)}</select>
-            <button className="rounded-xl border px-5 py-2.5 font-semibold">Filter</button>
-          </form>
+        <section className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div><h2 className="text-2xl font-bold">Owner Surrender Queue</h2><p className="mt-2 text-sm text-muted-foreground">Requests entered through the surrender-request process appear here. Review and approve a request before recording intake.</p></div>
+            <form className="grid w-full gap-3 md:w-auto md:grid-cols-[minmax(260px,1fr)_210px_auto]">
+              <input name="q" defaultValue={query.q || ""} placeholder="Search owner, animal, contact, or breed" className="rounded-xl border px-3 py-2.5" />
+              <select name="status" defaultValue={query.status || ""} className="rounded-xl border bg-white px-3 py-2.5"><option value="">All statuses</option>{["New", "Under Review", "Contacted", "Waitlist", "Approved for Intake", "Declined", "Withdrawn", "Completed"].map((status) => <option key={status}>{status}</option>)}</select>
+              <button className="rounded-xl border px-5 py-2.5 font-semibold">Filter</button>
+            </form>
+          </div>
+          <div className="mt-5 space-y-3">
+            {filteredRequests.map((record) => {
+              const isApproved = asText(record.fields.Status) === "Approved for Intake" && asStrings(record.fields["Animal Intakes"]).length === 0;
+              const alreadyIntaken = asStrings(record.fields["Animal Intakes"]).length > 0;
+              return <details key={record.id} className="rounded-2xl border p-5">
+                <summary className="cursor-pointer list-none">
+                  <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{asText(record.fields["Animal Name"]) || "Unnamed animal"}</h3><p className="mt-1 text-sm text-muted-foreground">{[asText(record.fields["Owner First Name"]), asText(record.fields["Owner Last Name"])].filter(Boolean).join(" ")} · Submitted {formatDate(record.fields["Submitted At"]) || "date not recorded"}</p><p className="mt-2 text-sm">{[asText(record.fields.Species), asText(record.fields.Sex), asText(record.fields["Approximate Age"]), asText(record.fields["Breed / Mix"])].filter(Boolean).join(" · ")}</p></div><div className="flex flex-wrap gap-2"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{alreadyIntaken ? "Intake recorded" : asText(record.fields.Status) || "No status"}</span>{asText(record.fields.Urgency) === "Urgent" && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Urgent</span>}</div></div>
+                </summary>
+                <div className="mt-5 grid gap-5 border-t pt-5 lg:grid-cols-[1fr_auto]">
+                  <div className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2"><p><strong>Owner contact:</strong> {[asText(record.fields.Email), asText(record.fields.Phone)].filter(Boolean).join(" · ") || "Not provided"}</p><p><strong>Requested date:</strong> {formatDate(record.fields["Requested Surrender Date"]) || "Not specified"}</p><p><strong>Can keep until:</strong> {formatDate(record.fields["Can Keep Animal Until"]) || "Not specified"}</p><p><strong>Reason:</strong> {asText(record.fields["Reason for Surrender"]) || "Not provided"}</p><p><strong>Behavior / safety:</strong> {asText(record.fields["Behavior / Safety Notes"]) || "No notes"}</p><p><strong>Medical:</strong> {asText(record.fields["Medical Conditions / Medications"]) || "No notes"}</p></div>
+                  <div className="space-y-3 lg:min-w-64">
+                    <form action={saveRequest} className="space-y-3 rounded-2xl bg-slate-50 p-4">
+                      <input type="hidden" name="requestId" value={record.id}/>
+                      <label className="block text-xs font-semibold">Request status<select name="status" defaultValue={alreadyIntaken ? "Completed" : asText(record.fields.Status)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}>{["New", "Under Review", "Contacted", "Waitlist", "Approved for Intake", "Declined", "Withdrawn", "Completed"].map((status) => <option key={status}>{status}</option>)}</select></label>
+                      <label className="block text-xs font-semibold">Urgency<select name="urgency" defaultValue={asText(record.fields.Urgency) || "Routine"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}>{["Routine", "Soon", "Urgent"].map((status) => <option key={status}>{status}</option>)}</select></label>
+                      <div className="grid gap-2 sm:grid-cols-2"><label className="block text-xs font-semibold">Requested date<input name="requestedDate" type="date" defaultValue={asText(record.fields["Requested Surrender Date"]).slice(0, 10)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label><label className="block text-xs font-semibold">Can keep until<input name="canKeepUntil" type="date" defaultValue={asText(record.fields["Can Keep Animal Until"]).slice(0, 10)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label></div>
+                      <label className="block text-xs font-semibold">Staff notes<textarea name="staffNotes" rows={2} defaultValue={asText(record.fields["Staff Notes"])} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label>
+                      {!alreadyIntaken && <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save review</button>}
+                    </form>
+                    {isApproved && <Link href={`/portal/staff/intake?surrenderRequest=${record.id}#record-intake`} className="inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:opacity-90">Start intake with request details</Link>}
+                  </div>
+                </div>
+              </details>;
+            })}
+            {!filteredRequests.length && <p className="rounded-xl bg-slate-50 p-5 text-sm text-muted-foreground">No surrender requests match this search.</p>}
+          </div>
         </section>
 
-        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-          <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-            <h2 className="text-2xl font-bold">Owner Surrender Queue</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Requests remain pre-intake until Safe Haven accepts the animal.</p>
-            <div className="mt-5 space-y-4">
-              {filtered.map((record) => (
-                <details key={record.id} className="rounded-2xl border p-5">
-                  <summary className="cursor-pointer list-none">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div><h3 className="font-bold">{asText(record.fields["Animal Name"]) || "Unnamed animal"}</h3><p className="mt-1 text-sm text-muted-foreground">{[asText(record.fields["Owner First Name"]),asText(record.fields["Owner Last Name"])].filter(Boolean).join(" ")} · {formatDate(record.fields["Submitted At"])}</p><p className="mt-2 text-sm">{asText(record.fields.Species)} · {asText(record.fields.Sex)} · {asText(record.fields["Approximate Age"])} · {asText(record.fields["Breed / Mix"])}</p></div>
-                      <div className="flex gap-2"><Status>{asText(record.fields.Status)}</Status>{asText(record.fields.Urgency)==="Urgent"&&<span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Urgent</span>}</div>
-                    </div>
-                  </summary>
-
-                  <div className="mt-5 grid gap-5 border-t pt-5 lg:grid-cols-2">
-                    <div className="space-y-3 text-sm">
-                      <p><strong>Owner:</strong> {asText(record.fields.Email)} · {asText(record.fields.Phone)}</p>
-                      <p><strong>Reason:</strong> {asText(record.fields["Reason for Surrender"]) || "Not provided"}</p>
-                      <p><strong>Behavior/safety:</strong> {asText(record.fields["Behavior / Safety Notes"]) || "No notes"}</p>
-                      <p><strong>Medical:</strong> {asText(record.fields["Medical Conditions / Medications"]) || "No notes"}</p>
-                      <p><strong>Requested date:</strong> {formatDate(record.fields["Requested Surrender Date"]) || "Not specified"}</p>
-                      <p><strong>Can keep until:</strong> {formatDate(record.fields["Can Keep Animal Until"]) || "Not specified"}</p>
-                    </div>
-                    <div className="space-y-4">
-                      <form action={saveRequest} className="space-y-3 rounded-2xl bg-slate-50 p-5">
-                        <input type="hidden" name="requestId" value={record.id}/>
-                        <select name="status" defaultValue={asText(record.fields.Status)} className="w-full rounded-xl border bg-white px-3 py-2.5">{["New","Under Review","Contacted","Waitlist","Approved for Intake","Declined","Withdrawn","Completed"].map((s)=><option key={s}>{s}</option>)}</select>
-                        <select name="urgency" defaultValue={asText(record.fields.Urgency)||"Routine"} className="w-full rounded-xl border bg-white px-3 py-2.5">{["Routine","Soon","Urgent"].map((s)=><option key={s}>{s}</option>)}</select>
-                        <div className="grid gap-3 sm:grid-cols-2"><input name="requestedDate" type="date" defaultValue={asText(record.fields["Requested Surrender Date"]).slice(0,10)} className="rounded-xl border bg-white px-3 py-2.5"/><input name="canKeepUntil" type="date" defaultValue={asText(record.fields["Can Keep Animal Until"]).slice(0,10)} className="rounded-xl border bg-white px-3 py-2.5"/></div>
-                        <textarea name="staffNotes" rows={3} defaultValue={asText(record.fields["Staff Notes"])} placeholder="Staff notes" className="w-full rounded-xl border bg-white px-3 py-2.5"/>
-                        <p className="text-xs text-muted-foreground">Decision date is recorded automatically when the request reaches a final decision.</p>
-                        <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save Review</button>
-                      </form>
-
-                      {asText(record.fields.Status)==="Approved for Intake" && asStrings(record.fields["Animal Intakes"]).length===0 && (
-                        <form action={acceptSurrender} className="space-y-3 rounded-2xl border border-primary/20 bg-primary/5 p-5">
-                          <input type="hidden" name="requestId" value={record.id}/>
-                          <h4 className="font-bold">Accept Into Safe Haven Care</h4>
-                          <input name="intakeDate" type="date" defaultValue={today()} className="w-full rounded-xl border bg-white px-3 py-2.5"/>
-                          <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label><label className="text-sm font-medium">Estimated date of birth<input name="estimatedDateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/><span className="mt-1 block text-xs text-muted-foreground">The surrender form's approximate age is reference only. Record one birth date here when accepting the animal.</span></label></div>
-                          <select name="initialPlacement" defaultValue="In Shelter" className="w-full rounded-xl border bg-white px-3 py-2.5"><option>In Shelter</option><option>Foster Home</option></select>
-                          <label className="block text-sm font-medium">Observed condition at intake<select name="condition" defaultValue="Unable to assess" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Stable, no concern observed","Minor concern, routine review","Illness or injury, veterinary review needed","Urgent concern, immediate veterinary review","Unable to assess"].map((s)=><option key={s}>{s}</option>)}</select><span className="mt-1 block text-xs text-muted-foreground">Choose the closest observed level, then record specific signs in intake notes. Do not enter a diagnosis.</span></label>
-                          <textarea name="intakeNotes" rows={3} placeholder="Care, safety, or placement notes" className="w-full rounded-xl border bg-white px-3 py-2.5"/>
-                          <details className="rounded-xl border bg-white p-3"><summary className="cursor-pointer text-sm font-semibold">Foster placement or intake details</summary><div className="mt-3 space-y-3"><select name="fosterApplicationId" defaultValue="" className="w-full rounded-xl border bg-white px-3 py-2.5"><option value="">If going to foster, select approved foster</option>{approvedFosters.map((foster)=><option key={foster.id} value={foster.id}>{[asText(foster.fields["First Name"]),asText(foster.fields["Last Name"])].filter(Boolean).join(" ")}</option>)}</select><select name="placementType" defaultValue="Other" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Bottle Babies","Pregnant Mom","Nursing Mom with Litter","Orphaned Litter","Kitten / Puppy","Adult Animal","Medical","Behavior Support","Short-Term / Emergency","Other"].map((s)=><option key={s}>{s}</option>)}</select><input name="nextCheckInDate" type="date" className="w-full rounded-xl border bg-white px-3 py-2.5"/><textarea name="careInstructions" rows={2} placeholder="Foster care instructions, if applicable" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="weight" type="number" min="0" step="0.1" placeholder="Weight at intake (lb)" className="w-full rounded-xl border bg-white px-3 py-2.5"/></div></details>
-                          <button className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white">Create Animal & Intake</button>
-                        </form>
-                      )}
-                    </div>
-                  </div>
-                </details>
-              ))}
+        <section id="record-intake" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+          <details open={query.new === "1" || Boolean(selectedRequest)}>
+            <summary className="cursor-pointer list-none"><div><h2 className="text-2xl font-bold">Record an Intake</h2><p className="mt-2 text-sm text-muted-foreground">{selectedRequest ? `Approved surrender request for ${asText(selectedRequest.fields["Animal Name"]) || "this animal"}. Request details have been carried into the form.` : "Use this form for approved owner surrenders and other accepted entry types."}</p></div></summary>
+            {selectedRequest && <div className="mt-4 rounded-2xl bg-primary/5 p-4 text-sm"><strong>Request context:</strong> {ownerName || "Owner name not provided"} · {[asText(selectedRequest.fields.Species), asText(selectedRequest.fields.Sex), asText(selectedRequest.fields["Breed / Mix"])].filter(Boolean).join(" · ") || "Animal details incomplete"}<p className="mt-2 whitespace-pre-line text-muted-foreground">{requestNotes || "No surrender reason, behavior, or medical details were provided."}</p></div>}
+            <div className="mt-6">
+              <IntakeRecordForm
+                action={recordIntake}
+                animals={animals.map((record) => ({
+                  id: record.id,
+                  label: `${asText(record.fields["Pet Name"]) || "Unnamed animal"} · ${asText(record.fields["Animal ID"])}`,
+                  details: [
+                    asText(record.fields["Animal ID"]), asText(record.fields.Species), asText(record.fields.Sex),
+                    asText(record.fields.Breed), asText(record.fields["Adoption Status"]),
+                    asText(record.fields["Housing Type"]),
+                  ].filter(Boolean).join(" · "),
+                }))}
+                fosters={approvedFosters.map((record) => ({ id: record.id, label: `${asText(record.fields["First Name"])} ${asText(record.fields["Last Name"])}`.trim() }))}
+                locations={activeLocations.map((record) => ({ id: record.id, label: `${asText(record.fields["Location Name"])}${asText(record.fields["Location Type"]) ? ` · ${asText(record.fields["Location Type"])}` : ""}` }))}
+                defaults={selectedRequest ? {
+                  requestId: selectedRequest.id,
+                  petName: asText(selectedRequest.fields["Animal Name"]),
+                  species: asText(selectedRequest.fields.Species),
+                  sex: asText(selectedRequest.fields.Sex) || "Unknown",
+                  breed: asText(selectedRequest.fields["Breed / Mix"]),
+                  source: ownerName,
+                  sourcePhone: asText(selectedRequest.fields.Phone),
+                  sourceEmail: asText(selectedRequest.fields.Email),
+                  intakeDate: todayChicago(),
+                } : { intakeDate: todayChicago() }}
+              />
             </div>
-          </section>
+          </details>
+        </section>
 
-          <div className="space-y-6">
-            <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-              <h2 className="text-2xl font-bold">Record Direct Intake</h2>
-              <p className="mt-2 text-sm text-muted-foreground">For strays, transfers, adoption returns, animals born in care, or other accepted entry paths.</p>
-              <form action={directIntake} className="mt-5 space-y-3">
-                <select name="intakeType" defaultValue="Stray" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Stray","Transfer In","Adoption Return","Born in Care","Other"].map((s)=><option key={s}>{s}</option>)}</select>
-                <select name="existingAnimalId" defaultValue="" className="w-full rounded-xl border bg-white px-3 py-2.5"><option value="">Create new animal</option>{animals.map((a)=><option key={a.id} value={a.id}>{asText(a.fields["Pet Name"])} · {asText(a.fields["Animal ID"])}</option>)}</select>
-                <div className="rounded-2xl bg-slate-50 p-4">
-                  <p className="mb-3 text-sm font-semibold">New animal details, if needed</p>
-                  <input name="petName" placeholder="Pet name" className="mb-3 w-full rounded-xl border bg-white px-3 py-2.5"/>
-                  <div className="grid gap-3 sm:grid-cols-2"><select name="species" defaultValue="" className="rounded-xl border bg-white px-3 py-2.5"><option value="">Species</option><option>Cat</option><option>Dog</option></select><select name="sex" defaultValue="Unknown" className="rounded-xl border bg-white px-3 py-2.5"><option>Female</option><option>Male</option><option>Unknown</option></select></div>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2"><label className="text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label><label className="text-sm font-medium">Estimated date of birth<input name="estimatedDateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/><span className="mt-1 block text-xs text-muted-foreground">Use when the exact date is unknown.</span></label></div>
-                  <input name="breed" placeholder="Breed" className="mt-3 w-full rounded-xl border bg-white px-3 py-2.5"/>
-                  <input name="color" placeholder="Color / markings" className="mt-3 w-full rounded-xl border bg-white px-3 py-2.5"/>
-                </div>
-                <select name="initialPlacement" defaultValue="In Shelter" className="w-full rounded-xl border bg-white px-3 py-2.5"><option>In Shelter</option><option>Foster Home</option></select>
-                <input name="intakeDate" type="date" defaultValue={today()} className="w-full rounded-xl border px-3 py-2.5"/>
-                <label className="block text-sm font-medium">Observed condition at intake<select name="condition" defaultValue="Unable to assess" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Stable, no concern observed","Minor concern, routine review","Illness or injury, veterinary review needed","Urgent concern, immediate veterinary review","Unable to assess"].map((s)=><option key={s}>{s}</option>)}</select><span className="mt-1 block text-xs text-muted-foreground">Choose the closest observed level, then record specific signs in intake notes. Do not enter a diagnosis.</span></label>
-                <textarea name="intakeNotes" rows={3} placeholder="Care, safety, or placement notes" className="w-full rounded-xl border px-3 py-2.5"/>
-                <details className="rounded-2xl bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold">Foster assignment, source & additional intake details</summary><div className="mt-4 space-y-3"><select name="fosterApplicationId" defaultValue="" className="w-full rounded-xl border bg-white px-3 py-2.5"><option value="">If going to foster, select approved foster</option>{approvedFosters.map((foster)=><option key={foster.id} value={foster.id}>{[asText(foster.fields["First Name"]),asText(foster.fields["Last Name"])].filter(Boolean).join(" ")}</option>)}</select><select name="placementType" defaultValue="Other" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Bottle Babies","Pregnant Mom","Nursing Mom with Litter","Orphaned Litter","Kitten / Puppy","Adult Animal","Medical","Behavior Support","Short-Term / Emergency","Other"].map((s)=><option key={s}>{s}</option>)}</select><input name="nextCheckInDate" type="date" className="w-full rounded-xl border bg-white px-3 py-2.5"/><textarea name="careInstructions" rows={2} placeholder="Foster care instructions, if applicable" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="source" placeholder="Source person / organization" className="w-full rounded-xl border bg-white px-3 py-2.5"/><div className="grid gap-3 sm:grid-cols-2"><input name="sourcePhone" type="tel" placeholder="Source phone" className="rounded-xl border bg-white px-3 py-2.5"/><input name="sourceEmail" type="email" placeholder="Source email" className="rounded-xl border bg-white px-3 py-2.5"/></div><input name="origin" placeholder="Found / origin location" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="weight" type="number" min="0" step="0.1" placeholder="Weight at intake (lb)" className="w-full rounded-xl border bg-white px-3 py-2.5"/></div></details>
-                <button className="w-full rounded-full bg-primary px-5 py-3 font-semibold text-white">Record Intake</button>
-              </form>
-            </section>
-
-            <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-              <h2 className="text-2xl font-bold">Recent Intakes</h2>
-              <div className="mt-4 space-y-2">
-                {intakes.slice(0,12).map((record) => {
-                  const animal = animalById.get(asStrings(record.fields.Animal)[0]);
-                  const href = animal ? "/portal/staff/animals/" + animal.id : "#";
-                  return <Link key={record.id} href={href} className="block rounded-xl bg-slate-50 p-4 hover:bg-slate-100"><strong>{asText(animal?.fields["Pet Name"]) || asText(record.fields["Pet Name"]) || "Animal"}</strong><span className="ml-2 text-sm text-muted-foreground">{asText(record.fields["Intake Type"])} · {formatDate(record.fields["Intake Date"])}</span></Link>;
-                })}
-              </div>
-            </section>
+        <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+          <h2 className="text-2xl font-bold">Recent Intakes</h2>
+          <div className="mt-4 divide-y">
+            {intakes.slice(0, 12).map((record) => {
+              const animalId = asStrings(record.fields.Animal)[0];
+              const animal = animalById.get(animalId);
+              return <Link key={record.id} href={animal ? `/portal/staff/animals/${animal.id}` : "/portal/staff/animals"} className="flex flex-wrap items-center justify-between gap-2 py-4 hover:text-primary"><span><strong>{asText(animal?.fields["Pet Name"]) || asText(record.fields["Pet Name"]) || "Animal"}</strong><span className="ml-2 text-sm text-muted-foreground">{asText(animal?.fields["Animal ID"])}</span></span><span className="text-sm text-muted-foreground">{asText(record.fields["Intake Type"])} · {formatDate(record.fields["Intake Date"])}</span></Link>;
+            })}
+            {!intakes.length && <p className="py-4 text-sm text-muted-foreground">No intakes have been recorded yet.</p>}
           </div>
-        </div>
+        </section>
       </div>
     </main>
   );
