@@ -5,14 +5,21 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2 } from "lucide-react";
 
 const selectClass = "flex h-12 w-full rounded-xl border border-input bg-background px-4 py-3 text-base";
 
 function Field({ label, children, note }: { label: string; children: React.ReactNode; note?: string }) {
-  return <div className="space-y-2"><Label>{label}</Label>{note && <p className="text-xs text-muted-foreground">{note}</p>}{children}</div>;
+  return (
+    <div className="space-y-2">
+      <label className="block space-y-2 text-sm font-medium">
+        <span>{label}</span>
+        {children}
+      </label>
+      {note && <p className="text-xs text-muted-foreground">{note}</p>}
+    </div>
+  );
 }
 
 export default function OwnerSurrenderRequestPage() {
