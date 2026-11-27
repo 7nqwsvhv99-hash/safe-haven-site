@@ -23,7 +23,7 @@ function photoUrl(value: unknown) {
 export default async function AnimalManagementPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; species?: string; status?: string }>;
+  searchParams: Promise<{ q?: string; species?: string; status?: string; group?: string }>;
 }) {
   await requirePortalRole("Staff");
   const query = await searchParams;
@@ -44,6 +44,8 @@ export default async function AnimalManagementPage({
         "Current Housing Location",
         "Public Listing",
         "Website Listing Readiness",
+        "Bonded Pair?",
+        "Bonded With",
         "Medical Summary",
       ],
       { sort: [{ field: "Pet Name", direction: "asc" }] }
@@ -60,6 +62,8 @@ export default async function AnimalManagementPage({
   const filtered = animals.filter((record) => {
     const species = asText(record.fields.Species);
     const status = asText(record.fields["Adoption Status"]);
+    const housingType = asText(record.fields["Housing Type"]);
+    const bonded = asText(record.fields["Bonded Pair?"]) === "Yes" || asStrings(record.fields["Bonded With"]).length > 0;
     const haystack = [
       asText(record.fields["Animal ID"]),
       asText(record.fields["Pet Name"]),
@@ -69,12 +73,13 @@ export default async function AnimalManagementPage({
     ].join(" ").toLowerCase();
     return (!q || haystack.includes(q)) &&
       (!query.species || species === query.species) &&
-      (!query.status || status === query.status);
+      (!query.status || status === query.status) &&
+      (!query.group || (query.group === "foster" ? housingType === "Foster Home" : query.group === "bonded" ? bonded : true));
   });
 
-  const activeCount = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted").length;
-  const fosterCount = animals.filter((record) => asText(record.fields["Housing Type"]) === "Foster Home").length;
-  const readyCount = animals.filter((record) => asText(record.fields["Website Listing Readiness"]) === "Ready").length;
+  const shelterCount = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted" && asText(record.fields["Housing Type"]) === "In Shelter").length;
+  const fosterCount = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted" && asText(record.fields["Housing Type"]) === "Foster Home").length;
+  const readyCount = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted" && asText(record.fields["Website Listing Readiness"]) === "Ready").length;
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -98,19 +103,20 @@ export default async function AnimalManagementPage({
 
         <section className="mb-8 grid gap-4 sm:grid-cols-3">
           {[
-            ["Active care", activeCount],
-            ["In foster", fosterCount],
-            ["Website ready", readyCount],
-          ].map(([label, value]) => (
+            ["In shelter", shelterCount, "Currently assigned to shelter care"],
+            ["In foster", fosterCount, "Currently placed with an approved foster"],
+            ["Listing details complete", readyCount, "Required details are filled in for public listing review"],
+          ].map(([label, value, description]) => (
             <div key={String(label)} className="rounded-2xl border bg-white p-5 shadow-sm">
               <p className="text-3xl font-bold">{String(value)}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{String(label)}</p>
+              <p className="mt-1 text-sm font-medium text-foreground">{String(label)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{String(description)}</p>
             </div>
           ))}
         </section>
 
         <section className="mb-8 rounded-3xl border bg-white p-6 shadow-sm">
-          <form className="grid gap-3 lg:grid-cols-[1fr_180px_230px_auto]">
+          <form className="grid gap-3 xl:grid-cols-[1fr_160px_210px_200px_auto]">
             <label className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <input name="q" defaultValue={query.q || ""} placeholder="Search name, ID, breed, or status" className="w-full rounded-xl border bg-white py-2.5 pl-9 pr-3" />
@@ -126,6 +132,11 @@ export default async function AnimalManagementPage({
               <option>Available</option>
               <option>Pending</option>
               <option>Adopted</option>
+            </select>
+            <select name="group" defaultValue={query.group || ""} className="rounded-xl border bg-white px-3 py-2.5" aria-label="Filter by placement or bond">
+              <option value="">All animals</option>
+              <option value="foster">In foster</option>
+              <option value="bonded">Bonded pairs</option>
             </select>
             <button className="rounded-xl border px-5 py-2.5 font-semibold hover:bg-slate-50">Filter</button>
           </form>

@@ -157,10 +157,10 @@ export default async function IntakeManagementPage({
     let petName = value(formData, "petName");
     let sex = value(formData, "sex") || "Unknown";
     let breed = value(formData, "breed");
-    let color = value(formData, "color");
-    let dateOfBirth = value(formData, "dateOfBirth");
-    let estimatedDateOfBirth = value(formData, "estimatedDateOfBirth");
-    let microchipNumber = value(formData, "microchipNumber");
+    const color = value(formData, "color");
+    const dateOfBirth = value(formData, "dateOfBirth");
+    const estimatedDateOfBirth = value(formData, "estimatedDateOfBirth");
+    const microchipNumber = value(formData, "microchipNumber");
     if (request) {
       species = asText(request.fields.Species);
       petName = asText(request.fields["Animal Name"]) || petName;
