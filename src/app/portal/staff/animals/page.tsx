@@ -159,7 +159,7 @@ export default async function AnimalManagementPage({
         ...(!dateOfBirth && estimatedDateOfBirth ? { "Estimated Date of Birth": estimatedDateOfBirth } : {}),
         ...(field(formData, "breed") ? { Breed: field(formData, "breed") } : {}),
         ...(field(formData, "color") ? { "Color / Markings": field(formData, "color") } : {}),
-        ...(optionalNumber(formData, "weight") !== undefined ? { "Weight (lb)": optionalNumber(formData, "weight") } : {}),
+        ...(optionalNumber(formData, "intakeWeight") !== undefined ? { "Weight (lb)": optionalNumber(formData, "intakeWeight") } : {}),
         "Housing Type": housingType,
         ...(housingLocation ? { "Current Housing Location": [housingLocation] } : {}),
         ...(field(formData, "microchipNumber") ? { "Microchip Number": field(formData, "microchipNumber") } : {}),
@@ -183,9 +183,10 @@ export default async function AnimalManagementPage({
         }).format(new Date()),
         "Intake Type": field(formData, "intakeType") || "Other",
         ...(field(formData, "source") ? { "Source Person / Organization": field(formData, "source") } : {}),
-        ...(field(formData, "sourceContact") ? { "Source Contact": field(formData, "sourceContact") } : {}),
+        ...(field(formData, "sourcePhone") ? { "Source Phone": field(formData, "sourcePhone") } : {}),
+        ...(field(formData, "sourceEmail") ? { "Source Email": field(formData, "sourceEmail") } : {}),
         ...(field(formData, "origin") ? { "Found / Origin Location": field(formData, "origin") } : {}),
-        "Condition at Intake": field(formData, "condition") || "Unknown",
+        "Condition at Intake": field(formData, "condition") || "Unable to assess",
         ...(optionalNumber(formData, "intakeWeight") !== undefined ? { "Weight at Intake (lb)": optionalNumber(formData, "intakeWeight") } : {}),
         ...(field(formData, "intakeNotes") ? { "Intake Notes": field(formData, "intakeNotes") } : {}),
       },
@@ -299,9 +300,6 @@ export default async function AnimalManagementPage({
         <section id="add-animal" className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-6">
             <h2 className="text-2xl font-bold">Add Animal</h2>
-            <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
-              This creates the master animal record and a linked intake record together. The Animal ID is generated automatically from species and year.
-            </p>
           </div>
           <form action={createAnimal} className="space-y-8">
             <AddAnimalPlacementGate>
@@ -339,17 +337,18 @@ export default async function AnimalManagementPage({
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <label className="block text-sm font-medium">Intake date<input name="intakeDate" type="date" className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
                 <Select name="intakeType" label="Intake type" options={["Owner Surrender", "Stray", "Transfer In", "Adoption Return", "Born in Care", "Other"]} defaultValue="Other" />
-                <Select name="condition" label="Condition at intake" options={["Good", "Fair", "Needs Medical Attention", "Critical", "Unknown"]} defaultValue="Unknown" />
+                <Select name="condition" label="Observed condition at intake" options={["Stable, no concern observed", "Minor concern, routine review", "Illness or injury, veterinary review needed", "Urgent concern, immediate veterinary review", "Unable to assess"]} defaultValue="Unable to assess" />
               </div>
+              <p className="mt-2 text-xs text-muted-foreground">Choose the closest observed level, then record specific signs in intake notes. Do not enter a diagnosis.</p>
               <label className="mt-4 block text-sm font-medium">Intake notes<textarea name="intakeNotes" rows={3} placeholder="Record only information important to care, safety, or placement." className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               <details className="mt-4 rounded-2xl bg-slate-50 p-4">
                 <summary className="cursor-pointer text-sm font-semibold">Additional intake & identification details</summary>
                 <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   <label className="block text-sm font-medium">Source person / organization<input name="source" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                  <label className="block text-sm font-medium">Source contact<input name="sourceContact" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="block text-sm font-medium">Source phone<input name="sourcePhone" type="tel" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="block text-sm font-medium">Source email<input name="sourceEmail" type="email" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                   <label className="block text-sm font-medium">Found / origin location<input name="origin" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                  <label className="block text-sm font-medium">Weight at intake (lb)<input name="intakeWeight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                  <label className="block text-sm font-medium">Current weight (lb)<input name="weight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="block text-sm font-medium">Weight at intake (lb)<input name="intakeWeight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Saved as both the intake weight and the animal’s starting current weight.</span></label>
                   <label className="block text-sm font-medium">Microchip number<input name="microchipNumber" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                   <Select name="microchipStatus" label="Microchip registration" options={["No Microchip", "Needs Registration", "Registered to Safe Haven", "Transferred to Adopter", "Unknown"]} defaultValue="Unknown" />
                 </div>

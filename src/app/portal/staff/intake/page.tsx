@@ -79,7 +79,7 @@ export default async function IntakeManagementPage({
     ], { sort: [{ field: "Submitted At", direction: "desc" }] }),
     airtableList(TABLES.animalIntakes, [
       "Animal","Intake Date","Intake Type","Related Surrender Request","Source Person / Organization",
-      "Source Contact","Found / Origin Location","Condition at Intake","Weight at Intake (lb)",
+      "Source Phone","Source Email","Found / Origin Location","Condition at Intake","Weight at Intake (lb)",
       "Intake Notes","Pet Name","Species","Animal Creation Status"
     ], { sort: [{ field: "Intake Date", direction: "desc" }] }),
     airtableList(TABLES.animals, [
@@ -154,6 +154,7 @@ export default async function IntakeManagementPage({
       Sex: asText(request.fields.Sex) || "Unknown",
       ...(dateOfBirth ? { "Date of Birth": dateOfBirth } : {}),
       ...(!dateOfBirth && estimatedDateOfBirth ? { "Estimated Date of Birth": estimatedDateOfBirth } : {}),
+      ...(numberValue(formData, "weight") !== undefined ? { "Weight (lb)": numberValue(formData, "weight") } : {}),
       Breed: asText(request.fields["Breed / Mix"]),
       "Adoption Status": "Getting Ready for Adoption",
       "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
@@ -163,7 +164,6 @@ export default async function IntakeManagementPage({
     if (!animal) return;
 
     const owner = [asText(request.fields["Owner First Name"]), asText(request.fields["Owner Last Name"])].filter(Boolean).join(" ");
-    const contact = [asText(request.fields.Email), asText(request.fields.Phone)].filter(Boolean).join(" · ");
     const notes = [
       asText(request.fields["Reason for Surrender"]) ? "Reason: " + asText(request.fields["Reason for Surrender"]) : "",
       asText(request.fields["Behavior / Safety Notes"]) ? "Behavior/safety: " + asText(request.fields["Behavior / Safety Notes"]) : "",
@@ -177,8 +177,9 @@ export default async function IntakeManagementPage({
       "Intake Type": "Owner Surrender",
       "Related Surrender Request": [requestId],
       "Source Person / Organization": owner,
-      "Source Contact": contact,
-      "Condition at Intake": value(formData, "condition") || "Unknown",
+      "Source Phone": asText(request.fields.Phone),
+      "Source Email": asText(request.fields.Email),
+      "Condition at Intake": value(formData, "condition") || "Unable to assess",
       ...(numberValue(formData, "weight") !== undefined ? { "Weight at Intake (lb)": numberValue(formData, "weight") } : {}),
       "Intake Notes": notes,
     }, true);
@@ -242,6 +243,7 @@ export default async function IntakeManagementPage({
     await airtableUpdate(TABLES.animals, animalId, {
       "Housing Type": initialPlacement === "Foster Home" ? "Foster Home" : "In Shelter",
       "Current Housing Location": [],
+      ...(numberValue(formData, "weight") !== undefined ? { "Weight (lb)": numberValue(formData, "weight") } : {}),
     }, true);
 
     await airtableCreate(TABLES.animalIntakes, {
@@ -249,9 +251,10 @@ export default async function IntakeManagementPage({
       "Intake Date": value(formData, "intakeDate") || today(),
       "Intake Type": value(formData, "intakeType") || "Other",
       "Source Person / Organization": value(formData, "source"),
-      "Source Contact": value(formData, "sourceContact"),
+      "Source Phone": value(formData, "sourcePhone"),
+      "Source Email": value(formData, "sourceEmail"),
       "Found / Origin Location": value(formData, "origin"),
-      "Condition at Intake": value(formData, "condition") || "Unknown",
+      "Condition at Intake": value(formData, "condition") || "Unable to assess",
       ...(numberValue(formData, "weight") !== undefined ? { "Weight at Intake (lb)": numberValue(formData, "weight") } : {}),
       "Intake Notes": value(formData, "intakeNotes"),
     }, true);
@@ -351,7 +354,7 @@ export default async function IntakeManagementPage({
                           <input name="intakeDate" type="date" defaultValue={today()} className="w-full rounded-xl border bg-white px-3 py-2.5"/>
                           <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/></label><label className="text-sm font-medium">Estimated date of birth<input name="estimatedDateOfBirth" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"/><span className="mt-1 block text-xs text-muted-foreground">The surrender form's approximate age is reference only. Record one birth date here when accepting the animal.</span></label></div>
                           <select name="initialPlacement" defaultValue="In Shelter" className="w-full rounded-xl border bg-white px-3 py-2.5"><option>In Shelter</option><option>Foster Home</option></select>
-                          <select name="condition" defaultValue="Unknown" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Good","Fair","Needs Medical Attention","Critical","Unknown"].map((s)=><option key={s}>{s}</option>)}</select>
+                          <label className="block text-sm font-medium">Observed condition at intake<select name="condition" defaultValue="Unable to assess" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Stable, no concern observed","Minor concern, routine review","Illness or injury, veterinary review needed","Urgent concern, immediate veterinary review","Unable to assess"].map((s)=><option key={s}>{s}</option>)}</select><span className="mt-1 block text-xs text-muted-foreground">Choose the closest observed level, then record specific signs in intake notes. Do not enter a diagnosis.</span></label>
                           <textarea name="intakeNotes" rows={3} placeholder="Care, safety, or placement notes" className="w-full rounded-xl border bg-white px-3 py-2.5"/>
                           <details className="rounded-xl border bg-white p-3"><summary className="cursor-pointer text-sm font-semibold">Foster placement or intake details</summary><div className="mt-3 space-y-3"><select name="fosterApplicationId" defaultValue="" className="w-full rounded-xl border bg-white px-3 py-2.5"><option value="">If going to foster, select approved foster</option>{approvedFosters.map((foster)=><option key={foster.id} value={foster.id}>{[asText(foster.fields["First Name"]),asText(foster.fields["Last Name"])].filter(Boolean).join(" ")}</option>)}</select><select name="placementType" defaultValue="Other" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Bottle Babies","Pregnant Mom","Nursing Mom with Litter","Orphaned Litter","Kitten / Puppy","Adult Animal","Medical","Behavior Support","Short-Term / Emergency","Other"].map((s)=><option key={s}>{s}</option>)}</select><input name="nextCheckInDate" type="date" className="w-full rounded-xl border bg-white px-3 py-2.5"/><textarea name="careInstructions" rows={2} placeholder="Foster care instructions, if applicable" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="weight" type="number" min="0" step="0.1" placeholder="Weight at intake (lb)" className="w-full rounded-xl border bg-white px-3 py-2.5"/></div></details>
                           <button className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white">Create Animal & Intake</button>
@@ -381,9 +384,9 @@ export default async function IntakeManagementPage({
                 </div>
                 <select name="initialPlacement" defaultValue="In Shelter" className="w-full rounded-xl border bg-white px-3 py-2.5"><option>In Shelter</option><option>Foster Home</option></select>
                 <input name="intakeDate" type="date" defaultValue={today()} className="w-full rounded-xl border px-3 py-2.5"/>
-                <select name="condition" defaultValue="Unknown" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Good","Fair","Needs Medical Attention","Critical","Unknown"].map((s)=><option key={s}>{s}</option>)}</select>
+                <label className="block text-sm font-medium">Observed condition at intake<select name="condition" defaultValue="Unable to assess" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Stable, no concern observed","Minor concern, routine review","Illness or injury, veterinary review needed","Urgent concern, immediate veterinary review","Unable to assess"].map((s)=><option key={s}>{s}</option>)}</select><span className="mt-1 block text-xs text-muted-foreground">Choose the closest observed level, then record specific signs in intake notes. Do not enter a diagnosis.</span></label>
                 <textarea name="intakeNotes" rows={3} placeholder="Care, safety, or placement notes" className="w-full rounded-xl border px-3 py-2.5"/>
-                <details className="rounded-2xl bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold">Foster assignment, source & additional intake details</summary><div className="mt-4 space-y-3"><select name="fosterApplicationId" defaultValue="" className="w-full rounded-xl border bg-white px-3 py-2.5"><option value="">If going to foster, select approved foster</option>{approvedFosters.map((foster)=><option key={foster.id} value={foster.id}>{[asText(foster.fields["First Name"]),asText(foster.fields["Last Name"])].filter(Boolean).join(" ")}</option>)}</select><select name="placementType" defaultValue="Other" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Bottle Babies","Pregnant Mom","Nursing Mom with Litter","Orphaned Litter","Kitten / Puppy","Adult Animal","Medical","Behavior Support","Short-Term / Emergency","Other"].map((s)=><option key={s}>{s}</option>)}</select><input name="nextCheckInDate" type="date" className="w-full rounded-xl border bg-white px-3 py-2.5"/><textarea name="careInstructions" rows={2} placeholder="Foster care instructions, if applicable" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="source" placeholder="Source person / organization" className="w-full rounded-xl border bg-white px-3 py-2.5"/><textarea name="sourceContact" rows={2} placeholder="Source contact" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="origin" placeholder="Found / origin location" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="weight" type="number" min="0" step="0.1" placeholder="Weight at intake (lb)" className="w-full rounded-xl border bg-white px-3 py-2.5"/></div></details>
+                <details className="rounded-2xl bg-slate-50 p-4"><summary className="cursor-pointer text-sm font-semibold">Foster assignment, source & additional intake details</summary><div className="mt-4 space-y-3"><select name="fosterApplicationId" defaultValue="" className="w-full rounded-xl border bg-white px-3 py-2.5"><option value="">If going to foster, select approved foster</option>{approvedFosters.map((foster)=><option key={foster.id} value={foster.id}>{[asText(foster.fields["First Name"]),asText(foster.fields["Last Name"])].filter(Boolean).join(" ")}</option>)}</select><select name="placementType" defaultValue="Other" className="w-full rounded-xl border bg-white px-3 py-2.5">{["Bottle Babies","Pregnant Mom","Nursing Mom with Litter","Orphaned Litter","Kitten / Puppy","Adult Animal","Medical","Behavior Support","Short-Term / Emergency","Other"].map((s)=><option key={s}>{s}</option>)}</select><input name="nextCheckInDate" type="date" className="w-full rounded-xl border bg-white px-3 py-2.5"/><textarea name="careInstructions" rows={2} placeholder="Foster care instructions, if applicable" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="source" placeholder="Source person / organization" className="w-full rounded-xl border bg-white px-3 py-2.5"/><div className="grid gap-3 sm:grid-cols-2"><input name="sourcePhone" type="tel" placeholder="Source phone" className="rounded-xl border bg-white px-3 py-2.5"/><input name="sourceEmail" type="email" placeholder="Source email" className="rounded-xl border bg-white px-3 py-2.5"/></div><input name="origin" placeholder="Found / origin location" className="w-full rounded-xl border bg-white px-3 py-2.5"/><input name="weight" type="number" min="0" step="0.1" placeholder="Weight at intake (lb)" className="w-full rounded-xl border bg-white px-3 py-2.5"/></div></details>
                 <button className="w-full rounded-full bg-primary px-5 py-3 font-semibold text-white">Record Intake</button>
               </form>
             </section>
