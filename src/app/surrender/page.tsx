@@ -111,7 +111,7 @@ export default function OwnerSurrenderRequestPage() {
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="How soon do you need help? *"><select name="urgency" className={selectClass} defaultValue="Soon" required><option>Soon</option><option>Urgent</option></select></Field>
           <Field label="Preferred surrender date, if known"><Input name="requestedDate" type="date" /></Field>
-          <Field label="How long can you continue caring for the animal?"><Input name="canKeepUntil" type="date" /></Field>
+          <Field label="Latest date you can continue caring for the animal" note="This may be the same as your preferred surrender date or a later date."><Input name="canKeepUntil" type="date" /></Field>
         </div>
         <p className="text-sm text-muted-foreground">Choose Urgent only if there is an immediate safety concern or you cannot safely keep the animal. This helps staff prioritize review but does not guarantee immediate placement.</p>
       </Card>
