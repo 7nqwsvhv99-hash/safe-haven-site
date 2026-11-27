@@ -57,9 +57,12 @@ function formatDate(input: unknown) {
 
 const REQUEST_FIELDS = [
   "Submitted At", "Status", "Owner First Name", "Owner Last Name", "Email", "Phone",
-  "Animal Name", "Species", "Sex", "Approximate Age", "Breed / Mix", "Reason for Surrender",
-  "Behavior / Safety Notes", "Medical Conditions / Medications", "Urgency", "Requested Surrender Date",
-  "Can Keep Animal Until", "Decision Date", "Staff Notes", "Follow-Up Status", "Animal Intakes",
+  "Street Address", "City", "State", "ZIP",
+  "Animal Name", "Species", "Sex", "Approximate Age", "Breed / Mix", "Spay / Neuter Status",
+  "Microchip Known", "Microchip Number", "Microchip Manufacturer", "Current Veterinarian",
+  "Veterinarian Phone", "Veterinarian Address", "Reason for Surrender", "Behavior / Safety Notes",
+  "Medical Conditions / Medications", "Urgency", "Requested Surrender Date", "Can Keep Animal Until",
+  "Decision Date", "Staff Notes", "Follow-Up Status", "Animal Intakes",
 ];
 
 export default async function IntakeManagementPage({
@@ -312,7 +315,22 @@ export default async function IntakeManagementPage({
                   <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{asText(record.fields["Animal Name"]) || "Unnamed animal"}</h3><p className="mt-1 text-sm text-muted-foreground">{[asText(record.fields["Owner First Name"]), asText(record.fields["Owner Last Name"])].filter(Boolean).join(" ")} · Submitted {formatDate(record.fields["Submitted At"]) || "date not recorded"}</p><p className="mt-2 text-sm">{[asText(record.fields.Species), asText(record.fields.Sex), asText(record.fields["Approximate Age"]), asText(record.fields["Breed / Mix"])].filter(Boolean).join(" · ")}</p></div><div className="flex flex-wrap gap-2"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{alreadyIntaken ? "Intake recorded" : asText(record.fields.Status) || "No status"}</span>{asText(record.fields.Urgency) === "Urgent" && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Urgent</span>}</div></div>
                 </summary>
                 <div className="mt-5 grid gap-5 border-t pt-5 lg:grid-cols-[1fr_auto]">
-                  <div className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2"><p><strong>Owner contact:</strong> {[asText(record.fields.Email), asText(record.fields.Phone)].filter(Boolean).join(" · ") || "Not provided"}</p><p><strong>Requested date:</strong> {formatDate(record.fields["Requested Surrender Date"]) || "Not specified"}</p><p><strong>Can keep until:</strong> {formatDate(record.fields["Can Keep Animal Until"]) || "Not specified"}</p><p><strong>Reason:</strong> {asText(record.fields["Reason for Surrender"]) || "Not provided"}</p><p><strong>Behavior / safety:</strong> {asText(record.fields["Behavior / Safety Notes"]) || "No notes"}</p><p><strong>Medical:</strong> {asText(record.fields["Medical Conditions / Medications"]) || "No notes"}</p></div>
+                  <div className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+                    <p><strong>Owner contact:</strong> {[asText(record.fields.Email), asText(record.fields.Phone)].filter(Boolean).join(" · ") || "Not provided"}</p>
+                    <p><strong>Address:</strong> {[asText(record.fields["Street Address"]), asText(record.fields.City), [asText(record.fields.State), asText(record.fields.ZIP)].filter(Boolean).join(" ")].filter(Boolean).join(", ") || "Not provided"}</p>
+                    <p><strong>Spayed / neutered:</strong> {asText(record.fields["Spay / Neuter Status"]) || "Not provided"}</p>
+                    <p><strong>Microchip known:</strong> {asText(record.fields["Microchip Known"]) || "Not provided"}</p>
+                    <p><strong>Microchip number:</strong> {asText(record.fields["Microchip Number"]) || "Not provided"}</p>
+                    <p><strong>Microchip manufacturer:</strong> {asText(record.fields["Microchip Manufacturer"]) || "Not provided"}</p>
+                    <p><strong>Current veterinarian:</strong> {asText(record.fields["Current Veterinarian"]) || "Not provided"}</p>
+                    <p><strong>Veterinarian phone:</strong> {asText(record.fields["Veterinarian Phone"]) || "Not provided"}</p>
+                    <p><strong>Veterinarian address:</strong> {asText(record.fields["Veterinarian Address"]) || "Not provided"}</p>
+                    <p><strong>Requested date:</strong> {formatDate(record.fields["Requested Surrender Date"]) || "Not specified"}</p>
+                    <p><strong>Can keep until:</strong> {formatDate(record.fields["Can Keep Animal Until"]) || "Not specified"}</p>
+                    <p className="sm:col-span-2"><strong>Reason:</strong> {asText(record.fields["Reason for Surrender"]) || "Not provided"}</p>
+                    <p className="sm:col-span-2"><strong>Behavior / safety:</strong> {asText(record.fields["Behavior / Safety Notes"]) || "No notes"}</p>
+                    <p className="sm:col-span-2"><strong>Medical:</strong> {asText(record.fields["Medical Conditions / Medications"]) || "No notes"}</p>
+                  </div>
                   <div className="space-y-3 lg:min-w-64">
                     <form action={saveRequest} className="space-y-3 rounded-2xl bg-slate-50 p-4">
                       <input type="hidden" name="requestId" value={record.id}/>
@@ -334,7 +352,11 @@ export default async function IntakeManagementPage({
         <section id="record-intake" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <details open={query.new === "1" || Boolean(selectedRequest)}>
             <summary className="cursor-pointer list-none"><div><h2 className="text-2xl font-bold">Record an Intake</h2><p className="mt-2 text-sm text-muted-foreground">{selectedRequest ? `Approved surrender request for ${asText(selectedRequest.fields["Animal Name"]) || "this animal"}. Request details have been carried into the form.` : "Use this form for approved owner surrenders and other accepted entry types."}</p></div></summary>
-            {selectedRequest && <div className="mt-4 rounded-2xl bg-primary/5 p-4 text-sm"><strong>Request context:</strong> {ownerName || "Owner name not provided"} · {[asText(selectedRequest.fields.Species), asText(selectedRequest.fields.Sex), asText(selectedRequest.fields["Breed / Mix"])].filter(Boolean).join(" · ") || "Animal details incomplete"}<p className="mt-2 whitespace-pre-line text-muted-foreground">{requestNotes || "No surrender reason, behavior, or medical details were provided."}</p></div>}
+            {selectedRequest && <div className="mt-4 rounded-2xl bg-primary/5 p-4 text-sm">
+              <strong>Approved request:</strong> {ownerName || "Owner name not provided"} · {[asText(selectedRequest.fields.Species), asText(selectedRequest.fields.Sex), asText(selectedRequest.fields["Approximate Age"]), asText(selectedRequest.fields["Breed / Mix"])].filter(Boolean).join(" · ") || "Animal details incomplete"}
+              <p className="mt-2 text-muted-foreground">Spay / neuter status: {asText(selectedRequest.fields["Spay / Neuter Status"]) || "Not provided"} · Microchip: {[asText(selectedRequest.fields["Microchip Known"]), asText(selectedRequest.fields["Microchip Number"]), asText(selectedRequest.fields["Microchip Manufacturer"])].filter(Boolean).join(" · ") || "Not provided"} · Veterinarian: {[asText(selectedRequest.fields["Current Veterinarian"]), asText(selectedRequest.fields["Veterinarian Phone"]), asText(selectedRequest.fields["Veterinarian Address"])].filter(Boolean).join(" · ") || "Not provided"}</p>
+              <p className="mt-2 whitespace-pre-line text-muted-foreground">{requestNotes || "No surrender reason, behavior, or medical details were provided."}</p>
+            </div>}
             <div className="mt-6">
               <IntakeRecordForm
                 action={recordIntake}

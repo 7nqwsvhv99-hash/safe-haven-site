@@ -13,7 +13,7 @@ function responseError(message: string, status = 400) {
 
 export async function POST(request: Request) {
   try {
-    const token = process.env.AIRTABLE_ACCESS_TOKEN;
+    const token = process.env.OWNER_SURRENDER_AIRTABLE_TOKEN || process.env.AIRTABLE_ACCESS_TOKEN;
     if (!token) return responseError("The request form is temporarily unavailable. Please call Safe Haven.", 500);
 
     const body = await request.json();
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     if (!["Female", "Male", "Unknown"].includes(text(body.sex))) return responseError("Select a valid sex.");
     if (!["Altered", "Not Altered", "Unknown"].includes(text(body.altered))) return responseError("Select a spay/neuter status.");
     if (!["Yes", "No", "Unknown"].includes(text(body.microchipKnown))) return responseError("Select whether a microchip is known.");
-    if (!["Routine", "Soon", "Urgent"].includes(text(body.urgency))) return responseError("Select a valid timeframe.");
+    if (!["Soon", "Urgent"].includes(text(body.urgency))) return responseError("Select a valid timeframe.");
     if (body.confirmAccurate !== true) return responseError("Please confirm that the information is accurate.");
     const email = text(body.email).toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return responseError("Enter a valid email address.");
@@ -68,6 +68,10 @@ export async function POST(request: Request) {
       "Behavior / Safety Notes": text(body.behaviorNotes),
       "Medical Conditions / Medications": text(body.medicalNotes),
       "Current Veterinarian": text(body.veterinarian),
+      ...(text(body.microchipNumber) ? { "Microchip Number": text(body.microchipNumber) } : {}),
+      ...(text(body.microchipManufacturer) ? { "Microchip Manufacturer": text(body.microchipManufacturer) } : {}),
+      ...(text(body.veterinarianPhone) ? { "Veterinarian Phone": text(body.veterinarianPhone) } : {}),
+      ...(text(body.veterinarianAddress) ? { "Veterinarian Address": text(body.veterinarianAddress) } : {}),
       Urgency: text(body.urgency),
       ...(text(body.requestedDate) ? { "Requested Surrender Date": text(body.requestedDate) } : {}),
       ...(text(body.canKeepUntil) ? { "Can Keep Animal Until": text(body.canKeepUntil) } : {}),

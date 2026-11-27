@@ -4,7 +4,6 @@ import {
   ExternalLink,
   HeartHandshake,
   House,
-  Mail,
   PawPrint,
   Phone,
   Stethoscope,
@@ -188,11 +187,11 @@ export default function ResourcesPage() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button asChild variant="outline">
-                  <a href="tel:815-858-2265"><Phone className="h-4 w-4 mr-2" />Call Safe Haven</a>
+                <Button asChild size="lg">
+                  <Link href="/surrender">Request Surrender Review</Link>
                 </Button>
-                <Button asChild variant="outline">
-                  <a href="mailto:safehaven1471@gmail.com?subject=Pet%20Owner%20Resources"><Mail className="h-4 w-4 mr-2" />Email Safe Haven</a>
+                <Button asChild variant="outline" size="lg">
+                  <a href="tel:815-858-2265"><Phone className="h-4 w-4 mr-2" />Call Safe Haven</a>
                 </Button>
               </div>
             </div>
