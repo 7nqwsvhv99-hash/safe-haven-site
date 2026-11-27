@@ -339,6 +339,7 @@ export default async function AnimalManagementPage({
                 <Select name="intakeType" label="Intake type" options={["Owner Surrender", "Stray", "Transfer In", "Adoption Return", "Born in Care", "Other"]} defaultValue="Other" />
                 <Select name="condition" label="Observed condition at intake" options={["Stable, no concern observed", "Minor concern, routine review", "Illness or injury, veterinary review needed", "Urgent concern, immediate veterinary review", "Unable to assess"]} defaultValue="Unable to assess" />
               </div>
+              <p className="mt-2 text-xs text-muted-foreground">Choose the closest observed level, then record specific signs in intake notes. Do not enter a diagnosis.</p>
               <label className="mt-4 block text-sm font-medium">Intake notes<textarea name="intakeNotes" rows={3} placeholder="Record only information important to care, safety, or placement." className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               <details className="mt-4 rounded-2xl bg-slate-50 p-4">
                 <summary className="cursor-pointer text-sm font-semibold">Additional intake & identification details</summary>
