@@ -15,6 +15,7 @@ import {
   UserRoundCheck,
 } from "lucide-react";
 import {
+  airtableCreate,
   airtableList,
   airtableUpdate,
   airtableUploadAttachment,
@@ -33,6 +34,7 @@ const HOUSING_LOCATIONS = "tblmwvODdr1Iuvy72";
 
 const PRIMARY_PHOTO_FIELD_ID = "fldhyNKg0v9pfQ8If";
 const ADDITIONAL_PHOTOS_FIELD_ID = "fldqpTkG8BkqawCGc";
+const CARE_PHOTO_FIELD_ID = "fldr0uzypmyE1XdAK";
 
 function asNumber(value: unknown) {
   return typeof value === "number" ? value : null;
@@ -256,6 +258,7 @@ export default async function AnimalProfilePage({
       "Follow-Up Date",
       "Weight (lb)",
       "Notes / Observation",
+      "Photo / Attachment",
       "Follow-Up Status",
     ], { sort: [{ field: "Date / Time", direction: "desc" }] }),
   ]);
@@ -347,6 +350,60 @@ export default async function AnimalProfilePage({
     revalidatePath("/adopt");
   }
 
+  async function recordCare(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Staff", "write");
+    const careType = field(formData, "careType");
+    const alertLevel = field(formData, "alertLevel");
+    const notes = field(formData, "notes");
+    const allowedCareTypes = ["Medication Support", "Behavior Observation", "Health Observation", "Grooming", "Other"];
+    const allowedAlertLevels = ["Monitor", "Needs Attention", "Urgent"];
+    if (!allowedCareTypes.includes(careType) || !allowedAlertLevels.includes(alertLevel) || !notes) return;
+
+    const animalRecord = (await airtableList(
+      TABLES.animals,
+      ["Pet Name", "Current Housing Location"]
+    )).find((record) => record.id === animalId);
+    if (!animalRecord) return;
+
+    const currentLocation = asStrings(animalRecord.fields["Current Housing Location"])[0] || "";
+    const followUpDate = field(formData, "followUpDate");
+    const followUpNeeded = ["Needs Attention", "Urgent"].includes(alertLevel) || Boolean(followUpDate);
+    const weight = optionalNumber(formData, "weight");
+    const careRecord = await airtableCreate(
+      TABLES.dailyCare,
+      {
+        Animal: [animalId],
+        "Date / Time": new Date().toISOString(),
+        "Care Type": careType,
+        ...(currentLocation ? { "Housing Location": [currentLocation] } : {}),
+        "Completed By": current.displayName,
+        "Alert Level": alertLevel,
+        "Follow-Up Needed": followUpNeeded,
+        ...(followUpDate ? { "Follow-Up Date": followUpDate } : {}),
+        ...(weight !== null ? { "Weight (lb)": weight } : {}),
+        "Notes / Observation": notes,
+        ...(followUpNeeded
+          ? { "Follow-Up Status": ["Needs Attention", "Urgent"].includes(alertLevel) ? "Needs Attention" : "Not Due" }
+          : {}),
+      },
+      true
+    );
+
+    if (weight !== null) {
+      await airtableUpdate(TABLES.animals, animalId, { "Weight (lb)": weight }, true);
+    }
+
+    const file = formData.get("photo");
+    if (careRecord && file instanceof File && file.size) {
+      await airtableUploadAttachment(careRecord.id, CARE_PHOTO_FIELD_ID, file);
+    }
+
+    revalidatePath(`/portal/staff/animals/${animalId}`);
+    revalidatePath("/portal/staff/animals");
+    revalidatePath("/portal/staff/care");
+  }
+
   const status = asText(animal.fields["Adoption Status"]);
   const readiness = asText(animal.fields["Website Listing Readiness"]);
 
@@ -413,7 +470,7 @@ export default async function AnimalProfilePage({
           ].map(([id, label]) => <a key={id} href={`#${id}`} className="whitespace-nowrap rounded-xl px-4 py-2 hover:bg-slate-50 hover:text-primary">{label}</a>)}
         </nav>
 
-        <section id="overview" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="overview" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-6 flex items-center gap-3">
             <PawPrint className="h-6 w-6 text-primary" />
             <div><h2 className="text-2xl font-bold">Overview</h2><p className="text-sm text-muted-foreground">Staff-owned animal information. System formulas and linked-record infrastructure stay protected.</p></div>
@@ -472,17 +529,55 @@ export default async function AnimalProfilePage({
           </form>
         </section>
 
-        <section id="care" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="care" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <ClipboardCheck className="h-6 w-6 text-primary" />
               <div>
                 <h2 className="text-2xl font-bold">Daily Care</h2>
-                <p className="text-sm text-muted-foreground">Feeding, cleaning, enrichment, exercise, weight, behavior, health observations, and follow-up.</p>
+                <p className="text-sm text-muted-foreground">Log medication, noteworthy observations, weight checks, and follow-up for this animal.</p>
               </div>
             </div>
-            <Link href="/portal/staff/care" className="text-sm font-semibold text-primary hover:underline">Open Daily Care & Housing</Link>
+            <Link href="/portal/staff/care" className="text-sm font-semibold text-primary hover:underline">Manage Housing</Link>
           </div>
+
+          <form action={recordCare} className="mb-6 space-y-4 rounded-2xl bg-slate-50 p-5 md:p-6">
+            <h3 className="font-bold">Record a care entry</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block text-sm font-medium">Care type
+                <select name="careType" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
+                  <option value="" disabled>Select care type</option>
+                  <option value="Medication Support">Medication</option>
+                  <option value="Behavior Observation">Behavior observation</option>
+                  <option value="Health Observation">Health observation</option>
+                  <option value="Grooming">Grooming / hygiene</option>
+                  <option value="Other">Other</option>
+                </select>
+              </label>
+              <label className="block text-sm font-medium">Alert level
+                <select name="alertLevel" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
+                  <option value="" disabled>Select alert level</option>
+                  {["Monitor", "Needs Attention", "Urgent"].map((value) => <option key={value}>{value}</option>)}
+                </select>
+              </label>
+            </div>
+            <label className="block text-sm font-medium">Notes / observation
+              <textarea name="notes" required rows={4} placeholder="Record what you observed, medication given, or what staff should follow up on." className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" />
+            </label>
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block text-sm font-medium">Weight (lb), if applicable
+                <input name="weight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" />
+              </label>
+              <label className="block text-sm font-medium">Follow-up date, if needed
+                <input name="followUpDate" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" />
+              </label>
+            </div>
+            <label className="block text-sm font-medium">Photo or attachment, if helpful
+              <input name="photo" type="file" accept="image/*,.pdf" className="mt-2 block w-full rounded-xl border bg-white px-3 py-2.5 text-sm" />
+            </label>
+            <button className="rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90">Save Care Entry</button>
+          </form>
+
           <div className="space-y-3">
             {relatedCare.length ? relatedCare.slice(0, 30).map((record) => {
               const locationId = asStrings(record.fields["Housing Location"])[0];
@@ -502,6 +597,9 @@ export default async function AnimalProfilePage({
                     {alert && alert !== "Normal" && <StatusPill>{alert}</StatusPill>}
                   </div>
                   {asText(record.fields["Notes / Observation"]) && <p className="mt-3 text-sm">{asText(record.fields["Notes / Observation"])}</p>}
+                  {attachments(record.fields["Photo / Attachment"]).map((file) => (
+                    <a key={file.url} href={file.url} target="_blank" rel="noopener noreferrer" className="mt-3 block text-sm font-semibold text-primary hover:underline">{file.filename}</a>
+                  ))}
                   <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
                     {asNumber(record.fields["Weight (lb)"]) !== null && <span>Weight: {asNumber(record.fields["Weight (lb)"])} lb</span>}
                     {Boolean(record.fields["Follow-Up Needed"]) && <span>Follow-up: {asText(record.fields["Follow-Up Status"]) || "Needed"}</span>}
@@ -513,7 +611,7 @@ export default async function AnimalProfilePage({
           </div>
         </section>
 
-        <section id="medical" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="medical" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex items-center justify-between gap-4">
             <div className="flex items-center gap-3"><Stethoscope className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Medical</h2><p className="text-sm text-muted-foreground">Complete medical history for this animal.</p></div></div>
             <Link href="/portal/medical" className="text-sm font-semibold text-primary hover:underline">Open Medical Portal</Link>
@@ -528,7 +626,7 @@ export default async function AnimalProfilePage({
           </div>
         </section>
 
-        <section id="timeline" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="timeline" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex items-center gap-3"><Activity className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Timeline</h2><p className="text-sm text-muted-foreground">Chronological activity from the Animal Activity table.</p></div></div>
           <div className="space-y-3">
             {relatedActivity.length ? relatedActivity.map((record)=>(
@@ -538,7 +636,7 @@ export default async function AnimalProfilePage({
           {relatedIntakes.length > 0 && <div className="mt-6 border-t pt-6"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><ClipboardList className="h-5 w-5 text-primary"/><h3 className="font-bold">Intake history</h3></div><Link href="/portal/staff/intake" className="text-sm font-semibold text-primary hover:underline">Open Intake Management</Link></div>{relatedIntakes.map((record)=><article key={record.id} className="mb-3 rounded-2xl bg-slate-50 p-5 text-sm"><p className="font-semibold">{asText(record.fields["Intake Type"])||"Intake"} · {formatDate(record.fields["Intake Date"])}</p><p className="mt-2 text-muted-foreground">{[asText(record.fields["Source Person / Organization"]),asText(record.fields["Found / Origin Location"])].filter(Boolean).join(" · ")}</p>{asText(record.fields["Intake Notes"])&&<p className="mt-2">{asText(record.fields["Intake Notes"])}</p>}</article>)}</div>}
         </section>
 
-        <section id="foster" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="foster" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3"><HeartHandshake className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Foster</h2><p className="text-sm text-muted-foreground">Placement history and care follow-up.</p></div></div>
             <Link href="/portal/staff/fosters" className="text-sm font-semibold text-primary hover:underline">Open Foster Management</Link>
@@ -550,7 +648,7 @@ export default async function AnimalProfilePage({
           </div>
         </section>
 
-        <section id="adoption" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="adoption" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3"><UserRoundCheck className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Adoption</h2><p className="text-sm text-muted-foreground">Applications and completed adoption records tied to this animal.</p></div></div>
             <Link href="/portal/staff/adoptions" className="text-sm font-semibold text-primary hover:underline">Open Adoption Management</Link>
@@ -561,7 +659,7 @@ export default async function AnimalProfilePage({
           </div>
         </section>
 
-        <section id="documents" className="mb-8 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="documents" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Documents</h2><p className="text-sm text-muted-foreground">Agreements and files linked to this animal.</p></div></div><Link href="/portal/staff/documents" className="text-sm font-semibold text-primary hover:underline">Open Documents & Agreements</Link></div>
           <div className="space-y-3">
             {relatedDocuments.length?relatedDocuments.map((record)=>{
@@ -571,7 +669,7 @@ export default async function AnimalProfilePage({
           </div>
         </section>
 
-        <section id="photos" className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
+        <section id="photos" className="scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex items-center gap-3"><ImageIcon className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Photos</h2><p className="text-sm text-muted-foreground">Primary and additional animal photos stored with the Airtable record.</p></div></div>
           <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[...primaryPhotos,...additionalPhotos].map((photo,index)=><figure key={photo.url} className="overflow-hidden rounded-2xl border bg-slate-50"><img src={photo.url} alt={`${asText(animal.fields["Pet Name"])} photo ${index+1}`} className="aspect-square w-full object-cover"/><figcaption className="p-3 text-xs text-muted-foreground">{index===0?"Primary photo":photo.filename}</figcaption></figure>)}
