@@ -395,7 +395,7 @@ export default async function CareAndHousingPage({
           </p>
         )}
 
-        <section className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+        <section className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
           <div className="rounded-2xl border bg-white p-4 shadow-sm">
             <BedDouble className="mb-2 h-4 w-4 text-primary" />
             <p className="text-2xl font-bold">{inShelter.length}</p>
