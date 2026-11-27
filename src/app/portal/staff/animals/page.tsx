@@ -1,4 +1,5 @@
 import Link from "next/link";
+import AddAnimalPlacementGate from "./add-animal-placement-gate";
 import { redirect } from "next/navigation";
 import { PawPrint, Plus, Search, ArrowLeft, MapPin } from "lucide-react";
 import {
@@ -128,6 +129,8 @@ export default async function AnimalManagementPage({
   async function createAnimal(formData: FormData) {
     "use server";
     await requirePortalRole("Staff", "write");
+
+    if (field(formData, "placementPath") !== "shelter") return;
 
     const species = field(formData, "species");
     const petName = field(formData, "petName");
@@ -301,6 +304,7 @@ export default async function AnimalManagementPage({
             </p>
           </div>
           <form action={createAnimal} className="space-y-8">
+            <AddAnimalPlacementGate>
             <div>
               <h3 className="mb-4 font-semibold">Animal details</h3>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -318,15 +322,15 @@ export default async function AnimalManagementPage({
               <h3 className="mb-4 font-semibold">Placement</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block text-sm font-medium">
-                  Shelter location
+                  Shelter location, if assigned
                   <select name="housingLocation" defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
-                    <option value="">No in-shelter location</option>
+                    <option value="">Choose later</option>
                     {locations.filter((record) => Boolean(record.fields.Active)).map((record) => (
                       <option key={record.id} value={record.id}>{asText(record.fields["Location Name"])}</option>
                     ))}
                   </select>
+                  <span className="mt-1 block text-xs text-muted-foreground">You can assign a room or kennel later if one has not been chosen yet.</span>
                 </label>
-                <p className="self-end rounded-xl bg-slate-50 p-4 text-sm text-muted-foreground">New animals created here enter shelter care. For direct-to-foster intake, use Intake & Owner Surrender so the Foster Placement is created correctly.</p>
               </div>
             </div>
 
@@ -355,6 +359,7 @@ export default async function AnimalManagementPage({
             <button type="submit" className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90">
               <Plus className="h-4 w-4" /> Create Animal
             </button>
+            </AddAnimalPlacementGate>
           </form>
         </section>
       </div>
