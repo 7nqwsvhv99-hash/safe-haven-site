@@ -502,7 +502,7 @@ export default async function CareAndHousingPage({
               <form action={createLocation} className="space-y-4 rounded-2xl bg-slate-50 p-5">
                 <h3 className="font-bold">Add location</h3>
                 <label className="block text-sm font-medium">Location name<input name="name" required className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                <label className="block text-sm font-medium">Location type<select name="type" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select type</option>{["Cat Room","Cat Cage","Dog Kennel","Isolation","Medical","Recovery","Other"].map((value)=><option key={value}>{value}</option>)}</select></label>
+                <label className="block text-sm font-medium">Location type<select name="type" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select type</option>{["Cat Room","Cat Condo","Dog Kennel","Isolation","Medical","Recovery","Other"].map((value)=><option key={value}>{value}</option>)}</select></label>
                 <label className="block text-sm font-medium">Capacity<input name="capacity" type="number" min="0" step="1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                 <label className="block text-sm font-medium">Notes<textarea name="notes" rows={2} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                 <button className="rounded-full border border-primary px-5 py-2.5 font-semibold text-primary">Add Housing Location</button>
@@ -515,7 +515,7 @@ export default async function CareAndHousingPage({
                     <form action={updateLocation} className="mt-4 space-y-3">
                       <input type="hidden" name="locationId" value={location.id} />
                       <input name="name" defaultValue={asText(location.fields["Location Name"])} required className="w-full rounded-xl border px-3 py-2.5" />
-                      <select name="type" defaultValue={asText(location.fields["Location Type"])} className="w-full rounded-xl border bg-white px-3 py-2.5">{["Cat Room","Cat Cage","Dog Kennel","Isolation","Medical","Recovery","Other"].map((value)=><option key={value}>{value}</option>)}</select>
+                      <select name="type" defaultValue={asText(location.fields["Location Type"])} className="w-full rounded-xl border bg-white px-3 py-2.5">{["Cat Room","Cat Condo","Dog Kennel","Isolation","Medical","Recovery","Other"].map((value)=><option key={value}>{value}</option>)}</select>
                       <input name="capacity" type="number" min="0" step="1" defaultValue={asNumber(location.fields.Capacity) ?? ""} placeholder="Capacity" className="w-full rounded-xl border px-3 py-2.5" />
                       <textarea name="notes" rows={2} defaultValue={asText(location.fields.Notes)} className="w-full rounded-xl border px-3 py-2.5" />
                       <label className="flex items-center gap-2 text-sm"><input name="active" type="checkbox" defaultChecked={Boolean(location.fields.Active)} disabled={(occupancyByLocation.get(location.id) || 0) > 0} /> Active location</label>{(occupancyByLocation.get(location.id) || 0) > 0 && <p className="text-xs text-muted-foreground">Move all animals out before deactivating this location.</p>}
