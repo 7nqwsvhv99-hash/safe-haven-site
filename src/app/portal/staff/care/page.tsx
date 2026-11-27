@@ -199,7 +199,7 @@ export default async function CareAndHousingPage({
         asText(record.fields["Adoption Status"]) !== "Adopted" &&
         asStrings(record.fields["Current Housing Location"]).includes(id)
     );
-    if (occupants.some((animal) => !isLocationCompatible(animal.fields.Species, nextType, currentLocation.fields["Location Name"]))) return;
+    if (occupants.some((animal) => !isLocationCompatible(animal.fields.Species, nextType, field(formData, "name")))) return;
     if (!active) {
       const occupied = latestAnimals.some(
         (record) =>
