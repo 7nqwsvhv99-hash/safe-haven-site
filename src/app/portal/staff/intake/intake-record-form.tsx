@@ -9,6 +9,7 @@ type Defaults = {
   species?: string;
   sex?: string;
   breed?: string;
+  microchipNumber?: string;
   source?: string;
   sourcePhone?: string;
   sourceEmail?: string;
@@ -85,7 +86,7 @@ export default function IntakeRecordForm({
               <label className="text-sm font-medium">Estimated date of birth, if exact date is unknown<input name="estimatedDateOfBirth" type="date" className={inputClass} /><span className="mt-1 block text-xs text-muted-foreground">Enter one birth date. Leave blank if unknown.</span></label>
               <label className="text-sm font-medium">Breed<input name="breed" defaultValue={defaults.breed} className={inputClass} /></label>
               <label className="text-sm font-medium">Color / markings<input name="color" className={inputClass} /></label>
-              <label className="text-sm font-medium">Microchip number<input name="microchipNumber" className={inputClass} /></label>
+              <label className="text-sm font-medium">Microchip number<input name="microchipNumber" defaultValue={defaults.microchipNumber} className={inputClass} /></label>
               <label className="text-sm font-medium">Microchip registration<select name="microchipStatus" defaultValue="Unknown" className={inputClass}>{["No Microchip", "Needs Registration", "Registered to Safe Haven", "Transferred to Adopter", "Unknown"].map((item) => <option key={item}>{item}</option>)}</select></label>
             </div>
           </div>
