@@ -33,9 +33,13 @@ function normalizedLocationType(value: unknown) {
   return type === "Cat Cage" ? "Cat Condo" : type;
 }
 
-function isLocationCompatible(speciesValue: unknown, locationTypeValue: unknown) {
+function isLocationCompatible(speciesValue: unknown, locationTypeValue: unknown, locationNameValue: unknown = "") {
   const species = asText(speciesValue).toLowerCase();
   const locationType = normalizedLocationType(locationTypeValue);
+  const locationName = asText(locationNameValue);
+  const isDogIsolationKennel = locationType === "Isolation" && /kennel/i.test(locationName);
+  if (isDogIsolationKennel) return species === "dog" || species === "dogs";
+
   const sharedTypes = ["Isolation", "Medical", "Recovery", "Other"];
   if (sharedTypes.includes(locationType)) return true;
   if (species === "cat" || species === "cats") return ["Cat Condo", "Cat Room"].includes(locationType);
@@ -183,7 +187,8 @@ export default async function CareAndHousingPage({
     await requirePortalRole("Staff", "write");
     const id = field(formData, "locationId");
     const latest = await airtableList(TABLES.housingLocations, ["Location Name", "Location Type"]);
-    if (!latest.some((record) => record.id === id)) return;
+    const currentLocation = latest.find((record) => record.id === id);
+    if (!currentLocation) return;
 
     const active = formData.get("active") === "on";
     const nextType = field(formData, "type");
@@ -194,7 +199,7 @@ export default async function CareAndHousingPage({
         asText(record.fields["Adoption Status"]) !== "Adopted" &&
         asStrings(record.fields["Current Housing Location"]).includes(id)
     );
-    if (occupants.some((animal) => !isLocationCompatible(animal.fields.Species, nextType))) return;
+    if (occupants.some((animal) => !isLocationCompatible(animal.fields.Species, nextType, field(formData, "name")))) return;
     if (!active) {
       const occupied = latestAnimals.some(
         (record) =>
@@ -242,7 +247,7 @@ export default async function CareAndHousingPage({
       }, true);
     } else {
       const location = latestLocations.find((record) => record.id === locationId && Boolean(record.fields.Active));
-      if (!location || !isLocationCompatible(animal.fields.Species, location.fields["Location Type"])) return;
+      if (!location || !isLocationCompatible(animal.fields.Species, location.fields["Location Type"], location.fields["Location Name"])) return;
 
       const occupants = latestAnimals.filter((record) =>
         asStrings(record.fields["Current Housing Location"]).includes(locationId) &&
