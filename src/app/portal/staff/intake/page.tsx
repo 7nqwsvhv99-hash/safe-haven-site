@@ -54,6 +54,29 @@ function formatDate(input: unknown) {
   if (Number.isNaN(date.getTime())) return text;
   return new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "America/Chicago" }).format(date);
 }
+const REVIEW_HISTORY_MARKER = "\n\n--- Staff review history ---\n";
+function splitReviewHistory(input: unknown) {
+  const raw = asText(input);
+  const markerIndex = raw.indexOf(REVIEW_HISTORY_MARKER);
+  if (markerIndex < 0) return { notes: raw, history: [] as string[] };
+  return {
+    notes: raw.slice(0, markerIndex),
+    history: raw.slice(markerIndex + REVIEW_HISTORY_MARKER.length).split("\n").filter(Boolean),
+  };
+}
+function lastReviewer(input: unknown) {
+  const latest = splitReviewHistory(input).history.at(-1);
+  if (!latest) return "";
+  const separator = latest.indexOf(" | ");
+  if (separator < 0) return "";
+  const timestamp = latest.slice(0, separator);
+  const reviewer = latest.slice(separator + 3);
+  const date = new Date(timestamp);
+  const when = Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("en-US", {
+    month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Chicago", timeZoneName: "short",
+  }).format(date);
+  return `Reviewed by ${reviewer}${when ? ` · ${when}` : ""}`;
+}
 
 const REQUEST_FIELDS = [
   "Submitted At", "Status", "Owner First Name", "Owner Last Name", "Email", "Phone",
@@ -120,15 +143,23 @@ export default async function IntakeManagementPage({
 
   async function saveRequest(formData: FormData) {
     "use server";
-    await requirePortalRole("Staff", "write");
+    const reviewer = await requirePortalRole("Staff", "write");
     const requestId = value(formData, "requestId");
-    const latest = await airtableList(TABLES.surrenderRequests, ["Status"]);
-    if (!latest.some((record) => record.id === requestId)) return;
+    const latest = await airtableList(TABLES.surrenderRequests, ["Status", "Staff Notes"]);
+    const current = latest.find((record) => record.id === requestId);
+    if (!current) return;
     const status = value(formData, "status");
+    const previousHistory = splitReviewHistory(current.fields["Staff Notes"]).history;
+    const timestamp = new Date().toISOString();
+    const reviewHistory = [...previousHistory, `${timestamp} | ${reviewer.displayName || reviewer.email}`];
+    const staffNotes = [
+      value(formData, "staffNotes"),
+      `${REVIEW_HISTORY_MARKER}${reviewHistory.join("\n")}`,
+    ].filter(Boolean).join("");
     await airtableUpdate(TABLES.surrenderRequests, requestId, {
       Status: status,
       Urgency: value(formData, "urgency"),
-      "Staff Notes": value(formData, "staffNotes"),
+      "Staff Notes": staffNotes,
       "Requested Surrender Date": value(formData, "requestedDate") || null,
       "Can Keep Animal Until": value(formData, "canKeepUntil") || null,
       ...(["Approved for Intake", "Declined", "Withdrawn", "Completed"].includes(status) ? { "Decision Date": todayChicago() } : {}),
@@ -323,7 +354,10 @@ export default async function IntakeManagementPage({
               const phone = asText(record.fields.Phone);
               const address = [asText(record.fields["Street Address"]), [asText(record.fields.City), asText(record.fields.State), asText(record.fields.ZIP)].filter(Boolean).join(", ")].filter(Boolean).join(" · ");
               const animalFacts = [asText(record.fields.Species), asText(record.fields.Sex), asText(record.fields["Approximate Age"]), asText(record.fields["Breed / Mix"])].filter(Boolean).join(" · ");
-              return <details key={record.id} className="group rounded-2xl border p-5">
+              const reviewNotes = splitReviewHistory(record.fields["Staff Notes"]);
+              const reviewerLabel = lastReviewer(record.fields["Staff Notes"]);
+              const requestStatus = alreadyIntaken ? "Completed" : asText(record.fields.Status);
+              return <details key={record.id} name="owner-surrender-requests" className="group rounded-2xl border p-5">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
                   <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-3">
                     <div>
@@ -331,9 +365,12 @@ export default async function IntakeManagementPage({
                       <p className="mt-1 text-sm text-muted-foreground">{[asText(record.fields["Owner First Name"]), asText(record.fields["Owner Last Name"])].filter(Boolean).join(" ") || "Owner name not provided"} · Submitted {formatDate(record.fields["Submitted At"]) || "date not recorded"}</p>
                       <p className="mt-2 text-sm">{animalFacts || "Animal details not provided"}</p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{alreadyIntaken ? "Intake recorded" : asText(record.fields.Status) || "No status"}</span>
-                      {asText(record.fields.Urgency) === "Urgent" && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Urgent</span>}
+                    <div className="flex flex-col items-start gap-2 sm:items-end">
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{alreadyIntaken ? "Intake recorded" : requestStatus || "No status"}</span>
+                        {asText(record.fields.Urgency) === "Urgent" && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Urgent</span>}
+                      </div>
+                      {reviewerLabel && <span className="text-xs text-muted-foreground">{reviewerLabel}</span>}
                     </div>
                   </div>
                   <span className="flex shrink-0 items-center gap-2 text-xs font-semibold text-primary sm:text-sm">Details<ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" /></span>
@@ -350,7 +387,7 @@ export default async function IntakeManagementPage({
                     </section>
                     <section className="rounded-2xl border p-4">
                       <h4 className="font-semibold">Animal details</h4>
-                      <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                      <div className="mt-4 grid gap-x-4 gap-y-5 text-sm sm:grid-cols-2">
                         <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Species</span>{asText(record.fields.Species) || "Not provided"}</p>
                         <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sex</span>{asText(record.fields.Sex) || "Not provided"}</p>
                         <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Approximate age</span>{asText(record.fields["Approximate Age"]) || "Not provided"}</p>
@@ -374,7 +411,7 @@ export default async function IntakeManagementPage({
                     </section>
                     <section className="space-y-3 rounded-2xl border p-4">
                       <h4 className="font-semibold">Reason and care information</h4>
-                      <div className="space-y-3 text-sm">
+                      <div className="space-y-5 text-sm">
                         <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reason for surrender</span><span className="whitespace-pre-line">{asText(record.fields["Reason for Surrender"]) || "Not provided"}</span></p>
                         <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Behavior or safety</span><span className="whitespace-pre-line">{asText(record.fields["Behavior / Safety Notes"]) || "No notes provided"}</span></p>
                         <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Medical conditions or medications</span><span className="whitespace-pre-line">{asText(record.fields["Medical Conditions / Medications"]) || "No notes provided"}</span></p>
@@ -385,10 +422,10 @@ export default async function IntakeManagementPage({
                     <form action={saveRequest} className="space-y-3 rounded-2xl bg-slate-50 p-4">
                       <div><h4 className="font-semibold">Review and next steps</h4><p className="mt-1 text-xs text-muted-foreground">Update the request, set its priority, and record staff-only notes.</p></div>
                       <input type="hidden" name="requestId" value={record.id}/>
-                      <label className="block text-xs font-semibold">Request status<select name="status" defaultValue={alreadyIntaken ? "Completed" : asText(record.fields.Status)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}>{["New", "Under Review", "Contacted", "Waitlist", "Approved for Intake", "Declined", "Withdrawn", "Completed"].map((status) => <option key={status}>{status}</option>)}</select></label>
+                      <label className="block text-xs font-semibold">Request status<select key={`${record.id}-${requestStatus}`} name="status" defaultValue={requestStatus} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}>{["New", "Under Review", "Contacted", "Waitlist", "Approved for Intake", "Declined", "Withdrawn", "Completed"].map((status) => <option key={status}>{status}</option>)}</select></label>
                       <label className="block text-xs font-semibold">Urgency<select name="urgency" defaultValue={asText(record.fields.Urgency) || "Routine"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}>{["Routine", "Soon", "Urgent"].map((status) => <option key={status}>{status}</option>)}</select></label>
                       <div className="grid gap-2 sm:grid-cols-2"><label className="block text-xs font-semibold">Preferred surrender date<input name="requestedDate" type="date" defaultValue={asText(record.fields["Requested Surrender Date"]).slice(0, 10)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label><label className="block text-xs font-semibold">Last day owner can keep animal<input name="canKeepUntil" type="date" defaultValue={asText(record.fields["Can Keep Animal Until"]).slice(0, 10)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label></div>
-                      <label className="block text-xs font-semibold">Staff notes<textarea name="staffNotes" rows={2} defaultValue={asText(record.fields["Staff Notes"])} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label>
+                      <label className="block text-xs font-semibold">Staff notes<textarea name="staffNotes" rows={2} defaultValue={reviewNotes.notes} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label>
                       {!alreadyIntaken && <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save review</button>}
                     </form>
                     {isApproved && <Link href={`/portal/staff/intake?surrenderRequest=${record.id}#record-intake`} className="inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:opacity-90">Start intake with request details</Link>}
