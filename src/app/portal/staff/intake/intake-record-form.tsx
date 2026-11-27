@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-type Option = { id: string; label: string; details?: string };
+type Option = { id: string; label: string; details?: string; species?: string; type?: string };
 type Defaults = {
   requestId?: string;
   petName?: string;
@@ -33,7 +33,13 @@ export default function IntakeRecordForm({
 }) {
   const [animalId, setAnimalId] = useState("");
   const [placement, setPlacement] = useState("");
+  const [species, setSpecies] = useState(defaults.species || "");
   const isSurrender = Boolean(defaults.requestId);
+  const selectedAnimal = animals.find((animal) => animal.id === animalId);
+  const placementSpecies = selectedAnimal?.species || species;
+  const catCondos = locations.filter((location) => location.type === "Cat Condo");
+  const catRooms = locations.filter((location) => location.type === "Cat Room");
+  const dogKennels = locations.filter((location) => ["Dog Kennel", "Isolation", "Medical", "Recovery", "Other"].includes(location.type || ""));
 
   return (
     <form action={action} className="space-y-7">
@@ -73,7 +79,7 @@ export default function IntakeRecordForm({
             <h4 className="font-semibold">New animal details</h4>
             <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               <label className="text-sm font-medium">Pet name<input name="petName" required defaultValue={defaults.petName} className={inputClass} /></label>
-              <label className="text-sm font-medium">Species<select name="species" required defaultValue={defaults.species || ""} className={inputClass}><option value="" disabled>Select species</option><option>Cat</option><option>Dog</option></select></label>
+              <label className="text-sm font-medium">Species<select name="species" required value={species} onChange={(event) => setSpecies(event.target.value)} className={inputClass}><option value="" disabled>Select species</option><option>Cat</option><option>Dog</option></select></label>
               <label className="text-sm font-medium">Sex<select name="sex" defaultValue={defaults.sex || "Unknown"} className={inputClass}><option>Female</option><option>Male</option><option>Unknown</option></select></label>
               <label className="text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" className={inputClass} /></label>
               <label className="text-sm font-medium">Estimated date of birth, if exact date is unknown<input name="estimatedDateOfBirth" type="date" className={inputClass} /><span className="mt-1 block text-xs text-muted-foreground">Enter one birth date. Leave blank if unknown.</span></label>
@@ -104,12 +110,22 @@ export default function IntakeRecordForm({
           ))}
         </fieldset>
         {placement === "shelter" && (
-          <label className="block max-w-xl text-sm font-medium">Shelter location
-            <select name="housingLocationId" required defaultValue="" className={inputClass}>
-              <option value="" disabled>Select the kennel, condo, room, or other location</option>
-              {locations.map((location) => <option key={location.id} value={location.id}>{location.label}</option>)}
-            </select>
-          </label>
+          placementSpecies === "Cat" ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <label className="block text-sm font-medium">Assigned cat condo
+                <select name="catCondoId" required defaultValue="" className={inputClass}><option value="" disabled>Select a condo</option>{catCondos.map((location) => <option key={location.id} value={location.id}>{location.label}</option>)}</select>
+              </label>
+              <label className="block text-sm font-medium">Current cat room
+                <select name="catRoomId" required defaultValue="" className={inputClass}><option value="" disabled>Select a room</option>{catRooms.map((location) => <option key={location.id} value={location.id}>{location.label}</option>)}</select>
+              </label>
+              <p className="text-sm text-muted-foreground md:col-span-2">Cats keep their assigned condo and also have a current room assignment. Room assignments may change as cats are introduced and staff observe how they get along.</p>
+            </div>
+          ) : placementSpecies === "Dog" ? (
+            <label className="block max-w-xl text-sm font-medium">Dog kennel or care location
+              <select name="housingLocationId" required defaultValue="" className={inputClass}><option value="" disabled>Select a kennel or care location</option>{dogKennels.map((location) => <option key={location.id} value={location.id}>{location.label}</option>)}</select>
+              <span className="mt-1 block text-xs text-muted-foreground">Dogs are assigned one per kennel unless a bonded pair benefits from sharing.</span>
+            </label>
+          ) : <p className="text-sm text-amber-800">Select an existing animal or choose Cat or Dog before assigning shelter housing.</p>
         )}
         {placement === "foster" && (
           <div className="rounded-2xl bg-primary/5 p-5">

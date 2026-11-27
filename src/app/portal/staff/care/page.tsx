@@ -10,6 +10,7 @@ import {
   Plus,
 } from "lucide-react";
 import HousingBoard from "./housing-board";
+import MoveAnimalForm from "./move-animal-form";
 import {
   airtableCreate,
   airtableList,
@@ -233,19 +234,14 @@ export default async function CareAndHousingPage({
     const locationId = field(formData, "locationId");
 
     const [latestAnimals, latestLocations] = await Promise.all([
-      airtableList(TABLES.animals, ["Pet Name", "Species", "Housing Type", "Current Housing Location", "Adoption Status"]),
+      airtableList(TABLES.animals, ["Pet Name", "Species", "Housing Type", "Current Housing Location", "Adoption Status", "Bonded With", "From field: Bonded With"]),
       airtableList(TABLES.housingLocations, ["Location Name", "Location Type", "Capacity", "Active"]),
     ]);
 
     const animal = latestAnimals.find((record) => record.id === animalId);
     if (!animal || asText(animal.fields["Housing Type"]) !== "In Shelter") return;
 
-    if (!locationId) {
-      await airtableUpdate(TABLES.animals, animalId, {
-        "Housing Type": "In Shelter",
-        "Current Housing Location": [],
-      }, true);
-    } else {
+    if (locationId) {
       const location = latestLocations.find((record) => record.id === locationId && Boolean(record.fields.Active));
       if (!location || !isLocationCompatible(animal.fields.Species, location.fields["Location Type"], location.fields["Location Name"])) return;
 
@@ -253,13 +249,33 @@ export default async function CareAndHousingPage({
         asStrings(record.fields["Current Housing Location"]).includes(locationId) &&
         record.id !== animalId &&
         asText(record.fields["Adoption Status"]) !== "Adopted"
-      ).length;
+      );
       const capacity = asNumber(location.fields.Capacity);
-      if (capacity !== null && occupants >= capacity) return;
+      const bondedIds = new Set([
+        ...asStrings(animal.fields["Bonded With"]),
+        ...asStrings(animal.fields["From field: Bonded With"]),
+      ]);
+      const isDogKennel = (asText(location.fields["Location Type"]) === "Dog Kennel") || (asText(location.fields["Location Type"]) === "Isolation" && /kennel/i.test(asText(location.fields["Location Name"])));
+      const sharedBondedKennel = isDogKennel && field(formData, "allowBondedSharing") === "yes" && occupants.length === 1 && bondedIds.has(occupants[0].id);
+      if (capacity !== null && occupants.length >= capacity && !sharedBondedKennel) return;
+
+      const currentLocationIds = asStrings(animal.fields["Current Housing Location"]);
+      const targetType = normalizedLocationType(location.fields["Location Type"]);
+      const replaceTypes = targetType === "Cat Room" ? new Set(["Cat Room"])
+        : targetType === "Cat Condo" ? new Set(["Cat Condo"])
+        : targetType === "Dog Kennel" || isDogKennel ? new Set(["Dog Kennel", "Isolation"])
+        : new Set(["Isolation", "Medical", "Recovery", "Other"]);
+      const retainedLocationIds = currentLocationIds.filter((currentId) => {
+        const current = latestLocations.find((candidate) => candidate.id === currentId);
+        const currentType = normalizedLocationType(current?.fields["Location Type"]);
+        const currentIsDogIsolation = currentType === "Isolation" && /kennel/i.test(asText(current?.fields["Location Name"]));
+        return !replaceTypes.has(currentType) && !(isDogKennel && currentIsDogIsolation);
+      });
+      const nextLocationIds = [...new Set([...retainedLocationIds, locationId])];
 
       await airtableUpdate(TABLES.animals, animalId, {
         "Housing Type": "In Shelter",
-        "Current Housing Location": [locationId],
+        "Current Housing Location": nextLocationIds,
       }, true);
     }
 
@@ -380,7 +396,7 @@ export default async function CareAndHousingPage({
                 <MapPin className="h-6 w-6 text-primary" />
                 <div>
                   <h2 className="text-2xl font-bold">Housing Board</h2>
-                  <p className="text-sm text-muted-foreground">Current in-shelter placement and capacity.</p>
+                  <p className="text-sm text-muted-foreground">Cats keep a condo assignment and also have a room assignment; room assignments can change as cats are introduced. Dogs are housed one per kennel unless a bonded pair should share for their welfare.</p>
                 </div>
               </div>
 
@@ -407,24 +423,24 @@ export default async function CareAndHousingPage({
                 <BedDouble className="h-6 w-6 text-primary" />
                 <div>
                   <h2 className="text-2xl font-bold">Move an Animal</h2>
-                  <p className="text-sm text-muted-foreground">Assign or change the animal&apos;s current in-shelter location.</p>
+                  <p className="text-sm text-muted-foreground">Changing a cat&apos;s room keeps its condo assignment, and changing its condo keeps its room. For dogs, use one kennel per dog unless a bonded pair benefits from sharing.</p>
                 </div>
               </div>
-              <form action={moveAnimal} className="grid gap-4 md:grid-cols-[1fr_1fr_auto]">
-                <select name="animalId" required defaultValue="" className="rounded-xl border bg-white px-3 py-2.5">
-                  <option value="" disabled>Select animal</option>
-                  {inShelter.map((animal) => <option key={animal.id} value={animal.id}>{asText(animal.fields["Pet Name"])} · {asText(animal.fields["Animal ID"])}</option>)}
-                </select>
-                <select name="locationId" defaultValue="" className="rounded-xl border bg-white px-3 py-2.5">
-                  <option value="">In shelter, location not assigned</option>
-                  {locations.filter((record) => Boolean(record.fields.Active)).map((location) => {
-                    const capacity = asNumber(location.fields.Capacity);
-                    const occupied = occupancyByLocation.get(location.id) || 0;
-                    return <option key={location.id} value={location.id} disabled={capacity !== null && occupied >= capacity}>{asText(location.fields["Location Name"])}{capacity !== null ? ` · ${occupied}/${capacity}` : ""}</option>;
-                  })}
-                </select>
-                <button className="rounded-xl bg-primary px-5 py-2.5 font-semibold text-white">Move</button>
-              </form>
+              <MoveAnimalForm
+                action={moveAnimal}
+                animals={inShelter.map((animal) => ({
+                  id: animal.id,
+                  label: `${asText(animal.fields["Pet Name"])} · ${asText(animal.fields["Animal ID"])}`,
+                  species: asText(animal.fields.Species),
+                }))}
+                locations={locations.filter((record) => Boolean(record.fields.Active)).map((location) => ({
+                  id: location.id,
+                  name: asText(location.fields["Location Name"]),
+                  type: normalizedLocationType(location.fields["Location Type"]),
+                  capacity: asNumber(location.fields.Capacity),
+                  occupancy: occupancyByLocation.get(location.id) || 0,
+                }))}
+              />
             </section>
 
             <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
