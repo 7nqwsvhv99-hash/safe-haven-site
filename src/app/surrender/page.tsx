@@ -25,6 +25,8 @@ function Field({ label, children, note }: { label: string; children: React.React
 export default function OwnerSurrenderRequestPage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [sex, setSex] = useState("Unknown");
+  const [microchipKnown, setMicrochipKnown] = useState("Unknown");
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -76,12 +78,28 @@ export default function OwnerSurrenderRequestPage() {
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="Animal's name *"><Input name="animalName" required /></Field>
           <Field label="Species *"><select name="species" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Cat</option><option>Dog</option><option>Other</option></select></Field>
-          <Field label="Sex"><select name="sex" className={selectClass} defaultValue="Unknown"><option>Female</option><option>Male</option><option>Unknown</option></select></Field>
+          <Field label="Sex"><select name="sex" className={selectClass} value={sex} onChange={(event) => setSex(event.target.value)}><option>Female</option><option>Male</option><option>Unknown</option></select></Field>
           <Field label="Approximate age"><Input name="approximateAge" placeholder="For example, 4 years or 6 months" /></Field>
           <Field label="Breed or mix"><Input name="breed" /></Field>
-          <Field label="Spayed or neutered?"><select name="altered" className={selectClass} defaultValue="Unknown"><option>Altered</option><option>Not Altered</option><option>Unknown</option></select></Field>
-          <Field label="Is a microchip known?"><select name="microchipKnown" className={selectClass} defaultValue="Unknown"><option>Yes</option><option>No</option><option>Unknown</option></select></Field>
-          <Field label="Current veterinarian"><Input name="veterinarian" /></Field>
+          <Field label="Spay or neuter status">
+            {sex === "Unknown" ? (
+              <><input type="hidden" name="altered" value="Unknown" /><p className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-muted-foreground">Sex is unknown, so spay or neuter status is recorded as unknown.</p></>
+            ) : (
+              <select name="altered" className={selectClass} defaultValue="Unknown">
+                <option value="Altered">{sex === "Male" ? "Neutered" : "Spayed"}</option>
+                <option value="Not Altered">{sex === "Male" ? "Not neutered" : "Not spayed"}</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+            )}
+          </Field>
+          <Field label="Does the animal have a microchip?"><select name="microchipKnown" className={selectClass} value={microchipKnown} onChange={(event) => setMicrochipKnown(event.target.value)}><option>Yes</option><option>No</option><option>Unknown</option></select></Field>
+          {microchipKnown === "Yes" && <>
+            <Field label="Microchip number"><Input name="microchipNumber" /></Field>
+            <Field label="Microchip manufacturer"><Input name="microchipManufacturer" /></Field>
+          </>}
+          <Field label="Current veterinarian or clinic"><Input name="veterinarian" /></Field>
+          <Field label="Veterinarian phone, if known"><Input name="veterinarianPhone" type="tel" /></Field>
+          <Field label="Veterinarian address, if known"><Input name="veterinarianAddress" autoComplete="street-address" /></Field>
         </div>
         <Field label="What is leading you to request surrender? *"><Textarea name="reason" rows={4} required /></Field>
         <Field label="Behavior or safety details" note="Include information that will help staff assess safe handling and placement."><Textarea name="behaviorNotes" rows={3} /></Field>
@@ -91,7 +109,7 @@ export default function OwnerSurrenderRequestPage() {
       <Card className="space-y-6 p-6 md:p-8">
         <h2 className="text-2xl font-bold">Timing</h2>
         <div className="grid gap-5 md:grid-cols-2">
-          <Field label="How soon do you need help? *"><select name="urgency" className={selectClass} defaultValue="Routine" required><option>Routine</option><option>Soon</option><option>Urgent</option></select></Field>
+          <Field label="How soon do you need help? *"><select name="urgency" className={selectClass} defaultValue="Soon" required><option>Soon</option><option>Urgent</option></select></Field>
           <Field label="Preferred surrender date, if known"><Input name="requestedDate" type="date" /></Field>
           <Field label="How long can you continue caring for the animal?"><Input name="canKeepUntil" type="date" /></Field>
         </div>
