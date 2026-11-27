@@ -39,7 +39,11 @@ export async function POST(request: Request) {
     if (!["Female", "Male", "Unknown"].includes(text(body.sex))) return responseError("Select a valid sex.");
     if (!["Altered", "Not Altered", "Unknown"].includes(text(body.altered))) return responseError("Select a spay/neuter status.");
     if (!["Yes", "No", "Unknown"].includes(text(body.microchipKnown))) return responseError("Select whether a microchip is known.");
-    if (!["Routine", "Soon", "Urgent"].includes(text(body.urgency))) return responseError("Select a valid timeframe.");
+    const compatibilityValues = ["Yes", "No", "Unknown / not assessed"];
+    if ([body.goodWithChildren, body.goodWithDogs, body.goodWithCats].some((value) => value && !compatibilityValues.includes(text(value)))) {
+      return responseError("Select a valid answer for each animal compatibility question.");
+    }
+    if (!["Soon", "Urgent"].includes(text(body.urgency))) return responseError("Select a valid timeframe.");
     if (body.confirmAccurate !== true) return responseError("Please confirm that the information is accurate.");
     const email = text(body.email).toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return responseError("Enter a valid email address.");
@@ -64,10 +68,17 @@ export async function POST(request: Request) {
       "Breed / Mix": text(body.breed),
       "Spay / Neuter Status": text(body.altered),
       "Microchip Known": text(body.microchipKnown),
+      "Microchip Number": text(body.microchipNumber),
+      "Microchip Manufacturer": text(body.microchipManufacturer),
+      "Good with Children": text(body.goodWithChildren) || "Unknown / not assessed",
+      "Good with Dogs": text(body.goodWithDogs) || "Unknown / not assessed",
+      "Good with Cats": text(body.goodWithCats) || "Unknown / not assessed",
       "Reason for Surrender": text(body.reason),
       "Behavior / Safety Notes": text(body.behaviorNotes),
       "Medical Conditions / Medications": text(body.medicalNotes),
       "Current Veterinarian": text(body.veterinarian),
+      "Veterinarian Phone": text(body.veterinarianPhone),
+      "Veterinarian Address": text(body.veterinarianAddress),
       Urgency: text(body.urgency),
       ...(text(body.requestedDate) ? { "Requested Surrender Date": text(body.requestedDate) } : {}),
       ...(text(body.canKeepUntil) ? { "Can Keep Animal Until": text(body.canKeepUntil) } : {}),

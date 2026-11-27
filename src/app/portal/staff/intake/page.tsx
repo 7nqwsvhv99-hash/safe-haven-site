@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { ArrowLeft, ClipboardPlus, Inbox, PawPrint, Search } from "lucide-react";
+import { ArrowLeft, ChevronDown, ClipboardPlus, Inbox, PawPrint, Search } from "lucide-react";
 import IntakeRecordForm from "./intake-record-form";
 import {
   airtableCreate,
@@ -57,7 +57,10 @@ function formatDate(input: unknown) {
 
 const REQUEST_FIELDS = [
   "Submitted At", "Status", "Owner First Name", "Owner Last Name", "Email", "Phone",
+  "Street Address", "City", "State", "ZIP",
   "Animal Name", "Species", "Sex", "Approximate Age", "Breed / Mix", "Reason for Surrender",
+  "Spay / Neuter Status", "Microchip Known", "Microchip Number", "Microchip Manufacturer",
+  "Good with Children", "Good with Dogs", "Good with Cats", "Current Veterinarian", "Veterinarian Phone", "Veterinarian Address",
   "Behavior / Safety Notes", "Medical Conditions / Medications", "Urgency", "Requested Surrender Date",
   "Can Keep Animal Until", "Decision Date", "Staff Notes", "Follow-Up Status", "Animal Intakes",
 ];
@@ -109,6 +112,10 @@ export default async function IntakeManagementPage({
     asText(selectedRequest.fields["Reason for Surrender"]) ? `Surrender reason: ${asText(selectedRequest.fields["Reason for Surrender"])}` : "",
     asText(selectedRequest.fields["Behavior / Safety Notes"]) ? `Behavior / safety: ${asText(selectedRequest.fields["Behavior / Safety Notes"])}` : "",
     asText(selectedRequest.fields["Medical Conditions / Medications"]) ? `Medical history / medications: ${asText(selectedRequest.fields["Medical Conditions / Medications"])}` : "",
+    asText(selectedRequest.fields["Spay / Neuter Status"]) ? `Spay/neuter: ${asText(selectedRequest.fields["Spay / Neuter Status"])}` : "",
+    asText(selectedRequest.fields["Microchip Known"]) ? `Microchip known: ${asText(selectedRequest.fields["Microchip Known"])}${asText(selectedRequest.fields["Microchip Number"]) ? ` · ${asText(selectedRequest.fields["Microchip Number"])}` : ""}${asText(selectedRequest.fields["Microchip Manufacturer"]) ? ` · ${asText(selectedRequest.fields["Microchip Manufacturer"])}` : ""}` : "",
+    asText(selectedRequest.fields["Current Veterinarian"]) ? `Veterinarian: ${asText(selectedRequest.fields["Current Veterinarian"])}${asText(selectedRequest.fields["Veterinarian Phone"]) ? ` · ${asText(selectedRequest.fields["Veterinarian Phone"])}` : ""}${asText(selectedRequest.fields["Veterinarian Address"]) ? ` · ${asText(selectedRequest.fields["Veterinarian Address"])}` : ""}` : "",
+    `Compatibility: children ${asText(selectedRequest.fields["Good with Children"]) || "unknown / not assessed"}; dogs ${asText(selectedRequest.fields["Good with Dogs"]) || "unknown / not assessed"}; cats ${asText(selectedRequest.fields["Good with Cats"]) || "unknown / not assessed"}`,
   ].filter(Boolean).join("\n\n") : "";
 
   async function saveRequest(formData: FormData) {
@@ -160,12 +167,13 @@ export default async function IntakeManagementPage({
     const color = value(formData, "color");
     const dateOfBirth = value(formData, "dateOfBirth");
     const estimatedDateOfBirth = value(formData, "estimatedDateOfBirth");
-    const microchipNumber = value(formData, "microchipNumber");
+    let microchipNumber = value(formData, "microchipNumber");
     if (request) {
       species = asText(request.fields.Species);
       petName = asText(request.fields["Animal Name"]) || petName;
       sex = asText(request.fields.Sex) || sex;
       breed = asText(request.fields["Breed / Mix"]) || breed;
+      microchipNumber = asText(request.fields["Microchip Number"]) || microchipNumber;
     }
     let currentHousing: string[] = [];
     if (placementPath === "shelter") {
@@ -237,6 +245,10 @@ export default async function IntakeManagementPage({
       asText(request.fields["Reason for Surrender"]) ? `Surrender reason: ${asText(request.fields["Reason for Surrender"])}` : "",
       asText(request.fields["Behavior / Safety Notes"]) ? `Behavior / safety: ${asText(request.fields["Behavior / Safety Notes"])}` : "",
       asText(request.fields["Medical Conditions / Medications"]) ? `Medical history / medications: ${asText(request.fields["Medical Conditions / Medications"])}` : "",
+      asText(request.fields["Spay / Neuter Status"]) ? `Spay/neuter: ${asText(request.fields["Spay / Neuter Status"])}` : "",
+      asText(request.fields["Microchip Known"]) ? `Microchip known: ${asText(request.fields["Microchip Known"])}${asText(request.fields["Microchip Number"]) ? ` · ${asText(request.fields["Microchip Number"])}` : ""}${asText(request.fields["Microchip Manufacturer"]) ? ` · ${asText(request.fields["Microchip Manufacturer"])}` : ""}` : "",
+      asText(request.fields["Current Veterinarian"]) ? `Veterinarian: ${asText(request.fields["Current Veterinarian"])}${asText(request.fields["Veterinarian Phone"]) ? ` · ${asText(request.fields["Veterinarian Phone"])}` : ""}${asText(request.fields["Veterinarian Address"]) ? ` · ${asText(request.fields["Veterinarian Address"])}` : ""}` : "",
+      `Compatibility: children ${asText(request.fields["Good with Children"]) || "unknown / not assessed"}; dogs ${asText(request.fields["Good with Dogs"]) || "unknown / not assessed"}; cats ${asText(request.fields["Good with Cats"]) || "unknown / not assessed"}`,
       value(formData, "intakeNotes"),
     ].filter(Boolean).join("\n\n") : value(formData, "intakeNotes");
     const intake = await airtableCreate(TABLES.animalIntakes, {
@@ -307,18 +319,75 @@ export default async function IntakeManagementPage({
             {filteredRequests.map((record) => {
               const isApproved = asText(record.fields.Status) === "Approved for Intake" && asStrings(record.fields["Animal Intakes"]).length === 0;
               const alreadyIntaken = asStrings(record.fields["Animal Intakes"]).length > 0;
-              return <details key={record.id} className="rounded-2xl border p-5">
-                <summary className="cursor-pointer list-none">
-                  <div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">{asText(record.fields["Animal Name"]) || "Unnamed animal"}</h3><p className="mt-1 text-sm text-muted-foreground">{[asText(record.fields["Owner First Name"]), asText(record.fields["Owner Last Name"])].filter(Boolean).join(" ")} · Submitted {formatDate(record.fields["Submitted At"]) || "date not recorded"}</p><p className="mt-2 text-sm">{[asText(record.fields.Species), asText(record.fields.Sex), asText(record.fields["Approximate Age"]), asText(record.fields["Breed / Mix"])].filter(Boolean).join(" · ")}</p></div><div className="flex flex-wrap gap-2"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{alreadyIntaken ? "Intake recorded" : asText(record.fields.Status) || "No status"}</span>{asText(record.fields.Urgency) === "Urgent" && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Urgent</span>}</div></div>
+              const email = asText(record.fields.Email);
+              const phone = asText(record.fields.Phone);
+              const address = [asText(record.fields["Street Address"]), [asText(record.fields.City), asText(record.fields.State), asText(record.fields.ZIP)].filter(Boolean).join(", ")].filter(Boolean).join(" · ");
+              const animalFacts = [asText(record.fields.Species), asText(record.fields.Sex), asText(record.fields["Approximate Age"]), asText(record.fields["Breed / Mix"])].filter(Boolean).join(" · ");
+              return <details key={record.id} className="group rounded-2xl border p-5">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
+                  <div className="flex min-w-0 flex-1 flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-bold">{asText(record.fields["Animal Name"]) || "Unnamed animal"}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{[asText(record.fields["Owner First Name"]), asText(record.fields["Owner Last Name"])].filter(Boolean).join(" ") || "Owner name not provided"} · Submitted {formatDate(record.fields["Submitted At"]) || "date not recorded"}</p>
+                      <p className="mt-2 text-sm">{animalFacts || "Animal details not provided"}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{alreadyIntaken ? "Intake recorded" : asText(record.fields.Status) || "No status"}</span>
+                      {asText(record.fields.Urgency) === "Urgent" && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">Urgent</span>}
+                    </div>
+                  </div>
+                  <span className="flex shrink-0 items-center gap-2 text-xs font-semibold text-primary sm:text-sm">Details<ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" /></span>
                 </summary>
-                <div className="mt-5 grid gap-5 border-t pt-5 lg:grid-cols-[1fr_auto]">
-                  <div className="grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2"><p><strong>Owner contact:</strong> {[asText(record.fields.Email), asText(record.fields.Phone)].filter(Boolean).join(" · ") || "Not provided"}</p><p><strong>Requested date:</strong> {formatDate(record.fields["Requested Surrender Date"]) || "Not specified"}</p><p><strong>Can keep until:</strong> {formatDate(record.fields["Can Keep Animal Until"]) || "Not specified"}</p><p><strong>Reason:</strong> {asText(record.fields["Reason for Surrender"]) || "Not provided"}</p><p><strong>Behavior / safety:</strong> {asText(record.fields["Behavior / Safety Notes"]) || "No notes"}</p><p><strong>Medical:</strong> {asText(record.fields["Medical Conditions / Medications"]) || "No notes"}</p></div>
-                  <div className="space-y-3 lg:min-w-64">
+                <div className="mt-5 grid gap-5 border-t pt-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+                  <div className="space-y-4">
+                    <section className="rounded-2xl bg-slate-50 p-4">
+                      <h4 className="font-semibold">Owner contact</h4>
+                      <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Email</span>{email ? <a className="font-medium text-primary hover:underline" href={`mailto:${email}`}>{email}</a> : "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Phone</span>{phone ? <a className="font-medium text-primary hover:underline" href={`tel:${phone.replace(/[^+\d]/g, "")}`}>{phone}</a> : "Not provided"}</p>
+                        <p className="sm:col-span-2"><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Address</span>{address || "Not provided"}</p>
+                      </div>
+                    </section>
+                    <section className="rounded-2xl border p-4">
+                      <h4 className="font-semibold">Animal details</h4>
+                      <div className="mt-3 grid gap-3 text-sm sm:grid-cols-2">
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Species</span>{asText(record.fields.Species) || "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sex</span>{asText(record.fields.Sex) || "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Approximate age</span>{asText(record.fields["Approximate Age"]) || "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Breed or mix</span>{asText(record.fields["Breed / Mix"]) || "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Spayed or neutered</span>{asText(record.fields["Spay / Neuter Status"]) || "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Microchip</span>{asText(record.fields["Microchip Known"]) || "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Microchip number</span>{asText(record.fields["Microchip Number"]) || "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Microchip manufacturer</span>{asText(record.fields["Microchip Manufacturer"]) || "Not provided"}</p>
+                        <p className="sm:col-span-2"><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Current veterinarian or clinic</span>{asText(record.fields["Current Veterinarian"]) || "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Veterinarian phone</span>{asText(record.fields["Veterinarian Phone"]) || "Not provided"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Veterinarian address</span>{asText(record.fields["Veterinarian Address"]) || "Not provided"}</p>
+                      </div>
+                    </section>
+                    <section className="rounded-2xl border p-4">
+                      <h4 className="font-semibold">Animal compatibility</h4>
+                      <div className="mt-3 grid gap-3 text-sm sm:grid-cols-3">
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Children</span>{asText(record.fields["Good with Children"]) || "Unknown / not assessed"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Other dogs</span>{asText(record.fields["Good with Dogs"]) || "Unknown / not assessed"}</p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Cats</span>{asText(record.fields["Good with Cats"]) || "Unknown / not assessed"}</p>
+                      </div>
+                    </section>
+                    <section className="space-y-3 rounded-2xl border p-4">
+                      <h4 className="font-semibold">Reason and care information</h4>
+                      <div className="space-y-3 text-sm">
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reason for surrender</span><span className="whitespace-pre-line">{asText(record.fields["Reason for Surrender"]) || "Not provided"}</span></p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Behavior or safety</span><span className="whitespace-pre-line">{asText(record.fields["Behavior / Safety Notes"]) || "No notes provided"}</span></p>
+                        <p><span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Medical conditions or medications</span><span className="whitespace-pre-line">{asText(record.fields["Medical Conditions / Medications"]) || "No notes provided"}</span></p>
+                      </div>
+                    </section>
+                  </div>
+                  <div className="space-y-3">
                     <form action={saveRequest} className="space-y-3 rounded-2xl bg-slate-50 p-4">
+                      <div><h4 className="font-semibold">Review and next steps</h4><p className="mt-1 text-xs text-muted-foreground">Update the request, set its priority, and record staff-only notes.</p></div>
                       <input type="hidden" name="requestId" value={record.id}/>
                       <label className="block text-xs font-semibold">Request status<select name="status" defaultValue={alreadyIntaken ? "Completed" : asText(record.fields.Status)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}>{["New", "Under Review", "Contacted", "Waitlist", "Approved for Intake", "Declined", "Withdrawn", "Completed"].map((status) => <option key={status}>{status}</option>)}</select></label>
                       <label className="block text-xs font-semibold">Urgency<select name="urgency" defaultValue={asText(record.fields.Urgency) || "Routine"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}>{["Routine", "Soon", "Urgent"].map((status) => <option key={status}>{status}</option>)}</select></label>
-                      <div className="grid gap-2 sm:grid-cols-2"><label className="block text-xs font-semibold">Requested date<input name="requestedDate" type="date" defaultValue={asText(record.fields["Requested Surrender Date"]).slice(0, 10)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label><label className="block text-xs font-semibold">Can keep until<input name="canKeepUntil" type="date" defaultValue={asText(record.fields["Can Keep Animal Until"]).slice(0, 10)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label></div>
+                      <div className="grid gap-2 sm:grid-cols-2"><label className="block text-xs font-semibold">Preferred surrender date<input name="requestedDate" type="date" defaultValue={asText(record.fields["Requested Surrender Date"]).slice(0, 10)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label><label className="block text-xs font-semibold">Last day owner can keep animal<input name="canKeepUntil" type="date" defaultValue={asText(record.fields["Can Keep Animal Until"]).slice(0, 10)} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label></div>
                       <label className="block text-xs font-semibold">Staff notes<textarea name="staffNotes" rows={2} defaultValue={asText(record.fields["Staff Notes"])} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5" disabled={alreadyIntaken}/></label>
                       {!alreadyIntaken && <button className="rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary">Save review</button>}
                     </form>
@@ -366,6 +435,7 @@ export default async function IntakeManagementPage({
                   species: asText(selectedRequest.fields.Species),
                   sex: asText(selectedRequest.fields.Sex) || "Unknown",
                   breed: asText(selectedRequest.fields["Breed / Mix"]),
+                  microchipNumber: asText(selectedRequest.fields["Microchip Number"]),
                   source: ownerName,
                   sourcePhone: asText(selectedRequest.fields.Phone),
                   sourceEmail: asText(selectedRequest.fields.Email),

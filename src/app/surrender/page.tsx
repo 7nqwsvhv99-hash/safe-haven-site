@@ -18,6 +18,8 @@ function Field({ label, children, note }: { label: string; children: React.React
 export default function OwnerSurrenderRequestPage() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [sex, setSex] = useState("Unknown");
+  const [microchipKnown, setMicrochipKnown] = useState("Unknown");
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -52,7 +54,7 @@ export default function OwnerSurrenderRequestPage() {
     <section className="hero-gradient"><div className="container-custom section-padding max-w-3xl text-center space-y-4"><p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">Animal Support</p><h1 className="text-4xl font-bold md:text-5xl">Owner Surrender Request</h1><p className="text-lg text-muted-foreground">Share information about your animal and your situation. Safe Haven reviews each request and will contact you about available next steps.</p></div></section>
     <form onSubmit={onSubmit} className="container-custom max-w-4xl space-y-8 py-10">
       {result && !result.ok && <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-destructive">{result.message}</div>}
-      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 text-sm"><strong>Before you submit:</strong> This is a request for review, not an appointment or confirmation that Safe Haven can accept the animal. Do not bring an animal to the shelter unless a staff member has arranged it. If the animal needs immediate help, call Safe Haven at <a className="font-semibold underline" href="tel:815-858-2265">(815) 858-2265</a>.</div>
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 text-sm"><strong>Before you submit:</strong> This is a request for review, not an appointment or confirmation that Safe Haven can accept the animal. Do not bring an animal to the shelter unless a staff member has arranged it.</div>
 
       <Card className="space-y-6 p-6 md:p-8">
         <h2 className="text-2xl font-bold">Your contact information</h2>
@@ -69,13 +71,23 @@ export default function OwnerSurrenderRequestPage() {
         <div className="grid gap-5 md:grid-cols-2">
           <Field label="Animal's name *"><Input name="animalName" required /></Field>
           <Field label="Species *"><select name="species" className={selectClass} required defaultValue=""><option value="" disabled>Select one</option><option>Cat</option><option>Dog</option><option>Other</option></select></Field>
-          <Field label="Sex"><select name="sex" className={selectClass} defaultValue="Unknown"><option>Female</option><option>Male</option><option>Unknown</option></select></Field>
+          <Field label="Sex"><select name="sex" className={selectClass} value={sex} onChange={(event) => setSex(event.target.value)}><option>Female</option><option>Male</option><option>Unknown</option></select></Field>
           <Field label="Approximate age"><Input name="approximateAge" placeholder="For example, 4 years or 6 months" /></Field>
           <Field label="Breed or mix"><Input name="breed" /></Field>
-          <Field label="Spayed or neutered?"><select name="altered" className={selectClass} defaultValue="Unknown"><option>Altered</option><option>Not Altered</option><option>Unknown</option></select></Field>
-          <Field label="Is a microchip known?"><select name="microchipKnown" className={selectClass} defaultValue="Unknown"><option>Yes</option><option>No</option><option>Unknown</option></select></Field>
-          <Field label="Current veterinarian"><Input name="veterinarian" /></Field>
+          <Field label={sex === "Female" ? "Spayed?" : sex === "Male" ? "Neutered?" : "Spayed or neutered?"}><select name="altered" className={selectClass} defaultValue="Unknown"><option value="Unknown">Unknown</option>{sex === "Female" && <><option value="Altered">Spayed</option><option value="Not Altered">Not spayed</option></>}{sex === "Male" && <><option value="Altered">Neutered</option><option value="Not Altered">Not neutered</option></>}{sex === "Unknown" && <><option value="Altered">Spayed or neutered</option><option value="Not Altered">Not spayed or neutered</option></>}</select></Field>
+          <Field label="Does the animal have a microchip?"><select name="microchipKnown" className={selectClass} value={microchipKnown} onChange={(event) => setMicrochipKnown(event.target.value)}><option>Yes</option><option>No</option><option>Unknown</option></select></Field>
+          {microchipKnown === "Yes" && <><Field label="Microchip number"><Input name="microchipNumber" /></Field><Field label="Microchip manufacturer"><Input name="microchipManufacturer" /></Field></>}
+          <Field label="Current veterinarian or clinic"><Input name="veterinarian" /></Field>
+          <Field label="Veterinarian phone"><Input name="veterinarianPhone" type="tel" /></Field>
+          <Field label="Veterinarian address"><Input name="veterinarianAddress" /></Field>
         </div>
+        <fieldset className="space-y-4">
+          <legend className="text-sm font-medium">How is the animal with other people and pets?</legend>
+          <div className="grid gap-5 md:grid-cols-3">
+            {([["goodWithChildren", "Good with children?"], ["goodWithDogs", "Good with other dogs?"], ["goodWithCats", "Good with cats?"]] as const).map(([name, label]) => <Field key={name} label={label}><select name={name} className={selectClass} defaultValue="Unknown / not assessed"><option>Unknown / not assessed</option><option>Yes</option><option>No</option></select></Field>)}
+          </div>
+          <p className="text-xs text-muted-foreground">If you are unsure or the animal has not met them, choose “Unknown / not assessed.”</p>
+        </fieldset>
         <Field label="What is leading you to request surrender? *"><Textarea name="reason" rows={4} required /></Field>
         <Field label="Behavior or safety details" note="Include information that will help staff assess safe handling and placement."><Textarea name="behaviorNotes" rows={3} /></Field>
         <Field label="Medical conditions or medications"><Textarea name="medicalNotes" rows={3} /></Field>
@@ -84,11 +96,11 @@ export default function OwnerSurrenderRequestPage() {
       <Card className="space-y-6 p-6 md:p-8">
         <h2 className="text-2xl font-bold">Timing</h2>
         <div className="grid gap-5 md:grid-cols-2">
-          <Field label="How soon do you need help? *"><select name="urgency" className={selectClass} defaultValue="Routine" required><option>Routine</option><option>Soon</option><option>Urgent</option></select></Field>
+          <Field label="How soon do you need help? *"><select name="urgency" className={selectClass} defaultValue="Soon" required><option>Soon</option><option>Urgent</option></select></Field>
           <Field label="Preferred surrender date, if known"><Input name="requestedDate" type="date" /></Field>
-          <Field label="How long can you continue caring for the animal?"><Input name="canKeepUntil" type="date" /></Field>
+          <Field label="What is the latest date you can continue caring for the animal?"><Input name="canKeepUntil" type="date" /></Field>
         </div>
-        <p className="text-sm text-muted-foreground">Choose Urgent only if there is an immediate safety concern or you cannot safely keep the animal. This helps staff prioritize review but does not guarantee immediate placement.</p>
+        <p className="text-sm text-muted-foreground">The preferred date is when you would like help, if possible. The latest date is the last day you can safely keep the animal. They can be the same. Choose Urgent only for an immediate safety concern or when you cannot safely keep the animal. This helps staff prioritize review but does not guarantee immediate placement.</p>
       </Card>
 
       <label className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden" aria-hidden="true">Leave this field empty<input name="website" tabIndex={-1} autoComplete="off" /></label>

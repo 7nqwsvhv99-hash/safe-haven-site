@@ -5,6 +5,8 @@ import {
   ArrowLeft,
   BedDouble,
   ClipboardCheck,
+  Cat,
+  Dog,
   HeartPulse,
   MapPin,
   Plus,
@@ -125,9 +127,30 @@ export default async function CareAndHousingPage({
   const locationById = new Map(locations.map((record) => [record.id, record]));
   const activeAnimals = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted");
   const inShelter = activeAnimals.filter((record) => asText(record.fields["Housing Type"]) === "In Shelter");
+  const catsInShelter = inShelter.filter((record) => ["cat", "cats"].includes(asText(record.fields.Species).toLowerCase()));
+  const dogsInShelter = inShelter.filter((record) => ["dog", "dogs"].includes(asText(record.fields.Species).toLowerCase()));
+  const activeLocations = locations.filter((record) => Boolean(record.fields.Active));
+  const dogCapacityLocations = activeLocations.filter((location) => {
+    const type = normalizedLocationType(location.fields["Location Type"]);
+    return type === "Dog Kennel" || (type === "Isolation" && /kennel/i.test(asText(location.fields["Location Name"])))
+      ? asNumber(location.fields.Capacity) !== null
+      : false;
+  });
+  const catCondoLocations = activeLocations.filter((location) =>
+    normalizedLocationType(location.fields["Location Type"]) === "Cat Condo" && asNumber(location.fields.Capacity) !== null
+  );
+  const countVacancies = (eligibleLocations: typeof activeLocations, species: "cat" | "dog") => eligibleLocations.length ? eligibleLocations.reduce((sum, location) => {
+    const capacity = asNumber(location.fields.Capacity) ?? 0;
+    const occupied = inShelter.filter((animal) =>
+      [species, `${species}s`].includes(asText(animal.fields.Species).toLowerCase()) &&
+      asStrings(animal.fields["Current Housing Location"]).includes(location.id)
+    ).length;
+    return sum + Math.max(0, capacity - occupied);
+  }, 0) : null;
+  const dogVacancies = countVacancies(dogCapacityLocations, "dog");
+  const catVacancies = countVacancies(catCondoLocations, "cat");
   const unassigned = inShelter.filter((record) => asStrings(record.fields["Current Housing Location"]).length === 0);
-  const boardLocations = locations
-    .filter((record) => Boolean(record.fields.Active))
+  const boardLocations = activeLocations
     .map((location) => ({
       id: location.id,
       name: asText(location.fields["Location Name"]),
@@ -372,11 +395,31 @@ export default async function CareAndHousingPage({
           </p>
         )}
 
-        <section className="mb-8 grid gap-4 sm:grid-cols-2">
+        <section className="mb-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
           <div className="rounded-2xl border bg-white p-5 shadow-sm">
             <BedDouble className="mb-3 h-5 w-5 text-primary" />
             <p className="text-3xl font-bold">{inShelter.length}</p>
             <p className="mt-1 text-sm text-muted-foreground">Animals in shelter</p>
+          </div>
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <Dog className="mb-3 h-5 w-5 text-primary" />
+            <p className="text-3xl font-bold">{dogsInShelter.length}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Dogs in shelter</p>
+          </div>
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <Cat className="mb-3 h-5 w-5 text-primary" />
+            <p className="text-3xl font-bold">{catsInShelter.length}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Cats in shelter</p>
+          </div>
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <BedDouble className="mb-3 h-5 w-5 text-primary" />
+            <p className="text-3xl font-bold">{dogVacancies ?? "—"}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Open dog kennel spaces</p>
+          </div>
+          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+            <BedDouble className="mb-3 h-5 w-5 text-primary" />
+            <p className="text-3xl font-bold">{catVacancies ?? "—"}</p>
+            <p className="mt-1 text-sm text-muted-foreground">Open cat condo spaces</p>
           </div>
           {openAlerts.length > 0 && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
@@ -386,6 +429,7 @@ export default async function CareAndHousingPage({
             </div>
           )}
         </section>
+        <p className="mb-8 text-xs text-muted-foreground">Vacancies use active locations with capacity entered. Cat openings count condos, since cats also have room assignments. A dash means no capacity is configured for that housing type.</p>
 
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-6">
