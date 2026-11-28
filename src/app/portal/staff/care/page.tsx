@@ -365,7 +365,7 @@ export default async function CareAndHousingPage({
         </section>
         <p className="mb-8 text-xs text-muted-foreground">Vacancies use active locations with capacity entered. Cat openings count condos, since cats also have room assignments. A dash means no capacity is configured for that housing type.</p>
 
-        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-6 xl:grid-cols-2">
           <div className="space-y-6">
 
 
