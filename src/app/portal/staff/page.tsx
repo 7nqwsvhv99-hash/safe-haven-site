@@ -90,10 +90,16 @@ export default async function StaffPortalPage({searchParams}:{searchParams:Promi
       icon: PawPrint,
     },
     {
-      title: "Kennel, Daily Care & Housing",
-      description: "Manage housing, move animals, record daily care, and resolve care follow-ups.",
+      title: "Housing",
+      description: "See shelter occupancy, move animals, and manage room, condo, and kennel locations.",
       href: "/portal/staff/care",
       icon: BedDouble,
+    },
+    {
+      title: "Care Alerts",
+      description: "Review shared animal observations and follow-ups by alert level.",
+      href: "/portal/staff/care-alerts",
+      icon: AlertTriangle,
     },
     {
       title: "Adoption Management",
