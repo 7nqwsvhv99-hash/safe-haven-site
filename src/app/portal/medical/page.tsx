@@ -94,7 +94,7 @@ export default async function MedicalPortalPage({
       ...(followUpDate ? { "Follow-Up Date": followUpDate } : {}),
       "Needs Veterinarian Review": needsReview,
       ...(needsReview ? { "Veterinary Review Status": "Pending Review" } : {}),
-      "Entered By Role": current.canStaff ? "Shelter Staff" : "Veterinarian",
+      "Entered By Role": current.roles.includes("Medical") ? "Veterinarian / Veterinary Technician" : current.roles.includes("Shelter Manager") ? "Shelter Manager" : "Executive Director",
     });
 
     revalidatePath("/portal/medical");
@@ -162,7 +162,7 @@ export default async function MedicalPortalPage({
                   <ClipboardPlus className="h-6 w-6 text-primary" />
                   <h2 className="text-2xl font-bold">Record Care</h2>
                 </div>
-                <form action={addMedicalEntry} className="space-y-4">
+                {(context.roles.includes("Medical") || context.isAdministrator) ? (<form action={addMedicalEntry} className="space-y-4">
                   <label className="block text-sm font-medium">
                     Animal
                     <select name="animalId" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
@@ -191,7 +191,7 @@ export default async function MedicalPortalPage({
                     <span><strong>Needs veterinarian review</strong><span className="mt-1 block text-muted-foreground">Add this entry to the focused queue for the veterinarian&apos;s weekly visit.</span></span>
                   </label>
                   <button type="submit" className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">Save Medical Entry</button>
-                </form>
+                </form>) : <p className="rounded-xl bg-slate-50 p-4 text-sm text-muted-foreground">Read-only medical history access. Medical record entry is reserved for the veterinarian and veterinary technician.</p>}
               </section>
             </div>}
 
@@ -206,12 +206,12 @@ export default async function MedicalPortalPage({
                     {data.pendingReview.map((record) => (
                       <div key={record.id}>
                         <MedicalRecordCard record={record} />
-                        <form action={updateReviewStatus} className="mt-2 flex flex-wrap gap-2 pl-2">
+                        {(context.roles.includes("Medical") || context.isAdministrator) && <form action={updateReviewStatus} className="mt-2 flex flex-wrap gap-2 pl-2">
                           <input type="hidden" name="recordId" value={record.id} />
                           {(["Reviewed", "Follow-Up Needed", "Resolved"] as const).map((status) => (
                             <button key={status} name="status" value={status} className="rounded-full border bg-white px-3 py-1.5 text-xs font-semibold hover:bg-slate-50">{status}</button>
                           ))}
-                        </form>
+                        </form>}
                       </div>
                     ))}
                   </div>

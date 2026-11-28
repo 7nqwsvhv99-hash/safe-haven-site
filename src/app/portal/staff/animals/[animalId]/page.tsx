@@ -11,6 +11,7 @@ import {
   HeartHandshake,
   ImageIcon,
   PawPrint,
+  Pill,
   Stethoscope,
   UserRoundCheck,
   Weight,
@@ -262,6 +263,19 @@ export default async function AnimalProfilePage({
       "Notes / Observation",
       "Photo / Attachment",
       "Follow-Up Status",
+      "Medication / Product",
+      "Medication Dose",
+      "Medication Route",
+      "Alert Status",
+      "Routed Roles",
+      "Assigned Role",
+      "Assigned To",
+      "Acknowledged By",
+      "Acknowledged At",
+      "Resolved By",
+      "Resolved At",
+      "Resolution Notes",
+      "Alert History",
     ], { sort: [{ field: "Date / Time", direction: "desc" }] }),
   ]);
 
@@ -289,7 +303,9 @@ export default async function AnimalProfilePage({
   const relatedAdoptions = adoptions.filter((record) => linked(record, "Animal", animalId));
   const relatedDocuments = documents.filter((record) => linked(record, "Animal", animalId));
   const relatedCare = dailyCare.filter((record) => linked(record, "Animal", animalId));
-  const observationEntries = relatedCare.filter((record) => asText(record.fields["Care Type"]) !== "Weight Check");
+  const observationEntries = relatedCare.filter((record) => !["Weight Check", "Medication Support"].includes(asText(record.fields["Care Type"])));
+  const medicationEntries = relatedCare.filter((record) => asText(record.fields["Care Type"]) === "Medication Support");
+  const activeCareAlerts = relatedCare.filter((record) => ["Monitor", "Needs Attention", "Urgent"].includes(asText(record.fields["Alert Level"])) && asText(record.fields["Alert Status"]) !== "Resolved");
   const weightHistory = [
     ...relatedIntakes.flatMap((record) => {
       const weight = asNumber(record.fields["Weight at Intake (lb)"]);
@@ -407,13 +423,40 @@ export default async function AnimalProfilePage({
     revalidatePath("/portal/staff/animals");
   }
 
+  async function recordMedication(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Staff", "write");
+    const product = field(formData, "medicationProduct");
+    const dose = field(formData, "medicationDose");
+    const route = field(formData, "medicationRoute");
+    const notes = field(formData, "medicationNotes");
+    if (!product || !dose || !route) return;
+    const animalRecord = (await airtableList(TABLES.animals, ["Pet Name", "Current Housing Location"])).find((record) => record.id === animalId);
+    if (!animalRecord) return;
+    const currentLocation = asStrings(animalRecord.fields["Current Housing Location"])[0] || "";
+    await airtableCreate(TABLES.dailyCare, {
+      Animal: [animalId],
+      "Date / Time": new Date().toISOString(),
+      "Care Type": "Medication Support",
+      ...(currentLocation ? { "Housing Location": [currentLocation] } : {}),
+      "Completed By": current.displayName,
+      "Medication / Product": product,
+      "Medication Dose": dose,
+      "Medication Route": route,
+      ...(notes ? { "Notes / Observation": notes } : {}),
+      "Follow-Up Needed": false,
+    }, true);
+    revalidatePath(`/portal/staff/animals/${animalId}`);
+    revalidatePath("/portal/medical");
+  }
+
   async function recordCare(formData: FormData) {
     "use server";
     const current = await requirePortalRole("Staff", "write");
     const careType = field(formData, "careType");
     const alertLevel = field(formData, "alertLevel");
     const notes = field(formData, "notes");
-    const allowedCareTypes = ["Medication Support", "Behavior Observation", "Health Observation", "Grooming", "Other"];
+    const allowedCareTypes = ["Behavior Observation", "Health Observation", "Grooming", "Other"];
     const allowedAlertLevels = ["Monitor", "Needs Attention", "Urgent"];
     if (!allowedCareTypes.includes(careType) || !allowedAlertLevels.includes(alertLevel) || !notes) return;
 
@@ -436,6 +479,10 @@ export default async function AnimalProfilePage({
         "Completed By": current.displayName,
         "Alert Level": alertLevel,
         "Follow-Up Needed": followUpNeeded,
+        "Alert Status": "Open",
+        "Routed Roles": alertLevel === "Urgent" ? ["Animal Care Staff", "Shelter Manager", "Executive Director"] : ["Animal Care Staff", "Shelter Manager"],
+        "Assigned Role": "Shelter Manager",
+        "Alert History": `${new Date().toISOString()} · Created by ${current.displayName} · Routed to animal care staff and ${alertLevel === "Urgent" ? "Shelter Manager and Executive Director" : "Shelter Manager"}.`,
         ...(followUpDate ? { "Follow-Up Date": followUpDate } : {}),
         "Notes / Observation": notes,
         ...(followUpNeeded
@@ -490,7 +537,7 @@ export default async function AnimalProfilePage({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <StatusPill>{status || "No status"}</StatusPill>
-                  <a href="#adoption-website-details" title="Open Adoption & website details" aria-label={`Website readiness: ${readiness || "unavailable"}. Open Adoption and website details.`} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold hover:bg-orange-100 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{readiness || "Website readiness unavailable"}</a>
+                  <a href="#adoption-website-details" title="Open Adoption & website details" aria-label={`Website readiness: ${readiness || "unavailable"}. Open Adoption and website details.`} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold hover:bg-orange-100 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{readiness ? `Website readiness: ${readiness}` : "Website readiness unavailable"}</a>
                   {isPublicListing && <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Public listing</span>}
                 </div>
               </div>
@@ -503,7 +550,7 @@ export default async function AnimalProfilePage({
                 <Detail label="Microchip" value={asText(animal.fields["Microchip Number"])} />
                 <Detail label="Microchip status" value={asText(animal.fields["Microchip Registration Status"])} />
                 <Detail label="Bonded companion" value={bondedNames.join(", ")} />
-                <Detail label="Medical review" value={relatedMedical.some((record) => Boolean(record.fields["Needs Veterinarian Review"]) && !["Reviewed", "Resolved"].includes(asText(record.fields["Veterinary Review Status"]))) ? "Needs review" : "No unresolved review"} />
+                <Detail label="Veterinary review" value={relatedMedical.some((record) => Boolean(record.fields["Needs Veterinarian Review"]) && !["Reviewed", "Resolved"].includes(asText(record.fields["Veterinary Review Status"]))) ? "Needs review" : "No unresolved review"} />
               </dl>
             </div>
           </div>
@@ -518,10 +565,17 @@ export default async function AnimalProfilePage({
           </a>
         )}
 
+        {activeCareAlerts.length > 0 && (
+          <a href={`/portal/staff/care-alerts?animal=${animalId}`} className="mb-4 block rounded-2xl border border-orange-300 bg-orange-50 px-5 py-4 font-semibold text-orange-950 hover:bg-orange-100">
+            {activeCareAlerts.length} open care alert{activeCareAlerts.length === 1 ? "" : "s"} · Review shared follow-up
+          </a>
+        )}
+
         <nav className="mb-8 flex gap-2 overflow-x-auto rounded-2xl border bg-white p-2 text-sm font-semibold shadow-sm">
           {[
             ["overview", "Overview"],
             ["weight", "Weight"],
+            ["medication", "Medication"],
             ["observations", "Observations"],
             ["medical", "Medical"],
             ["timeline", "Timeline"],
@@ -637,11 +691,38 @@ export default async function AnimalProfilePage({
             </div>
           </div>
 
+          <section id="medication" className="mb-6 scroll-mt-48 rounded-2xl border bg-white p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <Pill className="h-6 w-6 text-primary" />
+              <div><h2 className="text-2xl font-bold">Medication Administration</h2><p className="text-sm text-muted-foreground">Record each medication dose given. The date and time are captured automatically.</p></div>
+            </div>
+            <form action={recordMedication} className="mb-5 space-y-4 rounded-2xl bg-slate-50 p-5">
+              <h3 className="font-bold">Record medication given</h3>
+              <div className="grid gap-4 md:grid-cols-3">
+                <label className="text-sm font-medium">Medication / product<input name="medicationProduct" required className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                <label className="text-sm font-medium">Dose<input name="medicationDose" required placeholder="e.g. 5 mg" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                <label className="text-sm font-medium">Route<input name="medicationRoute" required placeholder="e.g. oral" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+              </div>
+              <label className="block text-sm font-medium">Administration notes, if needed<textarea name="medicationNotes" rows={2} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+              <button className="rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90">Save Medication Record</button>
+            </form>
+            <div className="space-y-3">
+              {medicationEntries.length ? medicationEntries.slice(0, 30).map((record) => (
+                <article key={record.id} className="rounded-xl border p-4 text-sm">
+                  <div className="flex flex-wrap justify-between gap-2"><strong>{asText(record.fields["Medication / Product"]) || "Medication"}</strong><span className="text-muted-foreground">{formatDate(record.fields["Date / Time"], true)}</span></div>
+                  <p className="mt-1">{asText(record.fields["Medication Dose"])} · {asText(record.fields["Medication Route"])}</p>
+                  <p className="mt-1 text-muted-foreground">Given by {asText(record.fields["Completed By"]) || "Staff"}</p>
+                  {asText(record.fields["Notes / Observation"]) && <p className="mt-2">{asText(record.fields["Notes / Observation"])}</p>}
+                </article>
+              )) : <Empty>No medication administrations have been recorded for this animal.</Empty>}
+            </div>
+          </section>
+
           <div id="observations" className="mb-4 scroll-mt-48 flex items-center gap-3">
             <ClipboardCheck className="h-6 w-6 text-primary" />
             <div>
               <h2 className="text-2xl font-bold">Observations &amp; Concerns</h2>
-              <p className="text-sm text-muted-foreground">Record medication, notable behavior or health observations, and follow-up for this animal.</p>
+              <p className="text-sm text-muted-foreground">Record notable behavior or health observations, and follow-up for this animal.</p>
             </div>
           </div>
           <form action={recordCare} className="mb-6 space-y-4 rounded-2xl bg-slate-50 p-5 md:p-6">
@@ -650,7 +731,6 @@ export default async function AnimalProfilePage({
               <label className="block text-sm font-medium">Entry type
                 <select name="careType" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
                   <option value="" disabled>Select entry type</option>
-                  <option value="Medication Support">Medication</option>
                   <option value="Behavior Observation">Behavior observation</option>
                   <option value="Health Observation">Health observation</option>
                   <option value="Grooming">Grooming / hygiene</option>
