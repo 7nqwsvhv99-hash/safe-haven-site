@@ -26,7 +26,7 @@ export default async function CareAlertsPage({ searchParams }: { searchParams: P
     "Animal", "Date / Time", "Care Type", "Completed By", "Alert Level", "Alert Status",
     "Routed Roles", "Assigned Role", "Assigned To", "Acknowledged By", "Acknowledged At",
     "Resolved By", "Resolved At", "Resolution Notes", "Alert History", "Notes / Observation",
-    "Follow-Up Date", "Follow-Up Status",
+    "Follow-Up Date", "Follow-Up Status", "Photo / Attachment",
   ], { sort: [{ field: "Date / Time", direction: "desc" }] });
   const animals = await airtableList(TABLES.animals, ["Pet Name", "Animal ID"]);
   const animalMap = new Map(animals.map((animal) => [animal.id, animal]));
@@ -98,17 +98,21 @@ export default async function CareAlertsPage({ searchParams }: { searchParams: P
             const animalId = asStrings(record.fields.Animal)[0] || "";
             const animal = animalMap.get(animalId);
             const level = asText(record.fields["Alert Level"]);
+            const files = Array.isArray(record.fields["Photo / Attachment"]) ? record.fields["Photo / Attachment"] as { url?: unknown; filename?: unknown }[] : [];
             return <article id={record.id} key={record.id} className="scroll-mt-28 rounded-3xl border bg-white p-6 shadow-sm">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div><Link className="text-xl font-bold hover:text-primary" href={"/portal/staff/animals/" + animalId + "#observations"}>{asText(animal?.fields["Pet Name"]) || "Animal"} · {asText(animal?.fields["Animal ID"])}</Link><p className="mt-1 text-sm text-muted-foreground">{asText(record.fields["Care Type"])} · {fmt(record.fields["Date / Time"])} · logged by {asText(record.fields["Completed By"]) || "Staff"}</p></div>
                 <span className={"rounded-full px-3 py-1 text-sm font-semibold " + (level === "Urgent" ? "bg-red-100 text-red-800" : level === "Needs Attention" ? "bg-orange-100 text-orange-900" : "bg-amber-100 text-amber-900")}><AlertTriangle className="mr-1 inline h-4 w-4" />{level}</span>
               </div>
               <p className="mt-4 whitespace-pre-wrap">{asText(record.fields["Notes / Observation"])}</p>
+              {files.map((file) => typeof file.url === "string" && file.url ? <a key={file.url} href={file.url} target="_blank" rel="noreferrer" className="mt-3 block text-sm font-semibold text-primary hover:underline">{typeof file.filename === "string" ? file.filename : "View attachment"}</a> : null)}
               <div className="mt-4 grid gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
                 <p><strong>Status:</strong> {alertStatus(record)}</p><p><strong>Routed roles:</strong> {asStrings(record.fields["Routed Roles"]).join(", ") || "Shelter Manager, Animal Care Staff"}</p>
                 <p><strong>Assigned role:</strong> {asText(record.fields["Assigned Role"]) || "Shelter Manager"}</p><p><strong>Assigned to:</strong> {asText(record.fields["Assigned To"]) || "Unassigned individual"}</p>
                 {record.fields["Follow-Up Date"] && <p><strong>Follow-up date:</strong> {fmt(record.fields["Follow-Up Date"])}</p>}
                 {asText(record.fields["Acknowledged By"]) && <p><strong>Acknowledged:</strong> {asText(record.fields["Acknowledged By"])} · {fmt(record.fields["Acknowledged At"])}</p>}
+                {asText(record.fields["Resolved By"]) && <p><strong>Resolved:</strong> {asText(record.fields["Resolved By"])} · {fmt(record.fields["Resolved At"])}</p>}
+                {asText(record.fields["Resolution Notes"]) && <p className="sm:col-span-2"><strong>Resolution notes:</strong> {asText(record.fields["Resolution Notes"])}</p>}
               </div>
               {management && <div className="mt-4 grid gap-4 border-t pt-4 lg:grid-cols-2">
                 <form action={manageAlert} className="flex flex-wrap items-end gap-2"><input type="hidden" name="recordId" value={record.id}/><input type="hidden" name="action" value="assign"/><label className="min-w-48 flex-1 text-sm font-medium">Assign role<select name="assignedRole" defaultValue={asText(record.fields["Assigned Role"]) || "Shelter Manager"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"><option>Shelter Manager</option><option>Executive Director</option><option>Animal Care Staff</option></select></label><label className="min-w-48 flex-1 text-sm font-medium">Assign to email, optional<input name="assignedTo" type="email" defaultValue={asText(record.fields["Assigned To"])} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"/></label><button className="rounded-full border px-4 py-2.5 font-semibold">Save assignment</button></form>
