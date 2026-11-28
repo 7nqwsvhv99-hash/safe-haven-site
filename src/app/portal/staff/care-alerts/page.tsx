@@ -1,122 +1,121 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
-import { AlertTriangle, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Clock3 } from "lucide-react";
 import { airtableList, airtableUpdate, asStrings, asText, requirePortalRole, TABLES } from "@/lib/portal";
 
-function formatDate(value: unknown) {
-  const text = asText(value);
-  if (!text) return "Date not recorded";
-  const date = new Date(text);
-  if (Number.isNaN(date.getTime())) return text;
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
-    timeZone: "America/Chicago",
-  }).format(date);
+function canManageAlerts(context: Awaited<ReturnType<typeof requirePortalRole>>) {
+  return context.isAdministrator || context.roles.includes("Shelter Manager") || context.roles.includes("Executive Director");
 }
 
-const levels = ["Urgent", "Needs Attention", "Monitor"];
+function fmt(value: unknown) {
+  const text = asText(value);
+  if (!text) return "Time not recorded";
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) return text;
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Chicago" }).format(date);
+}
 
-export default async function CareAlertsPage() {
-  const actor = await requirePortalRole("Staff");
-  const [care, animals, access] = await Promise.all([
-    airtableList(TABLES.dailyCare, [
-      "Animal", "Date / Time", "Care Type", "Completed By", "Alert Level",
-      "Follow-Up Needed", "Follow-Up Date", "Notes / Observation", "Photo / Attachment", "Follow-Up Status",
-    ], { sort: [{ field: "Date / Time", direction: "desc" }] }),
-    airtableList(TABLES.animals, ["Pet Name", "Animal ID", "Species"]),
-    airtableList(TABLES.portalAccess, ["Email", "Shelter Position", "Active"]),
-  ]);
-  const profile = access.find((record) => asText(record.fields.Email).toLowerCase() === actor.email.toLowerCase());
-  const position = asText(profile?.fields["Shelter Position"]);
-  const canResolve = actor.isAdministrator || (actor.roles.includes("Shelter Manager") || actor.roles.includes("Executive Director")) || position === "Animal Welfare Manager";
-  const animalById = new Map(animals.map((animal) => [animal.id, animal]));
-  const alerts = care.filter((record) =>
-    levels.includes(asText(record.fields["Alert Level"])) &&
-    asText(record.fields["Follow-Up Status"]) !== "Completed"
+function appendHistory(existing: unknown, entry: string) {
+  return [asText(existing), entry].filter(Boolean).join("\n");
+}
+
+export default async function CareAlertsPage({ searchParams }: { searchParams: Promise<{ animal?: string }> }) {
+  const context = await requirePortalRole("Staff");
+  const query = await searchParams;
+  const records = await airtableList(TABLES.dailyCare, [
+    "Animal", "Date / Time", "Care Type", "Completed By", "Alert Level", "Alert Status",
+    "Routed Roles", "Assigned Role", "Assigned To", "Acknowledged By", "Acknowledged At",
+    "Resolved By", "Resolved At", "Resolution Notes", "Alert History", "Notes / Observation",
+    "Follow-Up Date",
+  ], { sort: [{ field: "Date / Time", direction: "desc" }] });
+  const animals = await airtableList(TABLES.animals, ["Pet Name", "Animal ID"]);
+  const animalMap = new Map(animals.map((animal) => [animal.id, animal]));
+  const alerts = records.filter((record) =>
+    ["Monitor", "Needs Attention", "Urgent"].includes(asText(record.fields["Alert Level"])) &&
+    asText(record.fields["Alert Status"]) !== "Resolved" &&
+    (!query.animal || asStrings(record.fields.Animal).includes(query.animal))
   );
 
-  async function resolveAlert(formData: FormData) {
+  async function manageAlert(formData: FormData) {
     "use server";
-    const current = await requirePortalRole("Staff", "write");
-    const staff = await airtableList(TABLES.portalAccess, ["Email", "Shelter Position"]);
-    const currentProfile = staff.find((record) => asText(record.fields.Email).toLowerCase() === current.email.toLowerCase());
-    const currentPosition = asText(currentProfile?.fields["Shelter Position"]);
-    const authorized = current.isAdministrator || (current.roles.includes("Shelter Manager") || current.roles.includes("Executive Director")) || currentPosition === "Animal Welfare Manager";
-    if (!authorized) throw new Error("Only shelter management can resolve a care alert.");
-
-    const careId = String(formData.get("careId") || "");
-    const latest = await airtableList(TABLES.dailyCare, ["Alert Level", "Follow-Up Status"]);
-    const record = latest.find((item) => item.id === careId);
-    if (!record || !levels.includes(asText(record.fields["Alert Level"])) || asText(record.fields["Follow-Up Status"]) === "Completed") return;
-    await airtableUpdate(TABLES.dailyCare, careId, {
-      "Follow-Up Status": "Completed",
-      "Follow-Up Needed": false,
-    }, true);
+    const actor = await requirePortalRole("Staff");
+    if (!canManageAlerts(actor)) return;
+    const recordId = String(formData.get("recordId") || "");
+    const action = String(formData.get("action") || "");
+    const assignedRole = String(formData.get("assignedRole") || "");
+    const assignedTo = String(formData.get("assignedTo") || "").trim();
+    const resolutionNotes = String(formData.get("resolutionNotes") || "").trim();
+    const allRecords = await airtableList(TABLES.dailyCare, [
+      "Animal", "Alert Level", "Alert Status", "Assigned Role", "Assigned To", "Acknowledged By",
+      "Acknowledged At", "Resolved By", "Resolved At", "Resolution Notes", "Alert History",
+    ]);
+    const record = allRecords.find((item) => item.id === recordId);
+    if (!record || !["Monitor", "Needs Attention", "Urgent"].includes(asText(record.fields["Alert Level"]))) return;
+    const now = new Date().toISOString();
+    const history = (entry: string) => appendHistory(record.fields["Alert History"], now + " · " + actor.displayName + " · " + entry);
+    if (action === "assign") {
+      if (!["Shelter Manager", "Executive Director", "Animal Care Staff"].includes(assignedRole)) return;
+      await airtableUpdate(TABLES.dailyCare, recordId, {
+        "Assigned Role": assignedRole,
+        "Assigned To": assignedTo || null,
+        "Alert History": history("Assigned to " + assignedRole + (assignedTo ? " (" + assignedTo + ")" : "") + "."),
+      }, true);
+    } else if (action === "acknowledge") {
+      await airtableUpdate(TABLES.dailyCare, recordId, {
+        "Alert Status": "Acknowledged",
+        "Acknowledged By": actor.displayName,
+        "Acknowledged At": now,
+        "Alert History": history("Acknowledged."),
+      }, true);
+    } else if (action === "resolve") {
+      if (!resolutionNotes) return;
+      await airtableUpdate(TABLES.dailyCare, recordId, {
+        "Alert Status": "Resolved",
+        "Resolved By": actor.displayName,
+        "Resolved At": now,
+        "Resolution Notes": resolutionNotes,
+        "Follow-Up Needed": false,
+        "Follow-Up Status": "Completed",
+        "Alert History": history("Resolved. " + resolutionNotes),
+      }, true);
+    } else return;
     revalidatePath("/portal/staff/care-alerts");
-    revalidatePath("/portal/staff/animals");
+    for (const animalId of asStrings(record.fields.Animal)) revalidatePath("/portal/staff/animals/" + animalId);
+    revalidatePath("/portal/staff/care");
   }
 
+  const management = canManageAlerts(context);
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="container-custom py-10 md:py-12">
-        <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-          <ArrowLeft className="h-4 w-4" /> Staff Portal
-        </Link>
-        <header className="mb-8">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Animal Care</p>
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Care Alerts</h1>
-          <p className="mt-4 max-w-3xl text-muted-foreground">A shared queue for animal care staff and management to review observations that need follow-up.</p>
-        </header>
-
-        <section className="mb-6 grid gap-4 md:grid-cols-3">
-          {levels.map((level) => {
-            const count = alerts.filter((record) => asText(record.fields["Alert Level"]) === level).length;
-            return <div key={level} className="rounded-2xl border bg-white p-5 shadow-sm"><p className="text-2xl font-bold">{count}</p><p className="mt-1 font-medium">{level}</p></div>;
-          })}
-        </section>
-
-        <p className="mb-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-950">
-          All animal care staff can see this shared queue. Monitor and Needs Attention are routed for Shelter Manager review. Urgent is routed for Shelter Manager and Executive Director review.
-        </p>
-
-        <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-          <div className="mb-5 flex items-center gap-3"><AlertTriangle className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Open observations</h2><p className="text-sm text-muted-foreground">Review the animal, observation, alert level, and requested follow-up.</p></div></div>
-          {alerts.length ? (
-            <div className="space-y-4">
-              {alerts.map((record) => {
-                const animalId = asStrings(record.fields.Animal)[0];
-                const animal = animalById.get(animalId);
-                const level = asText(record.fields["Alert Level"]);
-                const audience = level === "Urgent" ? "Shelter Manager + Executive Director" : "Shelter Manager";
-                const files = Array.isArray(record.fields["Photo / Attachment"]) ? record.fields["Photo / Attachment"] as { url?: unknown; filename?: unknown }[] : [];
-                return (
-                  <article key={record.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div>
-                        <Link href={animalId ? `/portal/staff/animals/${animalId}` : "/portal/staff/animals"} className="font-semibold text-primary hover:underline">
-                          {asText(animal?.fields["Pet Name"]) || "Animal"}{asText(animal?.fields["Animal ID"]) ? ` · ${asText(animal?.fields["Animal ID"])}` : ""}
-                        </Link>
-                        <p className="mt-1 text-sm text-muted-foreground">{asText(record.fields["Care Type"]) || "Observation"} · {formatDate(record.fields["Date / Time"])}{asText(record.fields["Completed By"]) ? ` · Recorded by ${asText(record.fields["Completed By"])}` : ""}</p>
-                      </div>
-                      <span className={`rounded-full px-3 py-1 text-sm font-semibold ${level === "Urgent" ? "bg-red-100 text-red-900" : level === "Needs Attention" ? "bg-amber-100 text-amber-900" : "bg-slate-200 text-slate-800"}`}>{level}</span>
-                    </div>
-                    <p className="mt-4 whitespace-pre-wrap text-sm">{asText(record.fields["Notes / Observation"]) || "No observation notes were entered."}</p>
-                    <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                      <span>Review: <strong className="text-slate-900">{audience}</strong></span>
-                      {asText(record.fields["Follow-Up Date"]) && <span>Follow-up by {formatDate(record.fields["Follow-Up Date"])}</span>}
-                    </div>
-                    {files.map((file) => typeof file.url === "string" && file.url ? <a key={file.url} href={file.url} target="_blank" rel="noreferrer" className="mt-3 block text-sm font-semibold text-primary hover:underline">{typeof file.filename === "string" ? file.filename : "View attachment"}</a> : null)}
-                    {canResolve ? (
-                      <form action={resolveAlert} className="mt-4">
-                        <input type="hidden" name="careId" value={record.id} />
-                        <button className="inline-flex items-center gap-2 rounded-full border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5"><CheckCircle2 className="h-4 w-4" /> Mark follow-up complete</button>
-                      </form>
-                    ) : <p className="mt-4 text-sm font-medium text-muted-foreground">Awaiting management review</p>}
-                  </article>
-                );
-              })}
-            </div>
-          ) : <p className="rounded-2xl bg-slate-50 p-5 text-muted-foreground">No open care alerts right now.</p>}
+        <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft className="h-4 w-4" /> Staff Portal</Link>
+        <header className="mb-8"><p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Shelter Operations</p><h1 className="text-4xl font-bold md:text-5xl">Care Alert Review</h1><p className="mt-4 max-w-3xl text-muted-foreground">Shared care concerns routed by urgency. Animal care staff can view every alert; managers and the executive director manage ownership and follow-up.</p></header>
+        <div className="mb-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-950">Monitor and Needs Attention alerts route to the Shelter Manager. Urgent alerts route to the Shelter Manager and Executive Director.</div>
+        <section className="space-y-4">
+          {alerts.length ? alerts.map((record) => {
+            const animalId = asStrings(record.fields.Animal)[0] || "";
+            const animal = animalMap.get(animalId);
+            const level = asText(record.fields["Alert Level"]);
+            return <article id={record.id} key={record.id} className="scroll-mt-28 rounded-3xl border bg-white p-6 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div><Link className="text-xl font-bold hover:text-primary" href={"/portal/staff/animals/" + animalId + "#observations"}>{asText(animal?.fields["Pet Name"]) || "Animal"} · {asText(animal?.fields["Animal ID"])}</Link><p className="mt-1 text-sm text-muted-foreground">{asText(record.fields["Care Type"])} · {fmt(record.fields["Date / Time"])} · logged by {asText(record.fields["Completed By"]) || "Staff"}</p></div>
+                <span className={"rounded-full px-3 py-1 text-sm font-semibold " + (level === "Urgent" ? "bg-red-100 text-red-800" : level === "Needs Attention" ? "bg-orange-100 text-orange-900" : "bg-amber-100 text-amber-900")}><AlertTriangle className="mr-1 inline h-4 w-4" />{level}</span>
+              </div>
+              <p className="mt-4 whitespace-pre-wrap">{asText(record.fields["Notes / Observation"])}</p>
+              <div className="mt-4 grid gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
+                <p><strong>Status:</strong> {asText(record.fields["Alert Status"]) || "Open"}</p><p><strong>Routed roles:</strong> {asStrings(record.fields["Routed Roles"]).join(", ") || "Shelter Manager, Animal Care Staff"}</p>
+                <p><strong>Assigned role:</strong> {asText(record.fields["Assigned Role"]) || "Shelter Manager"}</p><p><strong>Assigned to:</strong> {asText(record.fields["Assigned To"]) || "Unassigned individual"}</p>
+                {record.fields["Follow-Up Date"] && <p><strong>Follow-up date:</strong> {fmt(record.fields["Follow-Up Date"])}</p>}
+                {asText(record.fields["Acknowledged By"]) && <p><strong>Acknowledged:</strong> {asText(record.fields["Acknowledged By"])} · {fmt(record.fields["Acknowledged At"])}</p>}
+              </div>
+              {management && <div className="mt-4 grid gap-4 border-t pt-4 lg:grid-cols-2">
+                <form action={manageAlert} className="flex flex-wrap items-end gap-2"><input type="hidden" name="recordId" value={record.id}/><input type="hidden" name="action" value="assign"/><label className="min-w-48 flex-1 text-sm font-medium">Assign role<select name="assignedRole" defaultValue={asText(record.fields["Assigned Role"]) || "Shelter Manager"} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"><option>Shelter Manager</option><option>Executive Director</option><option>Animal Care Staff</option></select></label><label className="min-w-48 flex-1 text-sm font-medium">Assign to email, optional<input name="assignedTo" type="email" defaultValue={asText(record.fields["Assigned To"])} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"/></label><button className="rounded-full border px-4 py-2.5 font-semibold">Save assignment</button></form>
+                {asText(record.fields["Alert Status"]) !== "Acknowledged" && <form action={manageAlert}><input type="hidden" name="recordId" value={record.id}/><input type="hidden" name="action" value="acknowledge"/><button className="inline-flex items-center gap-2 rounded-full border px-4 py-2.5 font-semibold"><Clock3 className="h-4 w-4"/>Acknowledge</button></form>}
+                <form action={manageAlert} className="flex flex-wrap items-end gap-2"><input type="hidden" name="recordId" value={record.id}/><input type="hidden" name="action" value="resolve"/><label className="min-w-56 flex-1 text-sm font-medium">Resolution notes<textarea name="resolutionNotes" required rows={2} className="mt-1 w-full rounded-xl border bg-white px-3 py-2.5"/></label><button className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 font-semibold text-white"><CheckCircle2 className="h-4 w-4"/>Resolve alert</button></form>
+              </div>}
+              {asText(record.fields["Alert History"]) && <details className="mt-4"><summary className="cursor-pointer text-sm font-semibold">Action history</summary><pre className="mt-2 whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-xs">{asText(record.fields["Alert History"])}</pre></details>}
+            </article>;
+          }) : <div className="rounded-2xl border bg-white p-6 text-muted-foreground">There are no unresolved care alerts.</div>}
         </section>
       </div>
     </main>
