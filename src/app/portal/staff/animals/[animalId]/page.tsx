@@ -151,6 +151,7 @@ export default async function AnimalProfilePage({
       "Current Housing Location",
       "Microchip Number",
       "Microchip Registration Status",
+      "Microchip Manufacturer",
       "Bonded With",
       "From field: Bonded With",
       "Bonded Pair?",
@@ -286,6 +287,28 @@ export default async function AnimalProfilePage({
   const relatedAdoptions = adoptions.filter((record) => linked(record, "Animal", animalId));
   const relatedDocuments = documents.filter((record) => linked(record, "Animal", animalId));
   const relatedCare = dailyCare.filter((record) => linked(record, "Animal", animalId));
+  const weightHistory = [
+    ...relatedIntakes.flatMap((record) => {
+      const weight = asNumber(record.fields["Weight at Intake (lb)"]);
+      return weight === null ? [] : [{
+        id: `${record.id}-intake-weight`,
+        date: asText(record.fields["Intake Date"]),
+        weight,
+        source: "At intake",
+        staff: "",
+      }];
+    }),
+    ...relatedCare.flatMap((record) => {
+      const weight = asNumber(record.fields["Weight (lb)"]);
+      return weight === null ? [] : [{
+        id: `${record.id}-care-weight`,
+        date: asText(record.fields["Date / Time"]),
+        weight,
+        source: "Daily Care",
+        staff: asText(record.fields["Completed By"]),
+      }];
+    }),
+  ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   async function saveAnimal(formData: FormData) {
     "use server";
@@ -293,7 +316,6 @@ export default async function AnimalProfilePage({
     const current = (await airtableList(TABLES.animals, ["Pet Name", "Housing Type", "Current Housing Location"])).find((record) => record.id === animalId);
     if (!current) return;
 
-    const weight = optionalNumber(formData, "weight");
     const fee = optionalNumber(formData, "adoptionFee");
     const currentHousingType = asText(current.fields["Housing Type"]);
     const currentLocation = asStrings(current.fields["Current Housing Location"])[0] || "";
@@ -305,7 +327,6 @@ export default async function AnimalProfilePage({
       ...(field(formData, "dateOfBirth") ? { "Date of Birth": field(formData, "dateOfBirth"), "Estimated Date of Birth": null } : { "Date of Birth": null, "Estimated Date of Birth": field(formData, "estimatedDateOfBirth") || null }),
       Breed: field(formData, "breed"),
       "Color / Markings": field(formData, "color"),
-      "Weight (lb)": weight,
       "Adoption Fee": fee,
       "Adoption Fee Status": field(formData, "adoptionFeeStatus"),
       "Short Bio": field(formData, "shortBio"),
@@ -320,6 +341,7 @@ export default async function AnimalProfilePage({
       "Current Housing Location": currentLocation ? [currentLocation] : [],
       "Microchip Number": field(formData, "microchipNumber"),
       "Microchip Registration Status": field(formData, "microchipStatus"),
+      "Microchip Manufacturer": field(formData, "microchipManufacturer"),
       "Public Listing": formData.get("publicListing") === "on",
       ...(field(formData, "availableSince") ? { "Available Since": field(formData, "availableSince") } : { "Available Since": null }),
     }, true);
@@ -486,31 +508,43 @@ export default async function AnimalProfilePage({
               <div className="rounded-xl bg-slate-50 p-4 text-sm"><span className="font-medium">Current age</span><p className="mt-1 text-muted-foreground">{asText(animal.fields["Current Age Display"]) || "Birth date not yet recorded"}</p></div>
               <label className="text-sm font-medium">Breed<input name="breed" defaultValue={asText(animal.fields.Breed)} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               <label className="text-sm font-medium">Color / markings<input name="color" defaultValue={asText(animal.fields["Color / Markings"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <label className="text-sm font-medium">Weight (lb)<input name="weight" type="number" min="0" step="0.1" defaultValue={asNumber(animal.fields["Weight (lb)"]) ?? ""} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm"><span className="font-medium">Current weight (lb)</span><p className="mt-1 text-muted-foreground">{asNumber(animal.fields["Weight (lb)"]) ?? "Not recorded"}</p><p className="mt-1 text-xs text-muted-foreground">Enter new weights in Daily Care to preserve the dated history.</p></div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-muted-foreground">
               <strong>Current placement:</strong> {currentLocation || asText(animal.fields["Housing Type"]) || "Not assigned"}. Use Housing Management or Foster Management to change placement so the related records stay consistent.
             </div>
             <details className="rounded-2xl bg-slate-50 p-4">
               <summary className="cursor-pointer text-sm font-semibold">Additional animal, identification & adoption details</summary>
-              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <label className="text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" defaultValue={asText(animal.fields["Date of Birth"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                <label className="text-sm font-medium">Estimated date of birth, if exact date is unknown<input name="estimatedDateOfBirth" type="date" defaultValue={asText(animal.fields["Estimated Date of Birth"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Use one or the other. Actual DOB takes priority if both are present.</span></label>
-                <label className="text-sm font-medium">Adoption fee<input name="adoptionFee" type="number" min="0" step="0.01" defaultValue={asNumber(animal.fields["Adoption Fee"]) ?? ""} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                <label className="text-sm font-medium">Fee status<select name="adoptionFeeStatus" defaultValue={asText(animal.fields["Adoption Fee Status"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="">Select</option>{["Standard","Reduced","Waived","Sponsored"].map((v)=><option key={v}>{v}</option>)}</select></label>
-                <label className="text-sm font-medium">Available since<input name="availableSince" type="date" defaultValue={asText(animal.fields["Available Since"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                <label className="text-sm font-medium">Microchip number<input name="microchipNumber" defaultValue={asText(animal.fields["Microchip Number"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                <label className="text-sm font-medium">Microchip registration<select name="microchipStatus" defaultValue={asText(animal.fields["Microchip Registration Status"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["No Microchip","Needs Registration","Registered to Safe Haven","Transferred to Adopter","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
+              <div className="mt-4 space-y-4">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <label className="text-sm font-medium">Date of birth, if known<input name="dateOfBirth" type="date" defaultValue={asText(animal.fields["Date of Birth"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="text-sm font-medium">Estimated date of birth, if exact date is unknown<input name="estimatedDateOfBirth" type="date" defaultValue={asText(animal.fields["Estimated Date of Birth"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Use one or the other. Actual DOB takes priority if both are present.</span></label>
+                  <label className="text-sm font-medium">Available since<input name="availableSince" type="date" defaultValue={asText(animal.fields["Available Since"]).slice(0,10)} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="text-sm font-medium">Adoption fee<input name="adoptionFee" type="number" min="0" step="0.01" defaultValue={asNumber(animal.fields["Adoption Fee"]) ?? ""} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="text-sm font-medium">Fee status<select name="adoptionFeeStatus" defaultValue={asText(animal.fields["Adoption Fee Status"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="">Select</option>{["Standard","Reduced","Waived","Sponsored"].map((v)=><option key={v}>{v}</option>)}</select></label>
+                </div>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <label className="text-sm font-medium">Microchip number<input name="microchipNumber" defaultValue={asText(animal.fields["Microchip Number"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                  <label className="text-sm font-medium">Microchip registration<select name="microchipStatus" defaultValue={asText(animal.fields["Microchip Registration Status"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["No Microchip","Needs Registration","Registered to Safe Haven","Transferred to Adopter","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
+                  <label className="text-sm font-medium">Microchip manufacturer<input name="microchipManufacturer" defaultValue={asText(animal.fields["Microchip Manufacturer"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
+                </div>
               </div>
             </details>
 
             <details className="rounded-2xl bg-slate-50 p-4">
               <summary className="cursor-pointer text-sm font-semibold">Adoption & website details</summary>
               <div className="mt-4 space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  {[["goodWithCats","Good With Cats"],["goodWithDogs","Good With Dogs"],["goodWithChildren","Good With Children"],["houseTrained","House / Litter Trained"]].map(([name,label])=>(
+                <div className="grid gap-4 md:grid-cols-3">
+                  {[
+                    ["goodWithCats","Good With Cats"],
+                    ["goodWithDogs","Good With Dogs"],
+                    ["goodWithChildren","Good With Children"],
+                  ].map(([name,label])=>(
                     <label key={name} className="text-sm font-medium">{label}<select name={name} defaultValue={asText(animal.fields[label])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Yes","No","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
                   ))}
+                  <label className="text-sm font-medium">House / Litter Trained<select name="houseTrained" defaultValue={asText(animal.fields["House / Litter Trained"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Yes","No","Unknown"].map((v)=><option key={v}>{v}</option>)}</select></label>
                 </div>
                 <div className="grid gap-4 lg:grid-cols-2">
                   <label className="text-sm font-medium">Short bio<textarea name="shortBio" rows={5} defaultValue={asText(animal.fields["Short Bio"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
@@ -539,6 +573,21 @@ export default async function AnimalProfilePage({
               </div>
             </div>
             <Link href="/portal/staff/care" className="text-sm font-semibold text-primary hover:underline">Manage Housing</Link>
+          </div>
+
+          <div className="mb-6 rounded-2xl border bg-white p-5">
+            <h3 className="font-bold">Weight history</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Intake weight and dated weights entered through Daily Care.</p>
+            {weightHistory.length ? (
+              <div className="mt-4 divide-y">
+                {weightHistory.map((entry) => (
+                  <div key={entry.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-6">
+                    <p className="text-muted-foreground">{formatDate(entry.date, true) || "Date not recorded"} · {entry.source}{entry.staff ? ` · ${entry.staff}` : ""}</p>
+                    <p className="font-semibold">{entry.weight} lb</p>
+                  </div>
+                ))}
+              </div>
+            ) : <p className="mt-3 text-sm text-muted-foreground">No weights have been recorded yet.</p>}
           </div>
 
           <form action={recordCare} className="mb-6 space-y-4 rounded-2xl bg-slate-50 p-5 md:p-6">
