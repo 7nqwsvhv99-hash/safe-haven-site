@@ -605,9 +605,9 @@ export default async function AnimalProfilePage({
           <div className="mb-6 rounded-2xl border bg-white p-5">
             <h3 className="font-bold">Weight Update</h3>
             <p className="mt-1 text-sm text-muted-foreground">Enter and review this animal’s intake weight and later weight updates. Each saved weight automatically records the date and time it is entered.</p>
-            <div className="mt-4">
-              <h4 className="font-semibold">Weight history</h4>
-              {weightHistory.length ? (
+            {weightHistory.length > 0 && (
+              <div className="mt-4">
+                <h4 className="font-semibold">Weight history</h4>
                 <div className="mt-2 divide-y">
                   {weightHistory.map((entry) => (
                     <div key={entry.id} className="grid gap-1 py-3 text-sm sm:grid-cols-[1fr_auto_auto] sm:items-center sm:gap-6">
@@ -616,8 +616,8 @@ export default async function AnimalProfilePage({
                     </div>
                   ))}
                 </div>
-              ) : <p className="mt-3 text-sm text-muted-foreground">No weights have been recorded yet.</p>}
-            </div>
+              </div>
+            )}
             <div className="mt-4 rounded-xl bg-slate-50 p-4">
               <h4 className="font-semibold">Record Weight</h4>
               <form action={recordWeight} className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
