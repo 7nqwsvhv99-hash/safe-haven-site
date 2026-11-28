@@ -288,6 +288,7 @@ export default async function AnimalProfilePage({
   const relatedAdoptions = adoptions.filter((record) => linked(record, "Animal", animalId));
   const relatedDocuments = documents.filter((record) => linked(record, "Animal", animalId));
   const relatedCare = dailyCare.filter((record) => linked(record, "Animal", animalId));
+  const observationEntries = relatedCare.filter((record) => asText(record.fields["Care Type"]) !== "Weight Check");
   const weightHistory = [
     ...relatedIntakes.flatMap((record) => {
       const weight = asNumber(record.fields["Weight at Intake (lb)"]);
@@ -305,7 +306,7 @@ export default async function AnimalProfilePage({
         id: `${record.id}-care-weight`,
         date: asText(record.fields["Date / Time"]),
         weight,
-        source: "Daily Care",
+        source: asText(record.fields["Care Type"]) === "Weight Check" ? "Weight check" : "Observation note",
         staff: asText(record.fields["Completed By"]),
       }];
     }),
@@ -373,6 +374,38 @@ export default async function AnimalProfilePage({
     revalidatePath("/adopt");
   }
 
+  async function recordWeight(formData: FormData) {
+    "use server";
+    const current = await requirePortalRole("Staff", "write");
+    const weight = optionalNumber(formData, "weight");
+    if (weight === null || weight <= 0) return;
+
+    const animalRecord = (await airtableList(
+      TABLES.animals,
+      ["Pet Name", "Current Housing Location"]
+    )).find((record) => record.id === animalId);
+    if (!animalRecord) return;
+
+    const currentLocation = asStrings(animalRecord.fields["Current Housing Location"])[0] || "";
+    await airtableCreate(
+      TABLES.dailyCare,
+      {
+        Animal: [animalId],
+        "Date / Time": new Date().toISOString(),
+        "Care Type": "Weight Check",
+        ...(currentLocation ? { "Housing Location": [currentLocation] } : {}),
+        "Completed By": current.displayName,
+        "Weight (lb)": weight,
+        "Follow-Up Needed": false,
+      },
+      true
+    );
+    await airtableUpdate(TABLES.animals, animalId, { "Weight (lb)": weight }, true);
+
+    revalidatePath(`/portal/staff/animals/${animalId}`);
+    revalidatePath("/portal/staff/animals");
+  }
+
   async function recordCare(formData: FormData) {
     "use server";
     const current = await requirePortalRole("Staff", "write");
@@ -392,7 +425,6 @@ export default async function AnimalProfilePage({
     const currentLocation = asStrings(animalRecord.fields["Current Housing Location"])[0] || "";
     const followUpDate = field(formData, "followUpDate");
     const followUpNeeded = ["Needs Attention", "Urgent"].includes(alertLevel) || Boolean(followUpDate);
-    const weight = optionalNumber(formData, "weight");
     const careRecord = await airtableCreate(
       TABLES.dailyCare,
       {
@@ -404,7 +436,6 @@ export default async function AnimalProfilePage({
         "Alert Level": alertLevel,
         "Follow-Up Needed": followUpNeeded,
         ...(followUpDate ? { "Follow-Up Date": followUpDate } : {}),
-        ...(weight !== null ? { "Weight (lb)": weight } : {}),
         "Notes / Observation": notes,
         ...(followUpNeeded
           ? { "Follow-Up Status": ["Needs Attention", "Urgent"].includes(alertLevel) ? "Needs Attention" : "Not Due" }
@@ -412,10 +443,6 @@ export default async function AnimalProfilePage({
       },
       true
     );
-
-    if (weight !== null) {
-      await airtableUpdate(TABLES.animals, animalId, { "Weight (lb)": weight }, true);
-    }
 
     const file = formData.get("photo");
     if (careRecord && file instanceof File && file.size) {
@@ -496,7 +523,7 @@ export default async function AnimalProfilePage({
             ["medical", "Medical"],
             ["timeline", "Timeline"],
             ...(relatedFosters.length ? [["foster", "Foster"]] : []),
-            ["adoption", "Adoption"],
+            ...(relatedApplications.length || relatedAdoptions.length ? [["adoption", pendingApplications.length ? `Adoption (${pendingApplications.length})` : "Adoption"]] : []),
             ["documents", "Documents"],
             ["photos", "Photos"],
           ].map(([id, label]) => <a key={id} href={`#${id}`} className="whitespace-nowrap rounded-xl px-4 py-2 hover:bg-slate-50 hover:text-primary">{label}</a>)}
@@ -519,7 +546,7 @@ export default async function AnimalProfilePage({
               <div className="rounded-xl bg-slate-50 p-4 text-sm"><span className="font-medium">Current age</span><p className="mt-1 text-muted-foreground">{asText(animal.fields["Current Age Display"]) || "Birth date not yet recorded"}</p></div>
               <label className="text-sm font-medium">Breed<input name="breed" defaultValue={asText(animal.fields.Breed)} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
               <label className="text-sm font-medium">Color / markings<input name="color" defaultValue={asText(animal.fields["Color / Markings"])} className="mt-2 w-full rounded-xl border px-3 py-2.5" /></label>
-              <div className="rounded-xl bg-slate-50 p-4 text-sm"><span className="font-medium">Current weight (lb)</span><p className="mt-1 text-muted-foreground">{asNumber(animal.fields["Weight (lb)"]) ?? "Not recorded"}</p><p className="mt-1 text-xs text-muted-foreground">Enter new weights in Daily Care to preserve the dated history.</p></div>
+              <div className="rounded-xl bg-slate-50 p-4 text-sm"><span className="font-medium">Current weight (lb)</span><p className="mt-1 text-muted-foreground">{asNumber(animal.fields["Weight (lb)"]) ?? "Not recorded"}</p><p className="mt-1 text-xs text-muted-foreground">Record new weights below to keep a dated history.</p></div>
             </div>
             <div className="rounded-2xl bg-slate-50 p-4 text-sm text-muted-foreground">
               <strong>Current placement:</strong> {currentLocation || asText(animal.fields["Housing Type"]) || "Not assigned"}. Use Housing Management or Foster Management to change placement so the related records stay consistent.
@@ -599,14 +626,20 @@ export default async function AnimalProfilePage({
                 ))}
               </div>
             ) : <p className="mt-3 text-sm text-muted-foreground">No weights have been recorded yet.</p>}
+            <form action={recordWeight} className="mt-4 grid gap-3 border-t pt-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+              <label className="block text-sm font-medium">Record weight (lb)
+                <input name="weight" type="number" min="0.1" step="0.1" required className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" />
+              </label>
+              <button className="rounded-full bg-primary px-5 py-2.5 font-semibold text-white shadow-sm hover:opacity-90">Record Weight</button>
+            </form>
           </div>
 
           <form action={recordCare} className="mb-6 space-y-4 rounded-2xl bg-slate-50 p-5 md:p-6">
             <h3 className="font-bold">Record an observation or concern</h3>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="block text-sm font-medium">Record type
+              <label className="block text-sm font-medium">Entry type
                 <select name="careType" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
-                  <option value="" disabled>Select care type</option>
+                  <option value="" disabled>Select entry type</option>
                   <option value="Medication Support">Medication</option>
                   <option value="Behavior Observation">Behavior observation</option>
                   <option value="Health Observation">Health observation</option>
@@ -625,9 +658,6 @@ export default async function AnimalProfilePage({
               <textarea name="notes" required rows={4} placeholder="Record what you observed, medication given, or what staff should follow up on." className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" />
             </label>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="block text-sm font-medium">Weight (lb), if applicable
-                <input name="weight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" />
-              </label>
               <label className="block text-sm font-medium">Follow-up date, if needed
                 <input name="followUpDate" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" />
               </label>
@@ -635,11 +665,11 @@ export default async function AnimalProfilePage({
             <label className="block text-sm font-medium">Photo or attachment, if helpful
               <input name="photo" type="file" accept="image/*,.pdf" className="mt-2 block w-full rounded-xl border bg-white px-3 py-2.5 text-sm" />
             </label>
-            <button className="rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90">Save Care Entry</button>
+            <button className="rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-sm hover:opacity-90">Save Note</button>
           </form>
 
           <div className="space-y-3">
-            {relatedCare.length ? relatedCare.slice(0, 30).map((record) => {
+            {observationEntries.length ? observationEntries.slice(0, 30).map((record) => {
               const locationId = asStrings(record.fields["Housing Location"])[0];
               const location = locationById.get(locationId);
               const alert = asText(record.fields["Alert Level"]);
@@ -710,6 +740,7 @@ export default async function AnimalProfilePage({
         </section>
         )}
 
+        {(relatedApplications.length > 0 || relatedAdoptions.length > 0) && (
         <section id="adoption" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3"><UserRoundCheck className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Adoption</h2><p className="text-sm text-muted-foreground">Applications and completed adoption records tied to this animal.</p></div></div>
@@ -720,6 +751,7 @@ export default async function AnimalProfilePage({
             <div><h3 className="mb-3 font-bold">Adoptions</h3><div className="space-y-3">{relatedAdoptions.length?relatedAdoptions.map((record)=><article key={record.id} className="rounded-2xl bg-slate-50 p-5"><p className="font-semibold">{asText(record.fields["Adoption ID"])||"Adoption"}</p><p className="mt-1 text-sm text-muted-foreground">{formatDate(record.fields["Adoption Date"])}</p>{asNumber(record.fields["Adoption Fee Paid"])!==null&&<p className="mt-2 text-sm">Fee paid: ${asNumber(record.fields["Adoption Fee Paid"])?.toFixed(2)}</p>}{asText(record.fields["Placement Notes"])&&<p className="mt-2 text-sm">{asText(record.fields["Placement Notes"])}</p>}</article>):<Empty>No completed adoption record is linked to this animal.</Empty>}</div></div>
           </div>
         </section>
+        )}
 
         <section id="documents" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4"><div className="flex items-center gap-3"><FileText className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Documents</h2><p className="text-sm text-muted-foreground">Agreements and files linked to this animal.</p></div></div><Link href="/portal/staff/documents" className="text-sm font-semibold text-primary hover:underline">Open Documents & Agreements</Link></div>
