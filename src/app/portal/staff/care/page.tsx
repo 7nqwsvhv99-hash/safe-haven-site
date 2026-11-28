@@ -273,6 +273,7 @@ export default async function CareAndHousingPage({
           <p className="mt-4 max-w-3xl text-muted-foreground">
             See where shelter animals are housed, manage room and kennel capacity, and maintain active housing locations.
           </p>
+          <Link href="/portal/staff/care-alerts" className="mt-4 inline-flex rounded-full border border-orange-300 bg-orange-50 px-4 py-2 text-sm font-semibold text-orange-900 hover:bg-orange-100">Review care alerts</Link>
         </header>
 
         {(notice.saved || notice.error) && (
