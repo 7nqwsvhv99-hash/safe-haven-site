@@ -4,11 +4,9 @@ import {
   AlertTriangle,
   ArrowLeft,
   BedDouble,
-  ClipboardCheck,
   Cat,
   Dog,
   MapPin,
-  Plus,
 } from "lucide-react";
 import HousingBoard from "./housing-board";
 import MoveAnimalForm from "./move-animal-form";
@@ -17,14 +15,12 @@ import {
   airtableCreate,
   airtableList,
   airtableUpdate,
-  airtableUploadAttachment,
   asStrings,
   asText,
   requirePortalRole,
   TABLES,
 } from "@/lib/portal";
 
-const CARE_PHOTO_FIELD_ID = "fldr0uzypmyE1XdAK";
 const LOCATION_TYPES = ["Cat Room", "Cat Condo", "Dog Kennel", "Isolation", "Medical", "Recovery", "Other"];
 
 function asNumber(value: unknown) {
@@ -81,7 +77,7 @@ export default async function CareAndHousingPage({
 }: {
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
-  const context = await requirePortalRole("Staff");
+  await requirePortalRole("Staff");
   const notice = await searchParams;
 
   const [animals, locations, care] = await Promise.all([
@@ -124,7 +120,6 @@ export default async function CareAndHousingPage({
   ]);
 
   const animalById = new Map(animals.map((record) => [record.id, record]));
-  const locationById = new Map(locations.map((record) => [record.id, record]));
   const activeAnimals = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted");
   const inShelter = activeAnimals.filter((record) => asText(record.fields["Housing Type"]) === "In Shelter");
   const catsInShelter = inShelter.filter((record) => ["cat", "cats"].includes(asText(record.fields.Species).toLowerCase()));
@@ -307,60 +302,6 @@ export default async function CareAndHousingPage({
     revalidatePath(`/portal/staff/animals/${animalId}`);
   }
 
-  async function recordCare(formData: FormData) {
-    "use server";
-    const current = await requirePortalRole("Staff", "write");
-    const animalId = field(formData, "animalId");
-    const careType = field(formData, "careType");
-    if (!animalId || !careType) return;
-
-    const latestAnimals = await airtableList(
-      TABLES.animals,
-      ["Pet Name", "Current Housing Location", "Adoption Status", "Weight (lb)"]
-    );
-    const animal = latestAnimals.find((record) => record.id === animalId);
-    if (!animal) return;
-
-    const currentLocation = asStrings(animal.fields["Current Housing Location"])[0] || "";
-    const alertLevel = field(formData, "alertLevel") || "Normal";
-    const followUpDate = field(formData, "followUpDate");
-    const followUpNeeded = ["Needs Attention", "Urgent"].includes(alertLevel) || Boolean(followUpDate);
-    const weight = optionalNumber(formData, "weight");
-
-    const careRecord = await airtableCreate(
-      TABLES.dailyCare,
-      {
-        Animal: [animalId],
-        "Date / Time": new Date().toISOString(),
-        "Care Type": careType,
-        ...(currentLocation ? { "Housing Location": [currentLocation] } : {}),
-        "Completed By": current.displayName,
-        "Alert Level": alertLevel,
-        "Follow-Up Needed": followUpNeeded,
-        ...(followUpDate ? { "Follow-Up Date": followUpDate } : {}),
-        ...(weight !== undefined ? { "Weight (lb)": weight } : {}),
-        ...(field(formData, "notes") ? { "Notes / Observation": field(formData, "notes") } : {}),
-        ...(followUpNeeded
-          ? { "Follow-Up Status": alertLevel === "Needs Attention" || alertLevel === "Urgent" ? "Needs Attention" : "Not Due" }
-          : {}),
-      },
-      true
-    );
-
-    if (weight !== undefined) {
-      await airtableUpdate(TABLES.animals, animalId, { "Weight (lb)": weight }, true);
-    }
-
-    const file = formData.get("photo");
-    if (careRecord && file instanceof File && file.size) {
-      await airtableUploadAttachment(careRecord.id, CARE_PHOTO_FIELD_ID, file);
-    }
-
-    revalidatePath("/portal/staff/care");
-    revalidatePath(`/portal/staff/animals/${animalId}`);
-    revalidatePath("/portal/staff/animals");
-  }
-
   async function completeFollowUp(formData: FormData) {
     "use server";
     await requirePortalRole("Staff", "write");
@@ -383,9 +324,9 @@ export default async function CareAndHousingPage({
 
         <header className="mb-8">
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Shelter Operations</p>
-          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Kennel, Daily Care & Housing</h1>
+          <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Housing</h1>
           <p className="mt-4 max-w-3xl text-muted-foreground">
-            See where every shelter animal is housed, manage room and kennel capacity, record daily care, and surface health or behavior observations that need follow-up.
+            See where shelter animals are housed, manage room and kennel capacity, and review care follow-ups that need staff attention.
           </p>
         </header>
 
@@ -455,63 +396,9 @@ export default async function CareAndHousingPage({
               )}
             </section>
 
-            <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-              <div className="mb-5 flex items-center gap-3">
-                <BedDouble className="h-6 w-6 text-primary" />
-                <div>
-                  <h2 className="text-2xl font-bold">Move an Animal</h2>
-                  <p className="text-sm text-muted-foreground">Changing a cat&apos;s room keeps its condo assignment, and changing its condo keeps its room. For dogs, use one kennel per dog unless a bonded pair benefits from sharing.</p>
-                </div>
-              </div>
-              <MoveAnimalForm
-                action={moveAnimal}
-                animals={inShelter.map((animal) => ({
-                  id: animal.id,
-                  label: `${asText(animal.fields["Pet Name"])} · ${asText(animal.fields["Animal ID"])}`,
-                  species: asText(animal.fields.Species),
-                }))}
-                locations={locations.filter((record) => Boolean(record.fields.Active)).map((location) => ({
-                  id: location.id,
-                  name: asText(location.fields["Location Name"]),
-                  type: normalizedLocationType(location.fields["Location Type"]),
-                  capacity: asNumber(location.fields.Capacity),
-                  occupancy: occupancyByLocation.get(location.id) || 0,
-                }))}
-              />
-            </section>
 
-            <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
-              <div className="mb-5 flex items-center gap-3">
-                <ClipboardCheck className="h-6 w-6 text-primary" />
-                <div>
-                  <h2 className="text-2xl font-bold">Recent Daily Care</h2>
-                  <p className="text-sm text-muted-foreground">Latest care, cleaning, exercise, enrichment, weight, behavior, and health entries.</p>
-                </div>
-              </div>
-              <div className="space-y-3">
-                {care.slice(0, 40).map((record) => {
-                  const animalId = asStrings(record.fields.Animal)[0];
-                  const animal = animalById.get(animalId);
-                  const locationId = asStrings(record.fields["Housing Location"])[0];
-                  const location = locationById.get(locationId);
-                  const alert = asText(record.fields["Alert Level"]);
-                  return (
-                    <article key={record.id} className="rounded-2xl bg-slate-50 p-5">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold">{asText(animal?.fields["Pet Name"]) || "Animal"} · {asText(record.fields["Care Type"])}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(record.fields["Date / Time"])} · {asText(record.fields["Completed By"]) || "Staff"}{location ? ` · ${asText(location.fields["Location Name"])}` : ""}</p>
-                        </div>
-                        {alert && alert !== "Normal" && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-900">{alert}</span>}
-                      </div>
-                      {asText(record.fields["Notes / Observation"]) && <p className="mt-3 text-sm">{asText(record.fields["Notes / Observation"])}</p>}
-                      {asNumber(record.fields["Weight (lb)"]) !== null && <p className="mt-2 text-sm text-muted-foreground">Weight: {asNumber(record.fields["Weight (lb)"])} lb</p>}
-                    </article>
-                  );
-                })}
-                {!care.length && <p className="text-sm text-muted-foreground">No daily care entries have been recorded yet.</p>}
-              </div>
-            </section>
+
+
           </div>
 
           <div className="space-y-6">
@@ -538,31 +425,31 @@ export default async function CareAndHousingPage({
               </div>
             </section>
             )}
+
+
             <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
               <div className="mb-5 flex items-center gap-3">
-                <Plus className="h-6 w-6 text-primary" />
+                <BedDouble className="h-6 w-6 text-primary" />
                 <div>
-                  <h2 id="record-care" className="scroll-mt-36 text-2xl font-bold">Record Daily Care</h2>
-                  <p className="text-sm text-muted-foreground">Log completed routine care and noteworthy observations against an animal and its current housing space. Needs Attention or Urgent creates a staff follow-up.</p>
+                  <h2 className="text-2xl font-bold">Move an Animal</h2>
+                  <p className="text-sm text-muted-foreground">Changing a cat&apos;s room keeps its condo assignment, and changing its condo keeps its room. For dogs, use one kennel per dog unless a bonded pair benefits from sharing.</p>
                 </div>
               </div>
-              <form action={recordCare} className="space-y-4">
-                <label className="block text-sm font-medium">Animal<select name="animalId" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select animal</option>{activeAnimals.map((animal)=><option key={animal.id} value={animal.id}>{asText(animal.fields["Pet Name"])} · {asText(animal.fields["Animal ID"])}</option>)}</select></label>
-                <label className="block text-sm font-medium">Care type<select name="careType" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5"><option value="" disabled>Select care type</option>{["Feeding","Water","Litter / Kennel Cleaning","Medication Support","Exercise / Walk","Enrichment / Socialization","Weight","Behavior Observation","Health Observation","Grooming","Other"].map((value)=><option key={value}>{value}</option>)}</select></label>
-                <label className="block text-sm font-medium">Alert level<select name="alertLevel" defaultValue="Normal" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">{["Normal","Monitor","Needs Attention","Urgent"].map((value)=><option key={value}>{value}</option>)}</select><span className="mt-1 block text-xs text-muted-foreground">Needs Attention or Urgent automatically creates a follow-up.</span></label>
-                <details className="rounded-2xl bg-slate-50 p-4">
-                  <summary className="cursor-pointer text-sm font-semibold">Add details only if needed</summary>
-                  <div className="mt-4 space-y-4">
-                    <label className="block text-sm font-medium">Notes / observation<textarea name="notes" rows={3} placeholder="Only record something noteworthy." className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <label className="block text-sm font-medium">Weight (lb)<input name="weight" type="number" min="0" step="0.1" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /><span className="mt-1 block text-xs text-muted-foreground">Use for a weight check or when weight is clinically relevant.</span></label>
-                      <label className="block text-sm font-medium">Follow-up date<input name="followUpDate" type="date" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
-                    </div>
-                    <label className="block text-sm font-medium">Photo / attachment<input name="photo" type="file" accept="image/*" className="mt-2 block w-full text-sm" /></label>
-                  </div>
-                </details>
-                <button className="w-full rounded-full bg-primary px-5 py-3 font-semibold text-white">Save Care Entry</button>
-              </form>
+              <MoveAnimalForm
+                action={moveAnimal}
+                animals={inShelter.map((animal) => ({
+                  id: animal.id,
+                  label: `${asText(animal.fields["Pet Name"])} · ${asText(animal.fields["Animal ID"])}`,
+                  species: asText(animal.fields.Species),
+                }))}
+                locations={locations.filter((record) => Boolean(record.fields.Active)).map((location) => ({
+                  id: location.id,
+                  name: asText(location.fields["Location Name"]),
+                  type: normalizedLocationType(location.fields["Location Type"]),
+                  capacity: asNumber(location.fields.Capacity),
+                  occupancy: occupancyByLocation.get(location.id) || 0,
+                }))}
+              />
             </section>
 
             <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
