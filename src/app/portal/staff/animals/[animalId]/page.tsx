@@ -603,7 +603,7 @@ export default async function AnimalProfilePage({
 
         <section id="care" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-6 rounded-2xl border bg-white p-5">
-            <h3 className="font-bold">Weight Update</h3>
+            <h2 className="text-2xl font-bold">Weight Update</h2>
             <p className="mt-1 text-sm text-muted-foreground">Enter and review this animal’s intake weight and later weight updates. Each saved weight automatically records the date and time it is entered.</p>
             {weightHistory.length > 0 && (
               <div className="mt-4">
