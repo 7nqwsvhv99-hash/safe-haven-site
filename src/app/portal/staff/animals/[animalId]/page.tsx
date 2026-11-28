@@ -13,6 +13,7 @@ import {
   PawPrint,
   Stethoscope,
   UserRoundCheck,
+  Weight,
 } from "lucide-react";
 import {
   airtableCreate,
@@ -603,7 +604,7 @@ export default async function AnimalProfilePage({
 
         <section id="care" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-6 rounded-2xl border bg-white p-5">
-            <h2 className="text-2xl font-bold">Weight Update</h2>
+            <div className="mb-4 flex items-center gap-3"><Weight className="h-6 w-6 text-primary" /><h2 className="text-2xl font-bold">Weight Update</h2></div>
             <p className="mt-1 text-sm text-muted-foreground">Enter and review this animal’s intake weight and later weight updates. Each saved weight automatically records the date and time it is entered.</p>
             {weightHistory.length > 0 && (
               <div className="mt-4">
