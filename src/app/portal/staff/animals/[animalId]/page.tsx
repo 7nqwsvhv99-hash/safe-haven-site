@@ -456,7 +456,7 @@ export default async function AnimalProfilePage({
     const careType = field(formData, "careType");
     const alertLevel = field(formData, "alertLevel");
     const notes = field(formData, "notes");
-    const allowedCareTypes = ["Medication Support", "Behavior Observation", "Health Observation", "Grooming", "Other"];
+    const allowedCareTypes = ["Behavior Observation", "Health Observation", "Grooming", "Other"];
     const allowedAlertLevels = ["Monitor", "Needs Attention", "Urgent"];
     if (!allowedCareTypes.includes(careType) || !allowedAlertLevels.includes(alertLevel) || !notes) return;
 
