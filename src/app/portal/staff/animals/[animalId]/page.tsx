@@ -457,6 +457,7 @@ export default async function AnimalProfilePage({
 
   const status = asText(animal.fields["Adoption Status"]);
   const readiness = asText(animal.fields["Website Listing Readiness"]);
+  const isPublicListing = Boolean(animal.fields["Public Listing"]);
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -489,8 +490,8 @@ export default async function AnimalProfilePage({
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <StatusPill>{status || "No status"}</StatusPill>
-                  <StatusPill>{readiness || "Website readiness unavailable"}</StatusPill>
-                  {Boolean(animal.fields["Public Listing"]) && <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Public listing</span>}
+                  <a href="#adoption-website-details" title="Open Adoption & website details" aria-label={`Website readiness: ${readiness || "unavailable"}. Open Adoption and website details.`} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold hover:bg-orange-100 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">{readiness || "Website readiness unavailable"}</a>
+                  {isPublicListing && <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Public listing</span>}
                 </div>
               </div>
 
@@ -573,7 +574,7 @@ export default async function AnimalProfilePage({
               </div>
             </details>
 
-            <details className="rounded-2xl bg-slate-50 p-4">
+            <details id="adoption-website-details" className="scroll-mt-48 rounded-2xl bg-slate-50 p-4">
               <summary className="cursor-pointer text-sm font-semibold">Adoption & website details</summary>
               <div className="mt-4 space-y-4">
                 <div className="grid gap-4 md:grid-cols-3">
@@ -592,8 +593,8 @@ export default async function AnimalProfilePage({
                   <label className="text-sm font-medium">Medical summary<textarea name="medicalSummary" rows={4} defaultValue={asText(animal.fields["Medical Summary"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                   <label className="text-sm font-medium">Adoption includes<textarea name="adoptionIncludes" rows={4} defaultValue={asText(animal.fields["Adoption Includes"])} className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5" /></label>
                 </div>
-                <div className="rounded-xl border bg-white p-4">
-                  <label className="flex items-start gap-3 text-sm"><input name="publicListing" type="checkbox" defaultChecked={Boolean(animal.fields["Public Listing"])} className="mt-1" /><span><strong>Publish on adoption website</strong><span className="mt-1 block text-muted-foreground">The animal displays only when the readiness formula is also Ready.</span></span></label>
+                <div className={`rounded-xl border p-4 transition-colors ${isPublicListing ? "bg-white" : "border-orange-400 bg-orange-50 shadow-[0_0_0_3px_rgba(249,115,22,0.24)]"}`}>
+                  <label className="flex items-start gap-3 text-sm"><input name="publicListing" type="checkbox" defaultChecked={isPublicListing} className="mt-0.5 h-6 w-6 shrink-0 accent-orange-500" /><span><strong>Publish on adoption website</strong><span className="mt-1 block text-muted-foreground">The animal displays only when the readiness formula is also Ready.</span></span></label>
                   <p className="mt-3 text-sm text-muted-foreground"><strong>Website readiness:</strong> {readiness || "Not calculated"}</p>
                 </div>
               </div>
@@ -605,8 +606,13 @@ export default async function AnimalProfilePage({
 
         <section id="care" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div id="weight" className="mb-6 scroll-mt-48 rounded-2xl border bg-white p-5">
-            <div className="mb-4 flex items-center gap-3"><Weight className="h-6 w-6 text-primary" /><h2 className="text-2xl font-bold">Weight Update</h2></div>
-            <p className="mt-1 text-sm text-muted-foreground">Enter and review this animal’s intake weight and later weight updates. Each saved weight automatically records the date and time it is entered.</p>
+            <div className="mb-4 flex items-center gap-3">
+              <Weight className="h-6 w-6 text-primary" />
+              <div>
+                <h2 className="text-2xl font-bold">Weight Update</h2>
+                <p className="text-sm text-muted-foreground">Enter and review this animal’s intake weight and later weight updates. Each saved weight automatically records the date and time it is entered.</p>
+              </div>
+            </div>
             {weightHistory.length > 0 && (
               <div className="mt-4">
                 <h4 className="font-semibold">Weight history</h4>
