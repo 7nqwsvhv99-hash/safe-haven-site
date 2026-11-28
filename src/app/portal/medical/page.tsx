@@ -94,7 +94,7 @@ export default async function MedicalPortalPage({
       ...(followUpDate ? { "Follow-Up Date": followUpDate } : {}),
       "Needs Veterinarian Review": needsReview,
       ...(needsReview ? { "Veterinary Review Status": "Pending Review" } : {}),
-      "Entered By Role": current.canStaff ? "Shelter Staff" : "Veterinarian",
+      "Entered By Role": current.roles.includes("Medical") ? "Veterinarian / Veterinary Technician" : current.roles.includes("Shelter Manager") ? "Shelter Manager" : "Executive Director",
     });
 
     revalidatePath("/portal/medical");
