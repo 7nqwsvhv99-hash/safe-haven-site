@@ -19,22 +19,21 @@ function appendHistory(existing: unknown, entry: string) {
   return [asText(existing), entry].filter(Boolean).join("\n");
 }
 
-export default async function CareAlertsPage({ searchParams }: { searchParams: Promise<{ animal?: string }> }) {
+export default async function CareAlertsPage({ searchParams }: { searchParams: Promise<{ animal?: string; state?: string }> }) {
   const context = await requirePortalRole("Staff");
   const query = await searchParams;
   const records = await airtableList(TABLES.dailyCare, [
     "Animal", "Date / Time", "Care Type", "Completed By", "Alert Level", "Alert Status",
     "Routed Roles", "Assigned Role", "Assigned To", "Acknowledged By", "Acknowledged At",
     "Resolved By", "Resolved At", "Resolution Notes", "Alert History", "Notes / Observation",
-    "Follow-Up Date",
+    "Follow-Up Date", "Follow-Up Status",
   ], { sort: [{ field: "Date / Time", direction: "desc" }] });
   const animals = await airtableList(TABLES.animals, ["Pet Name", "Animal ID"]);
   const animalMap = new Map(animals.map((animal) => [animal.id, animal]));
-  const alerts = records.filter((record) =>
-    ["Monitor", "Needs Attention", "Urgent"].includes(asText(record.fields["Alert Level"])) &&
-    asText(record.fields["Alert Status"]) !== "Resolved" &&
-    (!query.animal || asStrings(record.fields.Animal).includes(query.animal))
-  );
+  const allAlerts = records.filter((record) => ["Monitor", "Needs Attention", "Urgent"].includes(asText(record.fields["Alert Level"])) && (!query.animal || asStrings(record.fields.Animal).includes(query.animal)));
+  const state = ["resolved", "all"].includes(query.state || "") ? query.state : "open";
+  const alertStatus = (record: { fields: Record<string, unknown> }) => asText(record.fields["Alert Status"]) || (asText(record.fields["Follow-Up Status"]) === "Completed" ? "Resolved" : "Open");
+  const alerts = allAlerts.filter((record) => state === "all" || (state === "resolved" ? alertStatus(record) === "Resolved" : alertStatus(record) !== "Resolved"));
 
   async function manageAlert(formData: FormData) {
     "use server";
@@ -90,7 +89,10 @@ export default async function CareAlertsPage({ searchParams }: { searchParams: P
       <div className="container-custom py-10 md:py-12">
         <Link href="/portal/staff" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"><ArrowLeft className="h-4 w-4" /> Staff Portal</Link>
         <header className="mb-8"><p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Shelter Operations</p><h1 className="text-4xl font-bold md:text-5xl">Care Alert Review</h1><p className="mt-4 max-w-3xl text-muted-foreground">Shared care concerns routed by urgency. Animal care staff can view every alert; managers and the executive director manage ownership and follow-up.</p></header>
-        <div className="mb-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-950">Monitor and Needs Attention alerts route to the Shelter Manager. Urgent alerts route to the Shelter Manager and Executive Director.</div>
+        <div className="mb-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-sm text-orange-950">Monitor and Needs Attention alerts route to the Shelter Manager. Urgent alerts route to the Shelter Manager and Executive Director. Animal care staff can see all alerts and their follow-up status.</div>
+        <nav className="mb-5 flex flex-wrap gap-2 text-sm font-semibold">
+          {(["open", "resolved", "all"] as const).map((value) => <Link key={value} href={"/portal/staff/care-alerts?state=" + value + (query.animal ? "&animal=" + encodeURIComponent(query.animal) : "")} className={"rounded-full border px-4 py-2 " + (state === value ? "border-orange-300 bg-orange-50 text-orange-900" : "bg-white")}>{value === "open" ? "Open (" + allAlerts.filter((r) => alertStatus(r) !== "Resolved").length + ")" : value === "resolved" ? "Resolved (" + allAlerts.filter((r) => alertStatus(r) === "Resolved").length + ")" : "All (" + allAlerts.length + ")"}</Link>)}
+        </nav>
         <section className="space-y-4">
           {alerts.length ? alerts.map((record) => {
             const animalId = asStrings(record.fields.Animal)[0] || "";
@@ -103,7 +105,7 @@ export default async function CareAlertsPage({ searchParams }: { searchParams: P
               </div>
               <p className="mt-4 whitespace-pre-wrap">{asText(record.fields["Notes / Observation"])}</p>
               <div className="mt-4 grid gap-2 rounded-xl bg-slate-50 p-4 text-sm sm:grid-cols-2">
-                <p><strong>Status:</strong> {asText(record.fields["Alert Status"]) || "Open"}</p><p><strong>Routed roles:</strong> {asStrings(record.fields["Routed Roles"]).join(", ") || "Shelter Manager, Animal Care Staff"}</p>
+                <p><strong>Status:</strong> {alertStatus(record)}</p><p><strong>Routed roles:</strong> {asStrings(record.fields["Routed Roles"]).join(", ") || "Shelter Manager, Animal Care Staff"}</p>
                 <p><strong>Assigned role:</strong> {asText(record.fields["Assigned Role"]) || "Shelter Manager"}</p><p><strong>Assigned to:</strong> {asText(record.fields["Assigned To"]) || "Unassigned individual"}</p>
                 {record.fields["Follow-Up Date"] && <p><strong>Follow-up date:</strong> {fmt(record.fields["Follow-Up Date"])}</p>}
                 {asText(record.fields["Acknowledged By"]) && <p><strong>Acknowledged:</strong> {asText(record.fields["Acknowledged By"])} · {fmt(record.fields["Acknowledged At"])}</p>}
@@ -115,7 +117,7 @@ export default async function CareAlertsPage({ searchParams }: { searchParams: P
               </div>}
               {asText(record.fields["Alert History"]) && <details className="mt-4"><summary className="cursor-pointer text-sm font-semibold">Action history</summary><pre className="mt-2 whitespace-pre-wrap rounded-xl bg-slate-50 p-4 text-xs">{asText(record.fields["Alert History"])}</pre></details>}
             </article>;
-          }) : <div className="rounded-2xl border bg-white p-6 text-muted-foreground">There are no unresolved care alerts.</div>}
+          }) : <div className="rounded-2xl border bg-white p-6 text-muted-foreground">No care alerts match this view.</div>}
         </section>
       </div>
     </main>
