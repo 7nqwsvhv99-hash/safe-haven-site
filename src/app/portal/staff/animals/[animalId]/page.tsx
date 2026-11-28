@@ -284,6 +284,7 @@ export default async function AnimalProfilePage({
   const relatedActivity = activity.filter((record) => linked(record, "Animal", animalId));
   const relatedFosters = fosters.filter((record) => linked(record, "Animal", animalId));
   const relatedApplications = applications.filter((record) => linked(record, "Preferred Animal", animalId));
+  const pendingApplications = relatedApplications.filter((record) => !["Declined", "Withdrawn", "Adopted"].includes(asText(record.fields.Status)));
   const relatedAdoptions = adoptions.filter((record) => linked(record, "Animal", animalId));
   const relatedDocuments = documents.filter((record) => linked(record, "Animal", animalId));
   const relatedCare = dailyCare.filter((record) => linked(record, "Animal", animalId));
@@ -479,17 +480,27 @@ export default async function AnimalProfilePage({
           </div>
         </header>
 
+        {pendingApplications.length > 0 && (
+          <a href="#adoption" className="mb-6 flex items-center justify-between gap-4 rounded-2xl border border-orange-300 bg-orange-50 px-5 py-4 text-orange-950 hover:bg-orange-100" role="status">
+            <span className="font-semibold">
+              {pendingApplications.length} adoption application{pendingApplications.length === 1 ? "" : "s"} awaiting review
+            </span>
+            <span className="text-sm font-semibold text-primary">Review applications</span>
+          </a>
+        )}
+
         <nav className="mb-8 flex gap-2 overflow-x-auto rounded-2xl border bg-white p-2 text-sm font-semibold shadow-sm">
           {[
             ["overview", "Overview"],
-            ["care", "Daily Care"],
+            ["care", "Observations"],
             ["medical", "Medical"],
             ["timeline", "Timeline"],
-            ["foster", "Foster"],
+            ...(relatedFosters.length ? [["foster", "Foster"]] : []),
             ["adoption", "Adoption"],
             ["documents", "Documents"],
             ["photos", "Photos"],
           ].map(([id, label]) => <a key={id} href={`#${id}`} className="whitespace-nowrap rounded-xl px-4 py-2 hover:bg-slate-50 hover:text-primary">{label}</a>)}
+          <Link href="/portal/staff/care" className="whitespace-nowrap rounded-xl px-4 py-2 hover:bg-slate-50 hover:text-primary">Housing</Link>
         </nav>
 
         <section id="overview" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
@@ -568,16 +579,16 @@ export default async function AnimalProfilePage({
             <div className="flex items-center gap-3">
               <ClipboardCheck className="h-6 w-6 text-primary" />
               <div>
-                <h2 className="text-2xl font-bold">Daily Care</h2>
-                <p className="text-sm text-muted-foreground">Log medication, noteworthy observations, weight checks, and follow-up for this animal.</p>
+                <h2 className="text-2xl font-bold">Observations &amp; Concerns</h2>
+                <p className="text-sm text-muted-foreground">Record medication, notable behavior or health observations, and follow-up for this animal.</p>
               </div>
             </div>
-            <Link href="/portal/staff/care" className="text-sm font-semibold text-primary hover:underline">Manage Housing</Link>
+            
           </div>
 
           <div className="mb-6 rounded-2xl border bg-white p-5">
             <h3 className="font-bold">Weight history</h3>
-            <p className="mt-1 text-sm text-muted-foreground">Intake weight and dated weights entered through Daily Care.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Intake weight and dated weight checks recorded during the animal’s stay.</p>
             {weightHistory.length ? (
               <div className="mt-4 divide-y">
                 {weightHistory.map((entry) => (
@@ -591,9 +602,9 @@ export default async function AnimalProfilePage({
           </div>
 
           <form action={recordCare} className="mb-6 space-y-4 rounded-2xl bg-slate-50 p-5 md:p-6">
-            <h3 className="font-bold">Record a care entry</h3>
+            <h3 className="font-bold">Record an observation or concern</h3>
             <div className="grid gap-4 md:grid-cols-2">
-              <label className="block text-sm font-medium">Care type
+              <label className="block text-sm font-medium">Record type
                 <select name="careType" required defaultValue="" className="mt-2 w-full rounded-xl border bg-white px-3 py-2.5">
                   <option value="" disabled>Select care type</option>
                   <option value="Medication Support">Medication</option>
@@ -636,7 +647,7 @@ export default async function AnimalProfilePage({
                 <article key={record.id} className="rounded-2xl bg-slate-50 p-5">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <p className="font-semibold">{asText(record.fields["Care Type"]) || "Care entry"}</p>
+                      <p className="font-semibold">{asText(record.fields["Care Type"]) || "Observation or concern"}</p>
                       <p className="mt-1 text-xs text-muted-foreground">
                         {formatDate(record.fields["Date / Time"], true)}
                         {asText(record.fields["Completed By"]) ? ` · ${asText(record.fields["Completed By"])}` : ""}
@@ -656,7 +667,7 @@ export default async function AnimalProfilePage({
                   </div>
                 </article>
               );
-            }) : <Empty>No daily care entries have been recorded for this animal yet.</Empty>}
+            }) : <Empty>No observations or concerns have been recorded for this animal yet.</Empty>}
           </div>
         </section>
 
@@ -685,6 +696,7 @@ export default async function AnimalProfilePage({
           {relatedIntakes.length > 0 && <div className="mt-6 border-t pt-6"><div className="mb-4 flex flex-wrap items-center justify-between gap-3"><div className="flex items-center gap-2"><ClipboardList className="h-5 w-5 text-primary"/><h3 className="font-bold">Intake history</h3></div><Link href="/portal/staff/intake" className="text-sm font-semibold text-primary hover:underline">Open Intake Management</Link></div>{relatedIntakes.map((record)=><article key={record.id} className="mb-3 rounded-2xl bg-slate-50 p-5 text-sm"><p className="font-semibold">{asText(record.fields["Intake Type"])||"Intake"} · {formatDate(record.fields["Intake Date"])}</p><p className="mt-2 text-muted-foreground">{[asText(record.fields["Source Person / Organization"]),asText(record.fields["Found / Origin Location"])].filter(Boolean).join(" · ")}</p>{asText(record.fields["Intake Notes"])&&<p className="mt-2">{asText(record.fields["Intake Notes"])}</p>}</article>)}</div>}
         </section>
 
+        {relatedFosters.length > 0 && (
         <section id="foster" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3"><HeartHandshake className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Foster</h2><p className="text-sm text-muted-foreground">Placement history and care follow-up.</p></div></div>
@@ -696,6 +708,7 @@ export default async function AnimalProfilePage({
             )):<Empty>No foster placements are linked to this animal.</Empty>}
           </div>
         </section>
+        )}
 
         <section id="adoption" className="mb-8 scroll-mt-48 rounded-3xl border bg-white p-6 shadow-sm md:p-8">
           <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
