@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import {
-  AlertTriangle,
   ArrowLeft,
   BedDouble,
   Cat,
@@ -57,21 +56,6 @@ function optionalNumber(form: FormData, name: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function formatDateTime(value: unknown) {
-  const text = asText(value);
-  if (!text) return "Date not recorded";
-  const date = new Date(text);
-  if (Number.isNaN(date.getTime())) return text;
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: "America/Chicago",
-  }).format(date);
-}
-
 export default async function CareAndHousingPage({
   searchParams,
 }: {
@@ -80,7 +64,7 @@ export default async function CareAndHousingPage({
   await requirePortalRole("Staff");
   const notice = await searchParams;
 
-  const [animals, locations, care] = await Promise.all([
+  const [animals, locations] = await Promise.all([
     airtableList(
       TABLES.animals,
       [
@@ -98,28 +82,9 @@ export default async function CareAndHousingPage({
       TABLES.housingLocations,
       ["Location Name", "Location Type", "Capacity", "Active", "Notes", "Animals"],
       { sort: [{ field: "Location Name", direction: "asc" }] }
-    ),
-    airtableList(
-      TABLES.dailyCare,
-      [
-        "Animal",
-        "Date / Time",
-        "Care Type",
-        "Housing Location",
-        "Completed By",
-        "Alert Level",
-        "Follow-Up Needed",
-        "Follow-Up Date",
-        "Weight (lb)",
-        "Notes / Observation",
-        "Photo / Attachment",
-        "Follow-Up Status",
-      ],
-      { sort: [{ field: "Date / Time", direction: "desc" }] }
-    ),
+    )
   ]);
 
-  const animalById = new Map(animals.map((record) => [record.id, record]));
   const activeAnimals = animals.filter((record) => asText(record.fields["Adoption Status"]) !== "Adopted");
   const inShelter = activeAnimals.filter((record) => asText(record.fields["Housing Type"]) === "In Shelter");
   const catsInShelter = inShelter.filter((record) => ["cat", "cats"].includes(asText(record.fields.Species).toLowerCase()));
@@ -168,13 +133,6 @@ export default async function CareAndHousingPage({
       occupancyByLocation.set(locationId, (occupancyByLocation.get(locationId) || 0) + 1);
     }
   }
-
-  const openAlerts = care.filter((record) => {
-    const level = asText(record.fields["Alert Level"]);
-    const status = asText(record.fields["Follow-Up Status"]);
-    if (status === "Completed") return false;
-    return ["Needs Attention", "Urgent"].includes(level) || Boolean(record.fields["Follow-Up Needed"]);
-  });
 
   async function createLocation(formData: FormData) {
     "use server";
@@ -302,19 +260,6 @@ export default async function CareAndHousingPage({
     revalidatePath(`/portal/staff/animals/${animalId}`);
   }
 
-  async function completeFollowUp(formData: FormData) {
-    "use server";
-    await requirePortalRole("Staff", "write");
-    const careId = field(formData, "careId");
-    const latest = await airtableList(TABLES.dailyCare, ["Follow-Up Status"]);
-    if (!latest.some((record) => record.id === careId)) return;
-    await airtableUpdate(TABLES.dailyCare, careId, {
-      "Follow-Up Status": "Completed",
-      "Follow-Up Needed": false,
-    }, true);
-    revalidatePath("/portal/staff/care");
-  }
-
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="container-custom py-10 md:py-12">
@@ -326,7 +271,7 @@ export default async function CareAndHousingPage({
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-primary">Shelter Operations</p>
           <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Housing</h1>
           <p className="mt-4 max-w-3xl text-muted-foreground">
-            See where shelter animals are housed, manage room and kennel capacity, and review care follow-ups that need staff attention.
+            See where shelter animals are housed, manage room and kennel capacity, and maintain active housing locations.
           </p>
         </header>
 
@@ -402,31 +347,6 @@ export default async function CareAndHousingPage({
           </div>
 
           <div className="space-y-6">
-            {openAlerts.length > 0 && (
-            <section className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm md:p-8">
-              <div className="mb-5 flex items-center gap-3"><AlertTriangle className="h-6 w-6 text-primary" /><div><h2 className="text-2xl font-bold">Care Follow-Up</h2><p className="text-sm text-muted-foreground">Unresolved observations requiring staff attention.</p></div></div>
-              <div className="space-y-3">
-                {openAlerts.map((record) => {
-                  const animalId = asStrings(record.fields.Animal)[0];
-                  const animal = animalById.get(animalId);
-                  return (
-                    <form key={record.id} action={completeFollowUp} className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                      <input type="hidden" name="careId" value={record.id} />
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div><p className="font-semibold">{asText(animal?.fields["Pet Name"]) || "Animal"} · {asText(record.fields["Care Type"])}</p><p className="mt-1 text-xs text-muted-foreground">{formatDateTime(record.fields["Date / Time"])}</p></div>
-                        <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold">{asText(record.fields["Alert Level"]) || "Follow-up"}</span>
-                      </div>
-                      {asText(record.fields["Notes / Observation"]) && <p className="mt-3 text-sm">{asText(record.fields["Notes / Observation"])}</p>}
-                      {asText(record.fields["Follow-Up Date"]) && <p className="mt-2 text-xs text-muted-foreground">Follow-up date: {asText(record.fields["Follow-Up Date"])}</p>}
-                      <button className="mt-4 rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary shadow-sm">Mark Follow-Up Complete</button>
-                    </form>
-                  );
-                })}
-              </div>
-            </section>
-            )}
-
-
             <section className="rounded-3xl border bg-white p-6 shadow-sm md:p-8">
               <div className="mb-5 flex items-center gap-3">
                 <BedDouble className="h-6 w-6 text-primary" />
