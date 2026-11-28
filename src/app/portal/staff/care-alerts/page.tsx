@@ -28,7 +28,7 @@ export default async function CareAlertsPage() {
   ]);
   const profile = access.find((record) => asText(record.fields.Email).toLowerCase() === actor.email.toLowerCase());
   const position = asText(profile?.fields["Shelter Position"]);
-  const canResolve = actor.isAdministrator || actor.roles.some((role) => ["Shelter Manager", "Executive Director"].includes(role)) || position === "Animal Welfare Manager";
+  const canResolve = actor.isAdministrator || (actor.roles.includes("Shelter Manager") || actor.roles.includes("Executive Director")) || position === "Animal Welfare Manager";
   const animalById = new Map(animals.map((animal) => [animal.id, animal]));
   const alerts = care.filter((record) =>
     levels.includes(asText(record.fields["Alert Level"])) &&
@@ -41,7 +41,7 @@ export default async function CareAlertsPage() {
     const staff = await airtableList(TABLES.portalAccess, ["Email", "Shelter Position"]);
     const currentProfile = staff.find((record) => asText(record.fields.Email).toLowerCase() === current.email.toLowerCase());
     const currentPosition = asText(currentProfile?.fields["Shelter Position"]);
-    const authorized = current.isAdministrator || current.roles.some((role) => ["Shelter Manager", "Executive Director"].includes(role)) || currentPosition === "Animal Welfare Manager";
+    const authorized = current.isAdministrator || (current.roles.includes("Shelter Manager") || current.roles.includes("Executive Director")) || currentPosition === "Animal Welfare Manager";
     if (!authorized) throw new Error("Only shelter management can resolve a care alert.");
 
     const careId = String(formData.get("careId") || "");
